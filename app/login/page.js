@@ -176,18 +176,18 @@ function LoginContent() {
           links: tab === 'register' ? links : null,
           ...form 
         }),
-        timeout: 15000
+        timeout: 30000
       });
 
       let data;
-      try { data = await res.json(); } catch { throw new Error(`Server error (${res.status})`); }
+      try { data = await res.json(); } catch { throw new Error(`Server response was not valid JSON (${res.status})`); }
       
       if (!res.ok) {
         if (res.status === 403 && data.choices) {
           setChoices(data.choices);
           setErr('Multiple accounts found. Please select your school:');
         } else {
-          setErr(data.error || `Error: Please check your credentials.`);
+          setErr(data.error || `Error ${res.status}: Unable to authenticate. Please check your credentials.`);
         }
         setBusy(false);
         return;
@@ -208,7 +208,13 @@ function LoginContent() {
       }
     } catch (e) {
       console.error('[Login] Action failed:', e);
-      setErr(e.message || 'An unexpected connection error occurred. Please check your internet and try again.');
+      let msg = e.message || 'Unknown error';
+      if (msg.includes('Failed to fetch')) {
+        msg = 'Connection failed. Please check your internet or firewall settings.';
+      } else if (msg.includes('timeout')) {
+        msg = 'Request timed out. The server might be busy, please try again.';
+      }
+      setErr(`Connection Error: ${msg}. If this persists, please contact EduVantage support.`);
     } finally {
       setBusy(false);
     }
