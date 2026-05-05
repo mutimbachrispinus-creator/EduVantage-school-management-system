@@ -291,10 +291,23 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
   // Distribution stats — dynamically initialized based on curriculum
   const curr = profile?.curriculum || 'CBC';
   const dist = getDistributionBuckets(grade, curr);
+  const subjectDistribution = {};
+  subjects.forEach(s => { subjectDistribution[s] = getDistributionBuckets(grade, curr); });
     
   data.forEach(l => {
     const info = gInfo(parseFloat(l.avg), grade, gradCfg, curr);
     if (dist[info.lv] !== undefined) dist[info.lv]++;
+
+    // Subject-wise distribution
+    subjects.forEach(s => {
+      const score = getMark(marks, term, grade, s, assess, l.adm);
+      if (score !== null) {
+        const sInfo = gInfo(score, grade, gradCfg, curr);
+        if (subjectDistribution[s][sInfo.lv] !== undefined) {
+          subjectDistribution[s][sInfo.lv]++;
+        }
+      }
+    });
   });
 
   return (
@@ -406,8 +419,8 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
           <div style={{ fontSize: 9, fontWeight: 800, color: '#475569', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Class Performance Distribution</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 70 }}>
             {Object.entries(dist).map(([k, v]) => {
-              const max = Math.max(...Object.values(dist), 1);
-              const h = (v / max) * 100;
+              const maxVal = Math.max(...Object.values(dist), 1);
+              const h = (v / maxVal) * 100;
               const colors = getGradeColors(profile?.curriculum || 'CBC');
               return (
                 <div key={k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -427,6 +440,37 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Subject-wise Distribution Table */}
+      <div style={{ marginTop: 20, pageBreakInside: 'avoid' }}>
+        <div style={{ fontSize: 9, fontWeight: 800, color: '#475569', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Subject-wise Distribution Analysis</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9 }}>
+          <thead>
+            <tr style={{ background: '#f8fafc' }}>
+              <th style={{ border: '1px solid #ddd', padding: 4, textAlign: 'left' }}>Subject</th>
+              {Object.keys(getDistributionBuckets(grade, curr)).map(lv => (
+                <th key={lv} style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center' }}>{lv}</th>
+              ))}
+              <th style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center' }}>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(subjectDistribution).map(([subj, counts]) => (
+              <tr key={subj}>
+                <td style={{ border: '1px solid #ddd', padding: 3, fontWeight: 700 }}>{subj}</td>
+                {Object.values(counts).map((count, i) => (
+                  <td key={i} style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center', fontWeight: count > 0 ? 800 : 400, color: count > 0 ? '#1e293b' : '#cbd5e1' }}>
+                    {count || '—'}
+                  </td>
+                ))}
+                <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center', fontWeight: 900, background: '#f8fafc' }}>
+                  {Object.values(counts).reduce((a, b) => a + b, 0)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
