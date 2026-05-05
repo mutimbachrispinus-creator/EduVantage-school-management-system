@@ -227,11 +227,12 @@ export default function AnalyticsPage() {
                       <Tooltip />
                       <Bar dataKey="average" fill="#2563EB" radius={[8, 8, 0, 0]} barSize={40} />
                     </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       <style jsx>{`
         .bg-maroon-100 { background-color: #FFF5F5; }
         .hover\\:border-maroon-100:hover { border-color: #FED7D7; }
