@@ -14,8 +14,15 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export default function QuickReceipt({ schoolName = 'Nexed Portal' }) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function QuickReceipt({ isOpen: forcedOpen, onClose, schoolName = 'Nexed Portal' }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = forcedOpen !== undefined ? forcedOpen : internalOpen;
+
+  const setIsOpen = (val) => {
+    if (!val && onClose) onClose();
+    setInternalOpen(val);
+  };
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -30,12 +37,12 @@ export default function QuickReceipt({ schoolName = 'Nexed Portal' }) {
     const down = (e) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setIsOpen((open) => !open);
+        setIsOpen(!isOpen);
       }
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, []);
+  }, [isOpen]);
 
   // Search Logic
   useEffect(() => {

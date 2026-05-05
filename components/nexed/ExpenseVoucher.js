@@ -13,8 +13,15 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export default function ExpenseVoucher({ schoolName = 'Nexed Portal' }) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function ExpenseVoucher({ isOpen: forcedOpen, onClose, schoolName = 'Nexed Portal' }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = forcedOpen !== undefined ? forcedOpen : internalOpen;
+
+  const setIsOpen = (val) => {
+    if (!val && onClose) onClose();
+    setInternalOpen(val);
+  };
+
   const [query, setQuery] = useState('');
   const [suppliersList, setSuppliersList] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
@@ -31,12 +38,12 @@ export default function ExpenseVoucher({ schoolName = 'Nexed Portal' }) {
     const down = (e) => {
       if (e.key === 'j' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setIsOpen((open) => !open);
+        setIsOpen(!isOpen);
       }
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, []);
+  }, [isOpen]);
 
   // Fetch Voteheads
   useEffect(() => {

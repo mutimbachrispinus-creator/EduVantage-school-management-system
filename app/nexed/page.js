@@ -8,6 +8,7 @@ import { useState } from 'react';
 
 export default function NexedPage() {
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showExpense, setShowExpense] = useState(false);
 
   return (
     <div className="page on">
@@ -19,13 +20,13 @@ export default function NexedPage() {
         <div className="page-hdr-acts">
           <button 
             className="btn btn-ghost"
-            onClick={() => { /* Handled by hotkey */ }}
+            onClick={() => setShowExpense(true)}
           >
             💸 New Expense <kbd className="desktop-only" style={{ marginLeft: 8, fontSize: 10, opacity: 0.5 }}>⌘J</kbd>
           </button>
           <button 
             className="btn btn-primary"
-            onClick={() => { /* Handled by hotkey */ }}
+            onClick={() => setShowReceipt(true)}
           >
             🖨️ Quick Receipt <kbd className="desktop-only" style={{ marginLeft: 8, fontSize: 10, opacity: 0.5 }}>⌘K</kbd>
           </button>
@@ -78,8 +79,8 @@ export default function NexedPage() {
         </div>
       </div>
 
-      <QuickReceipt />
-      <ExpenseVoucher />
+      <QuickReceipt isOpen={showReceipt} onClose={() => setShowReceipt(false)} />
+      <ExpenseVoucher isOpen={showExpense} onClose={() => setShowExpense(false)} />
     </div>
   );
 }
