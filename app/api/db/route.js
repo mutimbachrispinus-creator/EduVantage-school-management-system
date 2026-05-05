@@ -182,6 +182,13 @@ async function handleRequest(req, auth, impTenant = null) {
       return { type: req.type, ok: true };
     }
 
+    case 'deleteLearner': {
+      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      const { kvDeleteLearner } = await import('@/lib/db');
+      await kvDeleteLearner(req.adm, tenantId);
+      return { type: req.type, ok: true };
+    }
+
     case 'updateMark': {
       const { kvUpdateMark } = await import('@/lib/db');
       await kvUpdateMark(req.gsa, req.adm, req.score, tenantId);

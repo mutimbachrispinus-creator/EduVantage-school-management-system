@@ -65,7 +65,11 @@ export default function ProfilePage() {
         })
       ]);
       const auth = await authRes.json();
-      if (!auth.ok || auth.user?.role !== 'admin') { router.push('/'); return; }
+      if (!auth.ok) { router.push('/login'); return; }
+      
+      const allowed = ['admin', 'teacher', 'staff', 'parent', 'jss_teacher', 'senior_teacher', 'super-admin'];
+      if (!allowed.includes(auth.user?.role)) { router.push('/'); return; }
+      
       setUser(auth.user);
 
       const db = await dbRes.json();

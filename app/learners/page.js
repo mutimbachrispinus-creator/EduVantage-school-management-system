@@ -210,10 +210,9 @@ export default function LearnersPage() {
                               style={{ marginLeft: 4 }}
                               onClick={async () => {
                                 if(!confirm(`Delete learner ${l.name}?`)) return;
-                                const updated = learners.filter(x => x.adm !== l.adm);
                                 await fetch('/api/db', {
                                   method:'POST', headers:{'Content-Type':'application/json'},
-                                  body: JSON.stringify({ requests:[{ type:'set', key:'paav6_learners', value: updated }] })
+                                  body: JSON.stringify({ requests:[{ type:'deleteLearner', adm: l.adm }] })
                                 });
                                 load();
                               }}>
