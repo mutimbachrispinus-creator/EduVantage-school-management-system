@@ -251,6 +251,7 @@ function PrintHeader({ title, grade, profile = {} }) {
 }
 
 function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gradCfg, profile }) {
+  const curr = profile?.curriculum || 'CBC';
   const data = learners.map(l => {
     let total = 0;
     let totalMarks = 0;
@@ -258,12 +259,12 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
     subjects.forEach(s => {
       const score = getMark(marks, term, grade, s, assess, l.adm);
       if (score !== null) {
-        total += gInfo(score, grade, gradCfg, profile?.curriculum || 'CBC').pts;
+        total += gInfo(score, grade, gradCfg, curr).pts;
         totalMarks += score;
         count++;
       }
     });
-    const maxPoss = maxPts(grade, subjects, profile?.curriculum || 'CBC');
+    const maxPoss = maxPts(grade, subjects, curr);
     return { ...l, total, totalMarks, count, avg: count > 0 ? (total / (maxPoss || 1) * 100).toFixed(1) : 0 };
   }).sort((a, b) => {
     if (shouldRankByMarks(grade, curr)) return b.totalMarks - a.totalMarks;
@@ -281,7 +282,7 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
       }
     });
     const avgScore = count > 0 ? Number((sum / count).toFixed(2)) : null;
-    const avgInfo = avgScore !== null ? gInfo(avgScore, grade, gradCfg, profile?.curriculum || 'CBC') : null;
+    const avgInfo = avgScore !== null ? gInfo(avgScore, grade, gradCfg, curr) : null;
     return { avgScore, avgInfo };
   });
 
@@ -292,7 +293,6 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
   const avgPct = data.length > 0 ? (data.reduce((acc, l) => acc + parseFloat(l.avg), 0) / data.length).toFixed(1) : 0;
 
   // Distribution stats — dynamically initialized based on curriculum
-  const curr = profile?.curriculum || 'CBC';
   const dist = getDistributionBuckets(grade, curr);
   const subjectDistribution = {};
   subjects.forEach(s => { subjectDistribution[s] = getDistributionBuckets(grade, curr); });
