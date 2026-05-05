@@ -285,6 +285,7 @@ export default function MeritListPage() {
                     ))}
                     <th style={{ textAlign: 'center', color:'#8B1A1A', padding: '6px 4px' }}>Total Marks</th>
                     <th style={{ textAlign: 'center', color:'#8B1A1A', padding: '6px 4px' }}>Total Pts</th>
+                    <th style={{ textAlign: 'center', color:'#8B1A1A', padding: '6px 4px' }}>Level</th>
                     <th style={{ textAlign: 'center', color:'#8B1A1A', padding: '6px 4px' }}>/ {max}</th>
                     <th style={{ textAlign: 'center', color:'#8B1A1A', padding: '6px 4px' }}>%</th>
                     <th style={{ textAlign: 'center', color:'#0369A1', padding: '6px 4px' }}>VAP</th>
@@ -292,52 +293,60 @@ export default function MeritListPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ranked.map(l => (
-                    <tr key={l.adm}
-                      className={l.rank <= 3 ? `merit-rank-${l.rank}` : ''}
-                      style={{ transition: 'background .15s' }}>
-                      <td style={{ padding: '4px' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <span style={{ fontFamily: 'Sora,sans-serif', fontWeight: 800, fontSize: 14,
-                            color: l.rank === 1 ? '#B45309' : l.rank === 2 ? '#475569'
-                                 : l.rank === 3 ? '#C2410C' : 'var(--navy)' }}>
-                            {MEDALS[l.rank] || `#${l.rank}`}
-                          </span>
-                          <button className="btn btn-ghost btn-sm no-print" title="View Profile"
-                            style={{ padding: '2px 6px', fontSize: 14 }}
-                            onClick={() => router.push(`/learners/${l.adm}`)}>
-                            👁
-                          </button>
-                        </div>
-                      </td>
-                      <td style={{ fontWeight: 700, fontSize: 11.5, padding: '4px' }}>{l.adm}</td>
-                      <td style={{ fontWeight: 600, padding: '4px 8px' }}>{l.name}</td>
-                      {l.detail.map(d => (
-                        <td key={d.subj} style={{ textAlign: 'center', padding: '3px 2px' }}>
-                          {d.score !== null ? (
-                            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
-                              <span style={{ fontWeight:800, fontSize:12.5 }}>{d.score}</span>
-                              <span style={{ padding:'1px 5px', borderRadius:10, fontSize:9, fontWeight:900, background:d.bg||'#eee', color:d.c||'#333' }}>
-                                {d.lv}
-                              </span>
-                            </div>
-                          ) : '—'}
+                  {ranked.map(l => {
+                    const lPct = max ? Number(((l.totalPts/max)*100).toFixed(2)) : 0;
+                    const lInfo = max ? (curr.gInfo ? curr.gInfo(lPct, grade) : gInfo(lPct, grade)) : { lv: '—' };
+                    return (
+                      <tr key={l.adm}
+                        className={l.rank <= 3 ? `merit-rank-${l.rank}` : ''}
+                        style={{ transition: 'background .15s' }}>
+                        <td style={{ padding: '4px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <span style={{ fontFamily: 'Sora,sans-serif', fontWeight: 800, fontSize: 14,
+                              color: l.rank === 1 ? '#B45309' : l.rank === 2 ? '#475569'
+                                   : l.rank === 3 ? '#C2410C' : 'var(--navy)' }}>
+                              {MEDALS[l.rank] || `#${l.rank}`}
+                            </span>
+                            <button className="btn btn-ghost btn-sm no-print" title="View Profile"
+                              style={{ padding: '2px 6px', fontSize: 14 }}
+                              onClick={() => router.push(`/learners/${l.adm}`)}>
+                              👁
+                            </button>
+                          </div>
                         </td>
-                      ))}
-                      <td style={{ textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#059669', padding: '4px' }}>
-                        {l.detail.reduce((s,d)=>s+(d.score||0),0)}
-                      </td>
-                      <td style={{ textAlign: 'center', fontWeight: 800, fontSize: 14,
-                        color: 'var(--navy)', padding: '4px' }}>
-                        {l.totalPts}
-                      </td>
-                      <td style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 11, padding: '4px' }}>
-                        {max}
-                      </td>
-                      <td style={{ textAlign: 'center', fontWeight: 700,
-                        color: l.totalPts/max >= 0.5 ? 'var(--green)' : 'var(--red)', padding: '4px' }}>
-                        {Number(((l.totalPts/max)*100).toFixed(2))}%
-                      </td>
+                        <td style={{ fontWeight: 700, fontSize: 11.5, padding: '4px' }}>{l.adm}</td>
+                        <td style={{ fontWeight: 600, padding: '4px 8px' }}>{l.name}</td>
+                        {l.detail.map(d => (
+                          <td key={d.subj} style={{ textAlign: 'center', padding: '3px 2px' }}>
+                            {d.score !== null ? (
+                              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
+                                <span style={{ fontWeight:800, fontSize:12.5 }}>{d.score}</span>
+                                <span style={{ padding:'1px 5px', borderRadius:10, fontSize:9, fontWeight:900, background:d.bg||'#eee', color:d.c||'#333' }}>
+                                  {d.lv}
+                                </span>
+                              </div>
+                            ) : '—'}
+                          </td>
+                        ))}
+                        <td style={{ textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#059669', padding: '4px' }}>
+                          {l.detail.reduce((s,d)=>s+(d.score||0),0)}
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: 800, fontSize: 14,
+                          color: 'var(--navy)', padding: '4px' }}>
+                          {l.totalPts}
+                        </td>
+                        <td style={{ textAlign: 'center', padding: '4px' }}>
+                           <span style={{ padding:'2px 8px', borderRadius:4, fontSize:11, fontWeight:900, background:lInfo.bg, color:lInfo.c }}>
+                             {lInfo.lv}
+                           </span>
+                        </td>
+                        <td style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 11, padding: '4px' }}>
+                          {max}
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: 700,
+                          color: l.totalPts/max >= 0.5 ? 'var(--green)' : 'var(--red)', padding: '4px' }}>
+                          {lPct}%
+                        </td>
                       <td style={{ textAlign: 'center', padding: '4px' }}>
                         {l.vap !== 0 ? (
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

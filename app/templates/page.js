@@ -331,34 +331,41 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
             {subjects.map(s => <th key={s} style={{ border: '1px solid #ddd', padding: 4, fontSize: 8, textAlign: 'center' }}>{s.slice(0,5)}</th>)}
             <th style={{ border: '1px solid #ddd', padding: 4, color: '#8B1A1A', textAlign: 'center' }}>Total Marks</th>
             <th style={{ border: '1px solid #ddd', padding: 4, color: '#8B1A1A', textAlign: 'center' }}>Total Pts</th>
+            <th style={{ border: '1px solid #ddd', padding: 4, color: '#8B1A1A', textAlign: 'center' }}>Level</th>
             <th style={{ border: '1px solid #ddd', padding: 4, color: '#8B1A1A', textAlign: 'center' }}>%</th>
           </tr>
         </thead>
         <tbody>
-          {data.map((l, i) => (
-            <tr key={l.adm}>
-              <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>{i + 1}</td>
-              <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>{l.adm}</td>
-              <td style={{ border: '1px solid #ddd', padding: 3 }}>{l.name}</td>
-              {subjects.map(s => {
-                const score = marks[`${term}:${grade}|${s}|${assess}`]?.[l.adm];
-                const info = score !== undefined ? gInfo(Number(score), grade, gradCfg, profile?.curriculum || 'CBC') : null;
-                return (
-                  <td key={s} style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>
-                    {score !== undefined ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600 }}>{score}</span>
-                        <span style={{ fontSize: 8, color: info.c, fontWeight: 800 }}>{info.lv}</span>
-                      </div>
-                    ) : '—'}
-                  </td>
-                );
-              })}
-              <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center', fontWeight: 700, color: '#059669' }}>{l.totalMarks}</td>
-              <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center', fontWeight: 800, color: 'var(--navy)' }}>{l.total}</td>
-              <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>{l.avg}%</td>
-            </tr>
-          ))}
+          {data.map((l, i) => {
+            const lInfo = gInfo(parseFloat(l.avg), grade, gradCfg, curr);
+            return (
+              <tr key={l.adm}>
+                <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>{i + 1}</td>
+                <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>{l.adm}</td>
+                <td style={{ border: '1px solid #ddd', padding: 3 }}>{l.name}</td>
+                {subjects.map(s => {
+                  const score = marks[`${term}:${grade}|${s}|${assess}`]?.[l.adm];
+                  const info = score !== undefined ? gInfo(Number(score), grade, gradCfg, profile?.curriculum || 'CBC') : null;
+                  return (
+                    <td key={s} style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>
+                      {score !== undefined ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 600 }}>{score}</span>
+                          <span style={{ fontSize: 8, color: info.c, fontWeight: 800 }}>{info.lv}</span>
+                        </div>
+                      ) : '—'}
+                    </td>
+                  );
+                })}
+                <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center', fontWeight: 700, color: '#059669' }}>{l.totalMarks}</td>
+                <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center', fontWeight: 800, color: 'var(--navy)' }}>{l.total}</td>
+                <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>
+                  <span style={{ color: lInfo.c, fontWeight: 800 }}>{lInfo.lv}</span>
+                </td>
+                <td style={{ border: '1px solid #ddd', padding: 3, textAlign: 'center' }}>{l.avg}%</td>
+              </tr>
+            );
+          })}
           {data.length > 0 && (
             <>
               <tr style={{ background: '#f0fdf4', borderTop: '2px solid #000' }}>
