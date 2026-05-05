@@ -266,8 +266,7 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
     const maxPoss = maxPts(grade, subjects, profile?.curriculum || 'CBC');
     return { ...l, total, totalMarks, count, avg: count > 0 ? (total / (maxPoss || 1) * 100).toFixed(1) : 0 };
   }).sort((a, b) => {
-    const isK6 = ['KINDERGARTEN','PP1','PP2','GRADE 1','GRADE 2','GRADE 3','GRADE 4','GRADE 5','GRADE 6'].includes(grade);
-    if (isK6) return b.totalMarks - a.totalMarks;
+    if (shouldRankByMarks(grade, curr)) return b.totalMarks - a.totalMarks;
     return b.total - a.total;
   });
 
@@ -498,21 +497,20 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
 }
 
 function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, profile }) {
+  const curr = profile?.curriculum || 'CBC';
   // Pre-calculate ranks based on average marks or points
-  const isK6 = ['KINDERGARTEN','PP1','PP2','GRADE 1','GRADE 2','GRADE 3','GRADE 4','GRADE 5','GRADE 6'].includes(grade);
-
   const rankedData = learners.map(l => {
-    const report = calcLearnerReportData(marks, l.adm, grade, term, subjects, gradCfg, profile?.curriculum || 'CBC');
+    const report = calcLearnerReportData(marks, l.adm, grade, term, subjects, gradCfg, curr);
     return { ...l, report };
   }).sort((a, b) => {
-    if (isK6) return b.report.totalAvgScore - a.report.totalAvgScore;
+    if (shouldRankByMarks(grade, curr)) return b.report.totalAvgScore - a.report.totalAvgScore;
     return b.report.totalAvgPts - a.report.totalAvgPts;
   });
 
   let r = 1;
   for (let i = 0; i < rankedData.length; i++) {
-    const val = isK6 ? rankedData[i].report.totalAvgScore : rankedData[i].report.totalAvgPts;
-    const prevVal = i > 0 ? (isK6 ? rankedData[i - 1].report.totalAvgScore : rankedData[i - 1].report.totalAvgPts) : null;
+    const val = shouldRankByMarks(grade, curr) ? rankedData[i].report.totalAvgScore : rankedData[i].report.totalAvgPts;
+    const prevVal = i > 0 ? (shouldRankByMarks(grade, curr) ? rankedData[i - 1].report.totalAvgScore : rankedData[i - 1].report.totalAvgPts) : null;
     
     if (i > 0 && val < prevVal) r = i + 1;
     rankedData[i].rank = r;
