@@ -360,7 +360,8 @@ export default function MeritListPage() {
                         ) : <span style={{ color: 'var(--muted)', fontSize: 10 }}>—</span>}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
                 <tfoot style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
                   {ranked.length > 0 && (
