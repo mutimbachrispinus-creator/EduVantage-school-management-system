@@ -491,15 +491,23 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
 }
 
 function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, profile }) {
-  // Pre-calculate ranks based on average points
+  // Pre-calculate ranks based on average marks or points
+  const isK6 = ['KINDERGARTEN','PP1','PP2','GRADE 1','GRADE 2','GRADE 3','GRADE 4','GRADE 5','GRADE 6'].includes(grade);
+
   const rankedData = learners.map(l => {
     const report = calcLearnerReportData(marks, l.adm, grade, term, subjects, gradCfg, profile?.curriculum || 'CBC');
     return { ...l, report };
-  }).sort((a, b) => b.report.totalAvgPts - a.report.totalAvgPts);
+  }).sort((a, b) => {
+    if (isK6) return b.report.totalAvgScore - a.report.totalAvgScore;
+    return b.report.totalAvgPts - a.report.totalAvgPts;
+  });
 
   let r = 1;
   for (let i = 0; i < rankedData.length; i++) {
-    if (i > 0 && rankedData[i].report.totalAvgPts < rankedData[i - 1].report.totalAvgPts) r = i + 1;
+    const val = isK6 ? rankedData[i].report.totalAvgScore : rankedData[i].report.totalAvgPts;
+    const prevVal = i > 0 ? (isK6 ? rankedData[i - 1].report.totalAvgScore : rankedData[i - 1].report.totalAvgPts) : null;
+    
+    if (i > 0 && val < prevVal) r = i + 1;
     rankedData[i].rank = r;
   }
 
