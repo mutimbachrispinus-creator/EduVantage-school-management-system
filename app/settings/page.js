@@ -39,8 +39,13 @@ export default function SettingsHubPage() {
           body: JSON.stringify({ requests: [{ type: 'storageUsage' }] }),
           signal: AbortSignal.timeout(5000)
         })
-        .then(res => res.json())
+        .then(res => {
+          const ct = res.headers.get('content-type');
+          if (!ct || !ct.includes('application/json')) return null;
+          return res.json();
+        })
         .then(dbData => {
+          if (!dbData) return;
           setUsage(dbData.results?.[0]?.usage || null);
         })
         .catch(() => setUsage(null));

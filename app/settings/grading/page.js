@@ -24,7 +24,11 @@ export default function GradingSettingsPage() {
     try {
       // 1. Auth check
       const authRes = await fetch('/api/auth', { signal: AbortSignal.timeout(5000) });
-      const auth    = await authRes.json();
+      const contentType = authRes.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Authentication server returned an invalid response (non-JSON).');
+      }
+      const auth = await authRes.json();
       if (!auth.ok || auth.user?.role !== 'admin') { router.push('/dashboard'); return; }
 
       // 2. Load Grading Config
@@ -35,6 +39,10 @@ export default function GradingSettingsPage() {
       });
       
       if (!dbRes.ok) throw new Error('Database server is not responding.');
+      const dbContentType = dbRes.headers.get('content-type');
+      if (!dbContentType || !dbContentType.includes('application/json')) {
+        throw new Error('Database server returned an invalid response (non-JSON).');
+      }
       
       const db  = await dbRes.json();
       const cfg = db.results?.[0]?.value;
@@ -68,46 +76,6 @@ export default function GradingSettingsPage() {
     setSaved(true); setTimeout(() => setSaved(false), 3000);
   }
 
-  function ScaleEditor({ scale, setScale, title }) {
-    return (
-      <div className="panel" style={{ marginBottom:16 }}>
-        <div className="panel-hdr"><h3>{title}</h3></div>
-        <div className="panel-body">
-          <div className="tbl-wrap">
-            <table>
-              <thead>
-                <tr><th>Level</th><th>Min Score (%)</th><th>Points</th><th>Description</th></tr>
-              </thead>
-              <tbody>
-                {scale.map((s, i) => (
-                  <tr key={s.lv}>
-                    <td>
-                      <span className="badge"
-                        style={{ background:s.bg, color:s.c }}>{s.lv}</span>
-                    </td>
-                    <td>
-                      <input type="number" value={s.min} min="0" max="100"
-                        onChange={e => {
-                          const updated = [...scale];
-                          updated[i] = { ...s, min: Number(e.target.value) };
-                          setScale(updated);
-                        }}
-                        style={{ width:72, padding:'5px 8px', border:'2px solid var(--border)',
-                          borderRadius:6, fontSize:12, outline:'none' }}
-                      />
-                    </td>
-                    <td style={{ fontWeight:700 }}>{s.pts}</td>
-                    <td style={{ fontSize:11.5, color:'var(--muted)' }}>{s.desc}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) return <div style={{ padding:40, color:'var(--muted)' }}>Loading…</div>;
   if (error) return (
     <div style={{ padding:40, textAlign:'center' }}>
@@ -133,6 +101,46 @@ export default function GradingSettingsPage() {
       <ScaleEditor scale={k6} setScale={setK6} title="🟢 K–Grade 6" />
       <ScaleEditor scale={junior} setScale={setJunior} title="🟡 Junior School (7–9)" />
       <ScaleEditor scale={senior} setScale={setSenior} title="🔴 Senior School (10–12)" />
+    </div>
+  );
+}
+
+function ScaleEditor({ scale, setScale, title }) {
+  return (
+    <div className="panel" style={{ marginBottom:16 }}>
+      <div className="panel-hdr"><h3>{title}</h3></div>
+      <div className="panel-body">
+        <div className="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Level</th><th>Min Score (%)</th><th>Points</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              {scale.map((s, i) => (
+                <tr key={s.lv}>
+                  <td>
+                    <span className="badge"
+                      style={{ background:s.bg, color:s.c }}>{s.lv}</span>
+                  </td>
+                  <td>
+                    <input type="number" value={s.min} min="0" max="100"
+                      onChange={e => {
+                        const updated = [...scale];
+                        updated[i] = { ...s, min: Number(e.target.value) };
+                        setScale(updated);
+                      }}
+                      style={{ width:72, padding:'5px 8px', border:'2px solid var(--border)',
+                        borderRadius:6, fontSize:12, outline:'none' }}
+                    />
+                  </td>
+                  <td style={{ fontWeight:700 }}>{s.pts}</td>
+                  <td style={{ fontSize:11.5, color:'var(--muted)' }}>{s.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
