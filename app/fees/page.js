@@ -290,7 +290,7 @@ export default function FeesPage() {
                     </td>
                     <td style={{ padding: '4px 6px' }}>
                       <button className="btn btn-ghost btn-sm"
-                        onClick={() => router.push(`/fees/${p.adm}/receipt`)}>
+                        onClick={() => router.push(`/fees/${encodeURIComponent(p.adm)}/receipt`)}>
                         🧾
                       </button>
                     </td>
@@ -318,9 +318,6 @@ export default function FeesPage() {
                 onClick={() => {
                   const arrearsOnly = learners.filter(l => getBal(l) > 0);
                   if (arrearsOnly.length === 0) { alert('No learners with fee balances found.'); return; }
-                  // We'll just trigger window.print() but let's add a state to maybe filter?
-                  // Actually, the user can just filter by grade and search.
-                  // Let's just make the print view clean.
                   window.print();
                 }}>
                 🖨️ Print Balances
@@ -417,7 +414,7 @@ export default function FeesPage() {
                         </button>
                         <SMSReminderButton adm={l.adm} balance={bal} phone={l.phone} />
                         <button className="btn btn-ghost btn-sm" style={{ marginLeft: 4 }}
-                          onClick={() => router.push(`/fees/${l.adm}/receipt`)}>
+                          onClick={() => router.push(`/fees/${encodeURIComponent(l.adm)}/receipt`)}>
                           🧾
                         </button>
                       </td>

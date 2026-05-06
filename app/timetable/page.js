@@ -83,6 +83,7 @@ export default function TimetablePage() {
   const [editEv, setEditEv] = useState(null);
   const [form, setForm] = useState({ title:'', date:'', desc:'', type:'Academic' });
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -161,6 +162,15 @@ export default function TimetablePage() {
     ...(isTeacher ? [{ id:'mine', label:'👔 My Timetable' }] : []),
     ...(isAdmin   ? [{ id:'edit', label:'⚙️ Edit Timetable' }] : []),
   ];
+
+  if (error) return (
+    <div className="page on" style={{ padding: '40px', textAlign: 'center' }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>📡</div>
+      <h3 style={{ fontWeight: 800, marginBottom: 8 }}>Connection Issue</h3>
+      <p style={{ color: 'var(--red)', marginBottom: '24px', fontSize: 13 }}>{error}</p>
+      <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry Connection</button>
+    </div>
+  );
 
   if (!mounted || loading || !user) return (
     <div className="page on" style={{padding:60,textAlign:'center',color:'var(--muted)'}}>
@@ -435,7 +445,12 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave })
           { type: 'get', key: 'paav_teacher_codes' }
         ]})
       });
+      const ct = dbRes.headers.get('content-type');
+      if (!ct || !ct.includes('application/json')) throw new Error('Server returned invalid response. Please try again.');
+      
       const db = await dbRes.json();
+      if (!db.results) throw new Error('Failed to retrieve allocation data.');
+
       const allocs = db.results[0]?.value || {};
       const subjCfg = db.results[1]?.value || {};
       const codes = db.results[2]?.value || {};

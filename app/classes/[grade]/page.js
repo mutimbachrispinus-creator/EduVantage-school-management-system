@@ -143,9 +143,9 @@ export default function ClassPage() {
                     </td>
                     <td style={{ whiteSpace:'nowrap' }}>
                       <button className="btn btn-ghost btn-sm"
-                        onClick={() => router.push(`/learners/${l.adm}`)}>👁</button>
+                        onClick={() => router.push(`/learners/${encodeURIComponent(l.adm)}`)}>👁</button>
                       <button className="btn btn-gold btn-sm" style={{ marginLeft:4 }}
-                        onClick={() => router.push(`/grades/report-card/${l.adm}`)}>📋</button>
+                        onClick={() => router.push(`/grades/report-card/${encodeURIComponent(l.adm)}`)}>📋</button>
                     </td>
                   </tr>
                 );

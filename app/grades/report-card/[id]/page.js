@@ -127,7 +127,7 @@ export default function ReportCardPage() {
             color: '#fff', cursor: 'pointer', outline: 'none' }}>
           {TERMS.map(t => <option key={t.id} value={t.id} style={{ color: '#1e293b' }}>{t.name}</option>)}
         </select>
-        <button onClick={() => router.push(`/learners/${admNo}`)}
+        <button onClick={() => router.push(`/learners/${encodeURIComponent(admNo)}`)}
           className="btn btn-ghost btn-sm" style={{ color: '#fff', borderColor: 'rgba(255,255,255,.3)' }}>
           ← Profile
         </button>

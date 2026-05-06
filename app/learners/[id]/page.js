@@ -45,8 +45,8 @@ export default function LearnerProfilePage() {
     async function load() {
       try {
         setError(null);
-        const [u, db] = await Promise.all([
-          getCachedUser(), // 5s timeout internally
+        const [u, dbRes] = await Promise.all([
+          getCachedUser(),
           fetch('/api/db', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -56,12 +56,17 @@ export default function LearnerProfilePage() {
               { type: 'get', key: 'paav6_feecfg'   },
               { type: 'get', key: 'paav8_grad'     },
             ]}),
-            signal: AbortSignal.timeout(8000)
-          }).then(res => res.json())
+            signal: AbortSignal.timeout(12000)
+          })
         ]);
 
         if (!u) { router.push('/'); return; }
         setUser(u);
+
+        const ct = dbRes.headers.get('content-type');
+        if (!ct || !ct.includes('application/json')) throw new Error('Invalid server response');
+        const db = await dbRes.json();
+        if (!db.results) throw new Error('Failed to load database results');
 
         const allLearners = db.results[0]?.value || [];
         const found = allLearners.find(l => l.adm === admNo);
@@ -78,7 +83,7 @@ export default function LearnerProfilePage() {
         setLoading(false);
       } catch (e) {
         console.error('[Profile] Load failed:', e);
-        setError('Connection timed out. Please try again.');
+        setError(e.name === 'TimeoutError' ? 'Connection timed out. Please try again.' : 'Failed to load learner profile.');
         setLoading(false);
       }
     }

@@ -19,13 +19,28 @@ export default function MessagesPage() {
   const [cmpSub, setCmpSub] = useState('');
   const [cmpBody, setCmpBody] = useState('');
   const [cmpPri, setCmpPri] = useState('normal');
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('inbox');
 
   const load = useCallback(async () => {
     try {
+      setError(null);
+      setLoading(true);
+      
+      const timeout = setTimeout(() => {
+        if (!user) setError('Taking longer than expected. Please refresh or check connection.');
+      }, 12000);
+
       const authRes = await fetch('/api/auth');
+      const ctAuth = authRes.headers.get('content-type');
+      if (!ctAuth || !ctAuth.includes('application/json')) throw new Error('Invalid server response');
       const auth = await authRes.json();
-      if (!auth.ok || !auth.user) { router.push('/'); return; }
+      
+      if (!auth.ok || !auth.user) { 
+        clearTimeout(timeout);
+        router.push('/'); 
+        return; 
+      }
       setUser(auth.user);
 
       const dbRes = await fetch('/api/db', {
@@ -33,14 +48,18 @@ export default function MessagesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests: [{ type: 'get', key: 'paav6_msgs' }] })
       });
-      const db = await dbRes.json();
-      setAllMessages(db.results[0]?.value || []);
+      const ctDb = dbRes.headers.get('content-type');
+      const msgs = (ctDb && ctDb.includes('application/json')) ? (await dbRes.json()).results[0]?.value : [];
+      
+      clearTimeout(timeout);
+      setAllMessages(msgs || []);
     } catch (e) {
       console.error(e);
+      setError('Communication error. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, user]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -127,6 +146,15 @@ export default function MessagesPage() {
       setSaving(false);
     }
   };
+
+  if (error) return (
+    <div className="page on" style={{ padding: '40px', textAlign: 'center' }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>📡</div>
+      <h3 style={{ fontWeight: 800, marginBottom: 8 }}>Connection Issue</h3>
+      <p style={{ color: 'var(--red)', marginBottom: '24px', fontSize: 13 }}>{error}</p>
+      <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry Connection</button>
+    </div>
+  );
 
   if (loading || !user) return <LoadingSkeleton />;
 
