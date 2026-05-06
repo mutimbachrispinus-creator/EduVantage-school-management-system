@@ -1,1 +1,0 @@
-var e={},b=(c,p,s)=>(e.__chunk_25630=(_,o,n)=>{n.d(o,{D:()=>r});let l=Symbol.for("react.postpone");function r(t){return typeof t=="object"&&t!==null&&t.$$typeof===l}},e);export{b as __getNamedExports};

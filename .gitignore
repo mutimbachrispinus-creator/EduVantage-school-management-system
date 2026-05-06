@@ -13,3 +13,4 @@ public/swe-worker-*.js
 scratch/
 .vercel
 .vercel/
+.wrangler/
