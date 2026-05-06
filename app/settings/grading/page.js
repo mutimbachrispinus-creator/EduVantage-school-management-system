@@ -123,14 +123,13 @@ function ScaleEditor({ scale, setScale, title }) {
                       style={{ background:s.bg, color:s.c }}>{s.lv}</span>
                   </td>
                   <td>
-                    <input type="number" value={s.min} min="0" max="100"
-                      onChange={e => {
+                    <InputWrapper 
+                      val={s.min} 
+                      onCommit={v => {
                         const updated = [...scale];
-                        updated[i] = { ...s, min: Number(e.target.value) };
+                        updated[i] = { ...s, min: v };
                         setScale(updated);
-                      }}
-                      style={{ width:72, padding:'5px 8px', border:'2px solid var(--border)',
-                        borderRadius:6, fontSize:12, outline:'none' }}
+                      }} 
                     />
                   </td>
                   <td style={{ fontWeight:700 }}>{s.pts}</td>
@@ -142,5 +141,21 @@ function ScaleEditor({ scale, setScale, title }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function InputWrapper({ val, onCommit }) {
+  const [local, setLocal] = useState(val);
+  useEffect(() => { setLocal(val); }, [val]);
+  return (
+    <input 
+      type="number" 
+      value={local} 
+      min="0" max="100"
+      onChange={e => setLocal(e.target.value)}
+      onBlur={() => onCommit(Number(local))}
+      style={{ width:72, padding:'5px 8px', border:'2px solid var(--border)',
+        borderRadius:6, fontSize:12, outline:'none' }}
+    />
   );
 }

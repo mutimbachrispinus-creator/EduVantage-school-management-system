@@ -53,6 +53,8 @@ export async function POST(request) {
       case 'google':     return handleGoogle(body, request);
       case 'whoami':     return handleWhoami(request);
       case 'forgot':     return handleForgot(body);
+      case 'request_otp': return handleRequestOtp(body, request);
+      case 'verify_otp_reset': return handleVerifyOtpReset(body, request);
       case 'resetpw':    return handleResetPw(body);
       case 'change_password': return handleChangePassword(body, request);
       case 'delete_user': return handleDeleteUser(body, request);
@@ -454,6 +456,66 @@ async function handleResetPw({ username, newPassword, secA }) {
   staff[idx].password = await hashPassword(newPassword);
   await kvSet('paav6_staff', staff);
   return NextResponse.json({ ok: true });
+}
+
+/* ─── OTP Based Reset ─────────────────────────────────────────────────── */
+async function handleRequestOtp({ username }, request) {
+  if (!username) return err('Username is required');
+  const tid = request.headers.get('x-tenant-id') || 'platform-master';
+  
+  const rows = await query('SELECT name, phone FROM staff WHERE LOWER(username) = ? AND tenant_id = ?', [username.toLowerCase(), tid]);
+  const user = rows[0];
+  if (!user) return err('Account not found in this institution.');
+  if (!user.phone) return err('No phone number linked to this account. Contact admin.');
+
+  const otp = Math.floor(100000 + Math.random() * 899999).toString();
+  
+  // Store OTP in KV with 10 min expiry (simulated via timestamp)
+  const otpData = { otp, expires: Date.now() + 10 * 60 * 1000 };
+  await kvSet(`otp_reset_${username.toLowerCase()}`, otpData, tid);
+
+  // Send SMS
+  const { sendSMS } = await import('@/lib/sms-client');
+  const atCreds = await kvGet('paav_at_creds', null, tid);
+  
+  const smsRes = await sendSMS({
+    to: user.phone,
+    message: `EduVantage Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
+    ...(atCreds || {})
+  });
+
+  if (!smsRes.success) {
+    console.error('[OTP] SMS Failed:', smsRes.error);
+    // For sandbox/dev, we might want to return the OTP in the response, 
+    // but for production this is a security risk.
+    // However, if it's sandbox, we can show it.
+    if (process.env.NODE_ENV === 'development') {
+      return ok({ message: `(Dev) OTP sent to ${user.phone}: ${otp}`, sent: true });
+    }
+    return err('Failed to send SMS. Please try again or contact support.');
+  }
+
+  return ok({ message: `OTP sent to your phone ending in ${user.phone.slice(-3)}`, sent: true });
+}
+
+async function handleVerifyOtpReset({ username, otp, newPassword }, request) {
+  if (!username || !otp || !newPassword) return err('Missing required fields');
+  const tid = request.headers.get('x-tenant-id') || 'platform-master';
+
+  const stored = await kvGet(`otp_reset_${username.toLowerCase()}`, null, tid);
+  if (!stored) return err('OTP expired or not requested.');
+  if (stored.otp !== otp) return err('Invalid OTP code.');
+  if (Date.now() > stored.expires) return err('OTP has expired.');
+
+  const hashed = await hashPassword(newPassword);
+  const { execute } = await import('@/lib/db');
+  await execute('UPDATE staff SET password = ? WHERE LOWER(username) = ? AND tenant_id = ?', [hashed, username.toLowerCase(), tid]);
+
+  // Clear OTP
+  const { kvSet: kvSetInternal } = await import('@/lib/db');
+  await kvSetInternal(`otp_reset_${username.toLowerCase()}`, null, tid);
+
+  return ok({ message: 'Password reset successful. You can now login.' });
 }
 
 /* ─── Admin edit user ───────────────────────────────────────────────────── */

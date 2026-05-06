@@ -20,6 +20,13 @@ const LEVEL_CFG = {
   primary46: { dur: 35, perDay: [7,7,7,7,7], breaks: [{ after: 2, label:'Break', dur: 20 },{ after: 5, label:'Lunch', dur: 60 }] },
   jss:       { dur: 40, perDay: [9,9,9,9,9], breaks: [{ after: 2, label:'Break', dur: 30 },{ after: 6, label:'Lunch', dur: 60 }] },
   senior:    { dur: 40, perDay: [8,8,8,8,8], breaks: [{ after: 2, label:'Break', dur: 30 },{ after: 5, label:'Lunch', dur: 60 }] },
+  // Fallbacks for other curriculums to prevent crashes
+  ks1:       { dur: 35, perDay: [7,7,7,7,7], breaks: [{ after: 2, label:'Break', dur: 20 },{ after: 5, label:'Lunch', dur: 60 }] },
+  ks2:       { dur: 35, perDay: [7,7,7,7,7], breaks: [{ after: 2, label:'Break', dur: 20 },{ after: 5, label:'Lunch', dur: 60 }] },
+  ks3:       { dur: 40, perDay: [8,8,8,8,8], breaks: [{ after: 2, label:'Break', dur: 30 },{ after: 5, label:'Lunch', dur: 60 }] },
+  igcse:     { dur: 40, perDay: [8,8,8,8,8], breaks: [{ after: 2, label:'Break', dur: 30 },{ after: 5, label:'Lunch', dur: 60 }] },
+  pyp:       { dur: 35, perDay: [7,7,7,7,7], breaks: [{ after: 2, label:'Break', dur: 20 },{ after: 5, label:'Lunch', dur: 60 }] },
+  myp:       { dur: 40, perDay: [8,8,8,8,8], breaks: [{ after: 2, label:'Break', dur: 30 },{ after: 5, label:'Lunch', dur: 60 }] },
 };
 
 function gradeLevel(g) {
@@ -130,7 +137,7 @@ export default function TimetablePage() {
 
   // Build slots for a grade
   const gradeTT = useMemo(() => timetable[selGrade] || {}, [timetable, selGrade]);
-  const cfg = LEVEL_CFG[gradeLevel(selGrade)];
+  const cfg = LEVEL_CFG[gradeLevel(selGrade)] || LEVEL_CFG.primary13;
   const maxPeriods = Math.max(...cfg.perDay);
 
   // My timetable: find all slots where this teacher is assigned
@@ -414,7 +421,7 @@ export default function TimetablePage() {
 function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave }) {
   const [localTT, setLocalTT] = useState(timetable);
   const [saving, setSaving] = useState(false);
-  const cfg = LEVEL_CFG[gradeLevel(selGrade)];
+  const cfg = LEVEL_CFG[gradeLevel(selGrade)] || LEVEL_CFG.primary13;
   const maxPeriods = Math.max(...cfg.perDay);
   const gradeTT = localTT[selGrade] || {};
   const teachers = staff.filter(s => s.role==='teacher' || s.role==='admin');

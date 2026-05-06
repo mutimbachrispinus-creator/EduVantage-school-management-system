@@ -12,14 +12,14 @@ import { useSchoolProfile } from '@/lib/school-profile';
 const COLORS = ['#8B1A1A', '#2563EB', '#059669', '#D97706', '#7C3AED', '#DB2777'];
 
 export default function AnalyticsPage() {
-  const { profile } = useSchoolProfile();
+  const profile = useSchoolProfile();
   const [grade, setGrade] = useState('GRADE 1');
   const [term, setTerm] = useState('TERM 1');
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
   const [isPending, startTransition] = useTransition();
 
-  const grades = getAllGrades();
+  const grades = getAllGrades(profile?.curriculum || 'CBC');
 
   useEffect(() => {
     if (profile?.tenantId) {

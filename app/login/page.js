@@ -55,6 +55,7 @@ function LoginContent() {
   }, [searchParams]);
 
   const [tab, setTab] = useState('login'); 
+  const [resetStep, setResetStep] = useState(1); // 1: username, 2: otp + new pass
   const [busy, setBusy] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -84,8 +85,12 @@ function LoginContent() {
     username: '', password: '', 
     name: '', phone: '', role: 'parent', 
   });
+  const [resetForm, setResetForm] = useState({
+    username: '', otp: '', newPassword: ''
+  });
 
   const F = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const RF = (k, v) => setResetForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
     async function loadSchools() {
@@ -220,6 +225,35 @@ function LoginContent() {
     }
   };
 
+  const handleResetAction = async (e) => {
+    if (e) e.preventDefault();
+    setBusy(true); setErr(''); setOkMsg('');
+    try {
+      const action = resetStep === 1 ? 'request_otp' : 'verify_otp_reset';
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-tenant-id': tenantId },
+        body: JSON.stringify({ action, ...resetForm })
+      });
+      const data = await res.json();
+      if (!data.ok) { setErr(data.error); setBusy(false); return; }
+      
+      if (resetStep === 1) {
+        setOkMsg(data.message);
+        setResetStep(2);
+      } else {
+        setOkMsg('✅ Password reset successful! Please login.');
+        setTab('login');
+        setResetStep(1);
+        setForm(f => ({ ...f, username: resetForm.username, password: '' }));
+      }
+    } catch (e) {
+      setErr('Connection failed. Try again later.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleSelectChoice = (tid) => {
     setTenantId(tid);
     setChoices(null);
@@ -269,12 +303,16 @@ function LoginContent() {
           <div style={{ textAlign: 'center', marginBottom: 14 }}>
             <img src={profile.logo || "/ev-brand-v3.png"} alt="Logo" style={{ width: 70, height: 70, objectFit: 'contain', borderRadius: '50%', boxShadow: `0 4px 16px ${theme?.primary || '#4F46E5'}33` }} />
           </div>
-          <div className="auth-card-title">{tab === 'login' ? 'Welcome Back' : tab === 'register' ? 'Parent Registration' : 'Security Check'}</div>
-          
-          <div className="auth-sw-row">
-            <button className={`auth-sw ${tab === 'login' ? 'on' : ''}`} onClick={() => setTab('login')} style={tab === 'login' ? { background: 'var(--primary)', boxShadow: `0 2px 8px ${theme?.primary}4D` } : {}}>Sign In</button>
-            <button className={`auth-sw ${tab === 'register' ? 'on' : ''}`} onClick={() => setTab('register')} style={tab === 'register' ? { background: 'var(--primary)', boxShadow: `0 2px 8px ${theme?.primary}4D` } : {}}>Parent Register</button>
+          <div className="auth-card-title">
+            {tab === 'login' ? 'Welcome Back' : tab === 'register' ? 'Parent Registration' : 'Reset Password'}
           </div>
+          
+          {tab !== 'reset' && (
+            <div className="auth-sw-row">
+              <button className={`auth-sw ${tab === 'login' ? 'on' : ''}`} onClick={() => setTab('login')} style={tab === 'login' ? { background: 'var(--primary)', boxShadow: `0 2px 8px ${theme?.primary}4D` } : {}}>Sign In</button>
+              <button className={`auth-sw ${tab === 'register' ? 'on' : ''}`} onClick={() => setTab('register')} style={tab === 'register' ? { background: 'var(--primary)', boxShadow: `0 2px 8px ${theme?.primary}4D` } : {}}>Parent Register</button>
+            </div>
+          )}
 
           {choices && (
             <div className="choices-panel" style={{ marginBottom: 20, animation: 'fadeIn 0.3s' }}>
@@ -297,82 +335,124 @@ function LoginContent() {
             </div>
           )}
 
-          <form onSubmit={handleAction}>
-            {tab === 'login' && (
-              <div className="field">
-                <label>Username</label>
-                <input required value={form.username} onChange={e => { F('username', e.target.value.toLowerCase()); setErr(''); }} placeholder="your.username" />
+          {tab === 'reset' ? (
+            <form onSubmit={handleResetAction}>
+              {resetStep === 1 ? (
+                <>
+                  <p style={{ fontSize: 13, color: '#64748B', marginBottom: 20 }}>Enter your username. We will send a 6-digit OTP to your registered phone number.</p>
+                  <div className="field">
+                    <label>Username</label>
+                    <input required value={resetForm.username} onChange={e => RF('username', e.target.value.toLowerCase())} placeholder="your.username" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="field">
+                    <label>6-Digit OTP</label>
+                    <input required value={resetForm.otp} onChange={e => RF('otp', e.target.value.replace(/\D/g, '').slice(0,6))} placeholder="000000" style={{ letterSpacing: 4, textAlign: 'center', fontSize: 20 }} />
+                  </div>
+                  <div className="field">
+                    <label>New Password</label>
+                    <input required type="password" value={resetForm.newPassword} onChange={e => RF('newPassword', e.target.value)} placeholder="Min 6 characters" />
+                  </div>
+                </>
+              )}
+
+              {err && <div className="alert alert-err show">{err}</div>}
+              {okMsg && <div className="alert alert-ok show">{okMsg}</div>}
+
+              <button type="submit" className="btn btn-primary" disabled={busy}>
+                {busy ? 'Processing...' : resetStep === 1 ? '📩 Send OTP' : '🔑 Reset Password'}
+              </button>
+              <button type="button" className="btn-link" style={{ width: '100%', marginTop: 15, textAlign: 'center', fontSize: 13 }} onClick={() => { setTab('login'); setResetStep(1); setErr(''); setOkMsg(''); }}>
+                Back to Login
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleAction}>
+              {tab === 'login' && (
+                <div className="field">
+                  <label>Username</label>
+                  <input required value={form.username} onChange={e => { F('username', e.target.value.toLowerCase()); setErr(''); }} placeholder="your.username" />
+                </div>
+              )}
+
+              {tab === 'register' && (
+                <>
+                  <div className="field">
+                    <label>Full Name</label>
+                    <input required value={form.name} onChange={e => F('name', e.target.value)} placeholder="Parent Name" />
+                  </div>
+                  
+                  <div className="field">
+                    <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      Choose Username
+                      <span 
+                        style={{ color: 'var(--primary)', fontSize: 10, cursor: 'pointer' }}
+                        onClick={() => {
+                          const base = (form.name.split(' ')[0] || 'parent').toLowerCase().replace(/[^a-z]/g, '');
+                          F('username', `${base}.parent${Math.floor(Math.random()*999)}`);
+                        }}
+                      >
+                        Suggest?
+                      </span>
+                    </label>
+                    <input required value={form.username} onChange={e => F('username', e.target.value.toLowerCase().replace(/\s/g, ''))} placeholder="desired.username" />
+                    {usernameStatus.checking && <div style={{ fontSize: 10, color: '#64748B' }}>Checking availability...</div>}
+                    {usernameStatus.taken && <div style={{ fontSize: 10, color: '#DC2626', fontWeight: 700 }}>⚠️ This username is already taken!</div>}
+                  </div>
+
+                  <div style={{ background: '#F8FAFC', padding: 15, borderRadius: 12, marginBottom: 20, border: '1px solid #E2E8F0' }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', display: 'block', marginBottom: 10 }}>LINKED SCHOOLS & LEARNERS</label>
+                    {links.map((link, idx) => (
+                      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 30px', gap: 10, marginBottom: 8 }}>
+                        <select required value={link.schoolId} onChange={e => {
+                          const newLinks = [...links]; newLinks[idx].schoolId = e.target.value; setLinks(newLinks);
+                        }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }}>
+                          <option value="">Select School</option>
+                          {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                        <input required placeholder="Adm No." value={link.adm} onChange={e => {
+                          const newLinks = [...links]; newLinks[idx].adm = e.target.value; setLinks(newLinks);
+                        }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }} />
+                        {idx > 0 && <button type="button" onClick={() => setLinks(links.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>❌</button>}
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setLinks([...links, { schoolId: '', adm: '' }])} style={{ width: '100%', padding: '8px', background: '#fff', border: '1.5px dashed #CBD5E1', borderRadius: 8, fontSize: 11, fontWeight: 700, color: '#2563EB', cursor: 'pointer' }}>+ Add Another School</button>
+                  </div>
+
+                  <div className="field">
+                    <label>Phone Number</label>
+                    <input required value={form.phone} onChange={e => F('phone', e.target.value)} placeholder="07XXXXXXXX" />
+                  </div>
+                </>
+              )}
+              
+              <div className="field" style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <label style={{ margin: 0 }}>Password</label>
+                  {tab === 'login' && (
+                    <button type="button" className="btn-link" style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)' }} onClick={() => { setTab('reset'); setErr(''); setOkMsg(''); }}>
+                      Forgot Password?
+                    </button>
+                  )}
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input required type={showPass ? "text" : "password"} value={form.password} onChange={e => { F('password', e.target.value); setErr(''); }} placeholder="••••••••" style={{ paddingRight: 45 }} />
+                  <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 0 }}>
+                    {showPass ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
-            )}
 
-            {tab === 'register' && (
-              <>
-                <div className="field">
-                  <label>Full Name</label>
-                  <input required value={form.name} onChange={e => F('name', e.target.value)} placeholder="Parent Name" />
-                </div>
-                
-                <div className="field">
-                  <label style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    Choose Username
-                    <span 
-                      style={{ color: 'var(--primary)', fontSize: 10, cursor: 'pointer' }}
-                      onClick={() => {
-                        const base = form.name.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '');
-                        if (base) F('username', `${base}.parent${Math.floor(Math.random()*99)}`);
-                      }}
-                    >
-                      Suggest?
-                    </span>
-                  </label>
-                  <input required value={form.username} onChange={e => F('username', e.target.value.toLowerCase().replace(/\s/g, ''))} placeholder="desired.username" />
-                  {usernameStatus.checking && <div style={{ fontSize: 10, color: '#64748B' }}>Checking availability...</div>}
-                  {usernameStatus.taken && <div style={{ fontSize: 10, color: '#DC2626', fontWeight: 700 }}>⚠️ This username is already taken!</div>}
-                </div>
+              {err && <div className="alert alert-err show">{err}</div>}
+              {okMsg && <div className="alert alert-ok show">{okMsg}</div>}
 
-                <div style={{ background: '#F8FAFC', padding: 15, borderRadius: 12, marginBottom: 20, border: '1px solid #E2E8F0' }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', display: 'block', marginBottom: 10 }}>LINKED SCHOOLS & LEARNERS</label>
-                  {links.map((link, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 30px', gap: 10, marginBottom: 8 }}>
-                      <select required value={link.schoolId} onChange={e => {
-                        const newLinks = [...links]; newLinks[idx].schoolId = e.target.value; setLinks(newLinks);
-                      }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }}>
-                        <option value="">Select School</option>
-                        {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
-                      <input required placeholder="Adm No." value={link.adm} onChange={e => {
-                        const newLinks = [...links]; newLinks[idx].adm = e.target.value; setLinks(newLinks);
-                      }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }} />
-                      {idx > 0 && <button type="button" onClick={() => setLinks(links.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>❌</button>}
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => setLinks([...links, { schoolId: '', adm: '' }])} style={{ width: '100%', padding: '8px', background: '#fff', border: '1.5px dashed #CBD5E1', borderRadius: 8, fontSize: 11, fontWeight: 700, color: '#2563EB', cursor: 'pointer' }}>+ Add Another School</button>
-                </div>
-
-                <div className="field">
-                  <label>Phone Number</label>
-                  <input required value={form.phone} onChange={e => F('phone', e.target.value)} placeholder="07XXXXXXXX" />
-                </div>
-              </>
-            )}
-            
-            <div className="field" style={{ position: 'relative' }}>
-              <label>Password</label>
-              <div style={{ position: 'relative' }}>
-                <input required type={showPass ? "text" : "password"} value={form.password} onChange={e => { F('password', e.target.value); setErr(''); }} placeholder="••••••••" style={{ paddingRight: 45 }} />
-                <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 0 }}>
-                  {showPass ? '🙈' : '👁️'}
-                </button>
-              </div>
-            </div>
-
-            {err && <div className="alert alert-err show">{err}</div>}
-            {okMsg && <div className="alert alert-ok show">{okMsg}</div>}
-
-            <button type="submit" className="btn btn-primary" disabled={busy} style={{ marginTop: 10, background: `linear-gradient(135deg, var(--primary), var(--primary))` }}>
-              {busy ? 'Processing...' : tab === 'login' ? '🔐 Sign In' : '🚀 Create Account'}
-            </button>
-          </form>
+              <button type="submit" className="btn btn-primary" disabled={busy} style={{ marginTop: 10, background: `linear-gradient(135deg, var(--primary), var(--primary))` }}>
+                {busy ? 'Processing...' : tab === 'login' ? '🔐 Sign In' : '🚀 Create Account'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
       <style jsx global>{`
@@ -410,6 +490,9 @@ function LoginContent() {
         .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3); }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         
+        .btn-link { background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 700; padding: 0; }
+        .btn-link:hover { text-decoration: underline; }
+
         .alert { padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 24px; display: none; line-height: 1.5; }
         .alert.show { display: block; animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -419,6 +502,16 @@ function LoginContent() {
         .choice-btn { width: 100%; padding: 12px 16px; border-radius: 12px; border: 2px solid #E2E8F0; background: #fff; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; color: #1E293B; }
         .choice-btn:hover { border-color: var(--primary); background: #F8FAFC; transform: translateX(5px); }
         .choice-icon { width: 36px; height: 36px; border-radius: 10px; background: #F1F5F9; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+        @media(max-width: 900px) {
+          .auth-left { display: none; }
+          .auth-right { width: 100%; background: #0F172A; }
+          .auth-card { background: #fff; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); margin: 20px; }
+        }
+      `}</style>
+    </div>
+  );
+}
 
         @media(max-width: 900px) {
           .auth-left { display: none; }
