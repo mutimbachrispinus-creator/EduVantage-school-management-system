@@ -15,7 +15,15 @@ export default function EduVantageSignup() {
       try {
         const res = await fetch('/api/saas/config?tenant=platform-master');
         const data = await res.json();
-        if (data.plans) setPlans(data.plans);
+        let fetchedPlans = data.plans || [];
+        
+        // Ensure 1 Term Free is always an option even if not in global config
+        const freeTerm = { id: 'free-term', name: '1 Term Free', price: 0, cycle: 'once', features: ['Full Access', 'Curriculum Aware', '1 Term Only'] };
+        if (!fetchedPlans.find(p => p.id === 'free-term')) {
+          fetchedPlans = [freeTerm, ...fetchedPlans];
+        }
+        
+        setPlans(fetchedPlans);
       } catch (e) {}
     }
     loadPlans();
@@ -91,7 +99,7 @@ export default function EduVantageSignup() {
 
             <div className="form-group">
               <label>Select Plan</label>
-              <div style={{ display: 'grid', gridTemplateColumns: plans.length > 2 ? '1fr 1fr 1fr' : '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
                 {plans.length > 0 ? (
                   plans.map(p => (
                     <div 
@@ -176,7 +184,7 @@ export default function EduVantageSignup() {
             </div>
 
             <button className="btn btn-primary" disabled={loading} style={{ padding: '14px', fontSize: 16, marginTop: 10, background: '#2563EB' }}>
-              {loading ? 'Setting up...' : form.plan === 'trial' ? 'Start My Free Trial' : 'Subscribe & Create Portal'}
+              {loading ? 'Setting up...' : (form.plan === 'trial' || form.plan === 'free-term') ? 'Start My Free Access' : 'Subscribe & Create Portal'}
             </button>
           </form>
         )}
