@@ -18,68 +18,80 @@ const styles = StyleSheet.create({
   sigLabel: { fontSize: 10, color: '#64748b', marginTop: 5 }
 });
 
-export const ExpensePDF = ({ data }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.schoolName}>{data.schoolName}</Text>
-          <Text style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>Institutional Expenditure Voucher</Text>
-        </View>
-        <Text style={styles.title}>VOUCHER</Text>
-      </View>
-
-      <View style={styles.infoSection}>
-        <View>
-          <Text style={styles.label}>Payee / Supplier</Text>
-          <Text style={styles.value}>{data.supplierName || 'General Expense'}</Text>
-        </View>
-        <View style={{ textAlign: 'right' }}>
-          <Text style={styles.label}>Voucher No.</Text>
-          <Text style={styles.value}>{data.reference}</Text>
-          <Text style={[styles.label, { marginTop: 10 }]}>Date</Text>
-          <Text style={styles.value}>{new Date().toLocaleDateString()}</Text>
-        </View>
-      </View>
-
-      <View style={styles.details}>
-        <View style={styles.row}>
+export const ExpensePDF = ({ data }) => {
+  const currency = data.currency || 'KES';
+  
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
           <View>
-            <Text style={styles.label}>Votehead Category</Text>
-            <Text style={styles.value}>{data.voteheadName}</Text>
+            <Text style={styles.schoolName}>{data.schoolName}</Text>
+            <Text style={{ fontSize: 9, color: '#64748b', marginTop: 2 }}>{data.schoolAddress || 'Official Institution Document'}</Text>
+            <Text style={{ fontSize: 9, color: '#64748b' }}>{data.schoolPhone ? `Tel: ${data.schoolPhone}` : ''}</Text>
+            <Text style={{ fontSize: 10, color: '#64748b', marginTop: 8, fontWeight: 'bold' }}>Institutional Expenditure Voucher</Text>
           </View>
           <View style={{ textAlign: 'right' }}>
-            <Text style={styles.label}>Payment Method</Text>
-            <Text style={styles.value}>{data.method.toUpperCase()}</Text>
+            <Text style={styles.title}>VOUCHER</Text>
+            {data.logo && <Text style={{ fontSize: 8, color: '#94a3b8' }}>[LOGO PLACEHOLDER]</Text>}
           </View>
         </View>
-        <View>
-          <Text style={styles.label}>Purpose / Description</Text>
-          <Text style={[styles.value, { fontWeight: 'normal', lineHeight: 1.5 }]}>{data.description}</Text>
-        </View>
-      </View>
 
-      <View style={styles.amountSection}>
-        <Text style={styles.amountLabel}>NET AMOUNT PAID</Text>
-        <Text style={styles.amountValue}>KES {Number(data.amount).toLocaleString()}</Text>
-      </View>
-
-      <View style={styles.footer}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={styles.infoSection}>
           <View>
-            <View style={styles.sigBox} />
-            <Text style={styles.sigLabel}>Prepared By (Bursar)</Text>
+            <Text style={styles.label}>Payee / Supplier</Text>
+            <Text style={styles.value}>{data.supplierName || 'General Expense'}</Text>
           </View>
-          <View>
-            <View style={styles.sigBox} />
-            <Text style={styles.sigLabel}>Authorized By (Principal)</Text>
-          </View>
-          <View>
-            <View style={styles.sigBox} />
-            <Text style={styles.sigLabel}>Received By (Payee)</Text>
+          <View style={{ textAlign: 'right' }}>
+            <Text style={styles.label}>Voucher No.</Text>
+            <Text style={styles.value}>{data.reference}</Text>
+            <Text style={[styles.label, { marginTop: 10 }]}>Date</Text>
+            <Text style={styles.value}>{new Date().toLocaleDateString('en-KE')}</Text>
           </View>
         </View>
-      </View>
-    </Page>
-  </Document>
-);
+
+        <View style={styles.details}>
+          <View style={styles.row}>
+            <View>
+              <Text style={styles.label}>Votehead Category</Text>
+              <Text style={styles.value}>{data.voteheadName}</Text>
+            </View>
+            <View style={{ textAlign: 'right' }}>
+              <Text style={styles.label}>Payment Method</Text>
+              <Text style={styles.value}>{data.method?.toUpperCase() || 'CASH'}</Text>
+            </View>
+          </View>
+          <View>
+            <Text style={styles.label}>Purpose / Description</Text>
+            <Text style={[styles.value, { fontWeight: 'normal', lineHeight: 1.5 }]}>{data.description}</Text>
+          </View>
+        </View>
+
+        <View style={styles.amountSection}>
+          <Text style={styles.amountLabel}>NET AMOUNT PAID</Text>
+          <Text style={styles.amountValue}>{currency} {Number(data.amount).toLocaleString()}</Text>
+        </View>
+
+        <View style={styles.footer}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <View>
+              <View style={styles.sigBox} />
+              <Text style={styles.sigLabel}>Prepared By (Bursar)</Text>
+            </View>
+            <View>
+              <View style={styles.sigBox} />
+              <Text style={styles.sigLabel}>Authorized By (Principal)</Text>
+            </View>
+            <View>
+              <View style={styles.sigBox} />
+              <Text style={styles.sigLabel}>Received By (Payee)</Text>
+            </View>
+          </View>
+          <Text style={{ textAlign: 'center', fontSize: 8, color: '#94a3b8', marginTop: 40 }}>
+            Generated via EduVantage Platform • {new Date().toUTCString()}
+          </Text>
+        </View>
+      </Page>
+    </Document>
+  );
+};

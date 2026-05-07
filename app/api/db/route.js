@@ -355,6 +355,26 @@ async function handleRequest(req, auth, impTenant = null) {
       return { type: req.type, usage };
     }
 
+    case 'getTerms': {
+      const { kvGetTerms } = await import('@/lib/db');
+      const value = await kvGetTerms(tenantId);
+      return { type: req.type, ok: true, value };
+    }
+
+    case 'setTerms': {
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
+      const { kvSetTerms } = await import('@/lib/db');
+      await kvSetTerms(req.terms, tenantId);
+      return { type: req.type, ok: true };
+    }
+
+    case 'getGlobalAudit': {
+      if (auth.role !== 'super-admin') return { type: req.type, error: 'Unauthorized' };
+      const { query: dbQuery } = await import('@/lib/db');
+      const value = await dbQuery('SELECT * FROM global_audit ORDER BY timestamp DESC LIMIT 200');
+      return { type: req.type, ok: true, value };
+    }
+
     default:
       return { error: `Unknown request type: ${req.type}` };
   }

@@ -23,20 +23,34 @@ const STATUS_COLORS = { P:'#059669', A:'#DC2626', L:'#D97706', E:'#7C3AED' };
 const STATUS_LABELS = { P:'Present', A:'Absent', L:'Late', E:'Excused' };
 
 /* ─── Helpers ── */
-function getSchoolDays(term, year = new Date().getFullYear()) {
-  // Each term: 14 weeks of Mon–Fri. Term 1 starts ~Jan 6, T2 ~May 5, T3 ~Sep 1
+function getSchoolDays(termId, customTerms = [], year = new Date().getFullYear()) {
+  const custom = customTerms.find(t => t.id === termId);
+  if (custom) {
+    const start = new Date(custom.start_date);
+    const end = new Date(custom.end_date);
+    const days = [];
+    let d = new Date(start);
+    while (d <= end) {
+      if (d.getDay() !== 0 && d.getDay() !== 6) { // Mon-Fri
+        days.push(d.toISOString().split('T')[0]);
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    return days;
+  }
+
+  // Fallback to 14-week term logic if no custom dates set
   const starts = { T1: new Date(year,0,6), T2: new Date(year,4,5), T3: new Date(year,8,1) };
   const days = [];
-  const start = starts[term] || starts.T1;
+  const start = starts[termId] || starts.T1;
   let d = new Date(start);
-  // find first Monday
   while (d.getDay() !== 1) d.setDate(d.getDate()+1);
   for (let w = 0; w < 14; w++) {
     for (let dow = 0; dow < 5; dow++) {
       days.push(new Date(d).toISOString().split('T')[0]);
       d.setDate(d.getDate()+1);
     }
-    d.setDate(d.getDate()+2); // skip weekend
+    d.setDate(d.getDate()+2); 
   }
   return days;
 }
@@ -55,6 +69,7 @@ export default function AttendancePage() {
   const curr = getCurriculum(profile?.curriculum || 'CBC');
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const [user,         setUser]         = useState(null);
+  const [dbTerms,      setDbTerms]      = useState([]);
 
   const [loading,      setLoading]      = useState(true);
   const [busy,         setBusy]         = useState(false);
@@ -70,13 +85,17 @@ export default function AttendancePage() {
 
   const load = useCallback(async () => {
     try {
-      const [u, db] = await Promise.all([
+      const [u, db, termsData] = await Promise.all([
         getCachedUser(),
         getCachedDBMulti([
           'paav6_learners',
           'paav_student_attendance',
           'paav_class_teachers'
-        ])
+        ]),
+        fetch('/api/db', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ requests:[{ type:'getTerms' }] })
+        }).then(r => r.json())
       ]);
 
       if (!u) { router.push('/login'); return; }
@@ -85,10 +104,12 @@ export default function AttendancePage() {
       const allLearners = db.paav6_learners || [];
       const attData     = db.paav_student_attendance || {};
       const ctData      = db.paav_class_teachers || {};
+      const fetchedTerms = termsData.results?.[0]?.value || [];
       
       setLearners(allLearners);
       setAtt(attData);
       setClassTeachers(ctData);
+      setDbTerms(fetchedTerms);
 
       // Determine which grade this teacher owns
       if (u.role !== 'admin') {
@@ -106,14 +127,20 @@ export default function AttendancePage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
 
   // Check if current user can mark this grade
-  const canMark = true; // Allow any teacher/admin who has access to the page to mark
+  const canMark = isAdmin || classTeachers[grade] === user?.id;
 
   const gradeList = useMemo(() => isAdmin ? ALL_GRADES : (grade ? [grade] : []), [isAdmin, grade]);
   const classList = useMemo(() => learners.filter(l => l.grade === grade).sort((a,b)=>a.name.localeCompare(b.name)), [learners, grade]);
-  const schoolDays = useMemo(() => getSchoolDays(term), [term]);
+  
+  const activeTerms = useMemo(() => {
+    if (dbTerms.length > 0) return dbTerms;
+    return TERMS;
+  }, [dbTerms, TERMS]);
+
+  const schoolDays = useMemo(() => getSchoolDays(term, activeTerms), [term, activeTerms]);
 
   function setStatus(adm, date, status) {
     const key = `${grade}|${date}|${adm}`;
@@ -226,7 +253,7 @@ export default function AttendancePage() {
             </select>
           )}
           <select value={term} onChange={e=>setTerm(e.target.value)} className="sc-inp">
-            {TERMS.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+            {activeTerms.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
           {activeView === 'mark' && (
             <>

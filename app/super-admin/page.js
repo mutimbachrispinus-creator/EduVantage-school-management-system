@@ -31,6 +31,8 @@ export default function SuperAdminPage() {
     maintenanceMode: false
   });
   const [announcement, setAnnouncement] = useState({ message: '', priority: 'normal', active: false });
+  const [terms, setTerms] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
 
   const load = useCallback(async () => {
     const u = await getCachedUser();
@@ -41,16 +43,22 @@ export default function SuperAdminPage() {
     setUser(u);
 
     try {
-      const [statsRes, configRes] = await Promise.all([
+      const [statsRes, configRes, termsRes, auditRes] = await Promise.all([
         fetch('/api/saas/stats'),
-        fetch('/api/saas/global-config')
+        fetch('/api/saas/global-config'),
+        fetch('/api/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ requests:[{ type:'getTerms' }] }) }),
+        fetch('/api/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ requests:[{ type:'getGlobalAudit' }] }) })
       ]);
       const stats = await statsRes.json();
       const conf = await configRes.json();
+      const tData = await termsRes.json();
+      const aData = await auditRes.json();
 
       setData(stats);
       if (conf.config) setGlobalConfig(conf.config);
       if (conf.announcement) setAnnouncement(conf.announcement);
+      setTerms(tData.results?.[0]?.value || []);
+      setAuditLogs(aData.results?.[0]?.value || []);
     } catch (e) {
       console.error('Failed to load super admin data:', e);
     } finally {
@@ -142,6 +150,19 @@ export default function SuperAdminPage() {
     finally { setSaving(false); }
   };
 
+  const saveTerms = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/db', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ type: 'setTerms', terms }] })
+      });
+      alert('✅ Academic Calendar Updated!');
+      load();
+    } catch (e) { alert(e.message); }
+    finally { setSaving(false); }
+  };
+
   if (loading) return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
       <div style={{ textAlign: 'center' }}>
@@ -174,6 +195,7 @@ export default function SuperAdminPage() {
       <div className="tabs" style={{ margin: '0 40px 30px', display: 'flex', gap: 10 }}>
         <TabBtn icon="📊" label="Overview" on={tab === 'overview'} onClick={() => setTab('overview')} />
         <TabBtn icon="🏫" label="Institutions" on={tab === 'schools'} onClick={() => setTab('schools')} />
+        <TabBtn icon="📅" label="Default Calendar" on={tab === 'terms'} onClick={() => setTab('terms')} />
         <TabBtn icon="💳" label="Plans & Billing" on={tab === 'billing'} onClick={() => setTab('billing')} />
         <TabBtn icon="⚙️" label="Global Settings" on={tab === 'settings'} onClick={() => setTab('settings')} />
         <TabBtn icon="📢" label="Broadcasts" on={tab === 'broadcast'} onClick={() => setTab('broadcast')} />
@@ -447,6 +469,47 @@ export default function SuperAdminPage() {
             </div>
           </div>
         )}
+        {tab === 'terms' && (
+          <div className="panel" style={{ maxWidth: 800, margin: '0 auto' }}>
+            <div className="panel-hdr">
+              <h3>🌍 Global Academic Defaults</h3>
+              <p style={{ fontSize: 12, color: SLATE }}>Set platform-wide default term dates. Individual schools can override these in their own settings.</p>
+            </div>
+            <div className="panel-body">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+                {terms.map((t, i) => (
+                  <div key={i} style={{ padding: 20, background: '#F8FAFC', borderRadius: 15, border: '1px solid #E2E8F0' }}>
+                    <div className="field-row">
+                      <div className="field">
+                        <label>Term Name</label>
+                        <input value={t.name} onChange={e => {
+                          const nt = [...terms]; nt[i].name = e.target.value; setTerms(nt);
+                        }} placeholder="e.g. Term 1" />
+                      </div>
+                      <div className="field">
+                        <label>Start Date</label>
+                        <input type="date" value={t.start_date} onChange={e => {
+                          const nt = [...terms]; nt[i].start_date = e.target.value; setTerms(nt);
+                        }} />
+                      </div>
+                      <div className="field">
+                        <label>End Date</label>
+                        <input type="date" value={t.end_date} onChange={e => {
+                          const nt = [...terms]; nt[i].end_date = e.target.value; setTerms(nt);
+                        }} />
+                      </div>
+                      <button className="btn btn-ghost" style={{ marginTop: 25, color: '#EF4444' }} onClick={() => setTerms(terms.filter((_, idx) => idx !== i))}>✕</button>
+                    </div>
+                  </div>
+                ))}
+                <button className="btn btn-ghost" style={{ border: '2px dashed #CBD5E1', padding: 15 }} onClick={() => setTerms([...terms, { name: '', start_date: '', end_date: '' }])}>+ Add Academic Term</button>
+              </div>
+              <button className="btn btn-primary" style={{ width: '100%', marginTop: 25, padding: 15 }} onClick={saveTerms} disabled={saving}>
+                {saving ? 'Saving...' : '💾 Save Academic Calendar'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {tab === 'audit' && (
           <div className="panel">
@@ -459,9 +522,17 @@ export default function SuperAdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="hover-row"><td>Today, 10:45 AM</td><td>st-peters</td><td>mutimba.junior</td><td><span className="badge bg-blue">IMPERSONATE</span></td><td>Login as Admin for St. Peters</td></tr>
-                  <tr className="hover-row"><td>Today, 09:20 AM</td><td>bright-future</td><td>admin</td><td><span className="badge bg-green">LOGIN</span></td><td>Standard Dashboard Access</td></tr>
-                  <tr className="hover-row"><td>Yesterday, 04:30 PM</td><td>platform-master</td><td>mutimba.junior</td><td><span className="badge bg-amber">CONFIG</span></td><td>Updated Global SMS Gateway</td></tr>
+                  {auditLogs.length === 0 ? (
+                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: 40, color: SLATE }}>No audit logs found.</td></tr>
+                  ) : auditLogs.map(log => (
+                    <tr key={log.id} className="hover-row">
+                      <td style={{ fontSize: 12 }}>{new Date(log.timestamp).toLocaleString()}</td>
+                      <td style={{ fontWeight: 700 }}>{log.tenant_id}</td>
+                      <td>{log.user_name} <span style={{ fontSize: 10, color: SLATE }}>({log.user_id})</span></td>
+                      <td><span className={`badge ${log.action.includes('Delete') ? 'bg-red' : log.action.includes('Impersonate') ? 'bg-amber' : 'bg-blue'}`}>{log.action}</span></td>
+                      <td style={{ fontSize: 12 }}>{log.details}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
