@@ -45,7 +45,7 @@ function DashboardContent() {
       const tid = u.tenant_id || u.tenantId;
       const isSuper = tid === 'platform-master' && u.role === 'super-admin';
 
-      // 2. Fetch data in parallel
+      // 2. Fetch CORE data in parallel
       const [db, glob, statRes] = await Promise.all([
         getCachedDBMulti(['paav_theme', 'paav_school_profile']),
         isSuper 
@@ -59,10 +59,13 @@ function DashboardContent() {
 
       const s = statRes.stats || {};
       setStats(s);
-      setUnread(s.unread || 0);
       
       // Warm up other common keys
       prefetchKeys(['paav_hero_img', 'paav6_fin_config']);
+
+      // 3. SECONDARY FETCH (Asynchronous/Non-blocking to avoid Worker limits)
+      fetch('/api/stats/unread').then(r => r.json()).then(d => { if (d.ok) setUnread(d.count); }).catch(() => {});
+      fetch('/api/stats/red-flags').then(r => r.json()).then(d => { if (d.ok) setStats(prev => ({ ...prev, redFlags: d.redFlags })); }).catch(() => {});
 
     } catch (e) {
       console.error('Dashboard load error:', e);
@@ -197,15 +200,14 @@ function DashboardContent() {
               <h3 style={{ color: '#fff' }}>🚀 Module Hub — All Platform Features</h3>
               <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.15)', padding: '3px 10px', borderRadius: 20, color: '#fff' }}>{ALL_NAV.filter(n => n.roles.includes(user.role)).length} Active Modules</span>
             </div>
-            <div className="panel-body" style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
-              gap: 12,
-              background: '#F1F5F9',
-              padding: 16
-            }}>
-              {ALL_NAV.filter(n => n.roles.includes(user.role)).map(t => (
-                <Link key={t.key} href={t.key === 'classes' ? '/classes' : `/${t.key}`} className="hub-btn">
+            <div className="panel-body hub-grid">
+              {ALL_NAV.filter(n => n.roles.includes(user.role)).map((t, idx) => (
+                <Link 
+                  key={t.key} 
+                  href={t.key === 'classes' ? '/classes' : `/${t.key}`} 
+                  className="hub-btn"
+                  style={{ animationDelay: `${idx * 40}ms` }}
+                >
                   <div className="hub-icon">{t.icon}</div>
                   <div className="hub-label">{t.label}</div>
                 </Link>
@@ -280,31 +282,60 @@ function DashboardContent() {
       )}
 
       <style jsx>{`
+        .hub-grid {
+          display: grid; 
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+          gap: 12px;
+          background: #F1F5F9;
+          padding: 16px;
+        }
         .hub-btn { 
           display: flex; 
           flex-direction: column; 
           align-items: center; 
           justify-content: center;
           gap: 10px; 
-          padding: 20px 10px; 
+          padding: 24px 10px; 
           background: #fff; 
-          border-radius: 16px; 
+          border-radius: 20px; 
           text-decoration: none; 
           color: var(--navy); 
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
           border: 1px solid #E2E8F0; 
           text-align: center; 
-          box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+          opacity: 0;
+          transform: translateY(10px);
+          animation: hubFadeIn 0.5s ease-out forwards;
+        }
+        @keyframes hubFadeIn {
+          to { opacity: 1; transform: translateY(0); }
         }
         .hub-btn:hover { 
           background: #fff; 
           border-color: #2563EB; 
-          transform: translateY(-3px); 
-          box-shadow: 0 12px 24px rgba(37,99,235,0.12); 
+          transform: translateY(-6px) scale(1.02); 
+          box-shadow: 0 20px 25px -5px rgba(37,99,235,0.15), 0 10px 10px -5px rgba(37,99,235,0.08); 
         }
-        .hub-icon { font-size: 32px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); transition: transform 0.2s; }
-        .hub-btn:hover .hub-icon { transform: scale(1.1); }
-        .hub-label { font-size: 11.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.3px; }
+        .hub-icon { 
+          font-size: 34px; 
+          filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); 
+          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        .hub-btn:hover .hub-icon { 
+          transform: translateY(-4px) scale(1.15); 
+        }
+        .hub-label { 
+          font-size: 11px; 
+          font-weight: 800; 
+          color: #475569; 
+          text-transform: uppercase; 
+          letter-spacing: 0.5px; 
+          line-height: 1.2;
+        }
+        .hub-btn:hover .hub-label {
+          color: #2563EB;
+        }
       `}</style>
     </div>
   );
