@@ -111,33 +111,28 @@ function DashboardContent() {
   const fmtK = (v) => v >= 1000 ? (v/1000).toFixed(1)+'k' : v;
 
   return (
-    <div className="page on">
-      <div className="page-hdr">
+    <div className="page on home-page">
+      <div className="page-hdr home-hero">
         <div>
           <h2>Welcome, {user.name}</h2>
           <p>{isSuper ? 'EduVantage Platform Oversight' : 'Here is your institutional overview for today.'}</p>
         </div>
         <div className="page-hdr-acts">
-           <button className="btn btn-ghost btn-sm" onClick={load}>🔄 Refresh Data</button>
+           <button className="btn btn-ghost btn-sm home-refresh" onClick={load}>🔄 Refresh Data</button>
         </div>
       </div>
 
       {/* ── Global Network Announcement ── */}
       {announcement && (
-        <div className="panel" style={{ 
-          marginBottom: 18, 
-          background: announcement.priority === 'critical' ? '#FEE2E2' : announcement.priority === 'high' ? '#FEF9C3' : '#EFF6FF',
-          border: `2px solid ${announcement.priority === 'critical' ? '#EF4444' : announcement.priority === 'high' ? '#FDE047' : '#3B82F6'}`,
-          borderRadius: 15,
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: 6, height: '100%', background: announcement.priority === 'critical' ? '#EF4444' : announcement.priority === 'high' ? '#FDE047' : '#3B82F6' }} />
-          <div className="panel-body" style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-            <div style={{ fontSize: 24 }}>{announcement.priority === 'critical' ? '🚨' : announcement.priority === 'high' ? '⚠️' : '📢'}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 2 }}>Platform Announcement</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>{announcement.message}</div>
+        <div
+          className="panel home-alert announcement-panel"
+          data-priority={announcement.priority || 'normal'}
+        >
+          <div className="panel-body alert-body">
+            <div className="alert-icon">{announcement.priority === 'critical' ? '🚨' : announcement.priority === 'high' ? '⚠️' : '📢'}</div>
+            <div className="alert-copy">
+              <div className="alert-kicker">Platform Announcement</div>
+              <div className="alert-message">{announcement.message}</div>
             </div>
             <button className="btn btn-sm btn-ghost" onClick={() => setAnnouncement(null)}>✕</button>
           </div>
@@ -146,35 +141,34 @@ function DashboardContent() {
 
       {/* ── Attendance Red-Flags ── */}
       {stats.redFlags?.length > 0 && (
-        <div className="panel" style={{ 
-          marginBottom: 18, 
-          background: '#FFF1F2', 
-          border: '2px solid #FB7185',
-          borderRadius: 15 
-        }}>
-          <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #E11D48, #9F1239)', color: '#fff', border: 'none' }}>
-            <h3 style={{ color: '#fff' }}>⚠️ High Absenteeism Red-Flags</h3>
-            <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: 10 }}>Critical Risk</span>
+        <div className="panel home-alert red-flag-panel">
+          <div className="panel-hdr red-flag-hdr">
+            <h3>⚠️ High Absenteeism Red-Flags</h3>
+            <span className="risk-pill">Critical Risk</span>
           </div>
           <div className="panel-body">
-            <p style={{ fontSize: 12, color: '#881337', marginBottom: 12, fontWeight: 700 }}>The following students have missed 3 or more days recently. Urgent follow-up recommended.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-              {stats.redFlags.map(rf => (
-                <div key={rf.adm} style={{ background: '#fff', padding: '10px 14px', borderRadius: 12, border: '1px solid #FDA4AF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p className="red-flag-copy">The following students have missed 3 or more days recently. Urgent follow-up recommended.</p>
+            <div className="red-flag-grid">
+              {stats.redFlags.map((rf, idx) => (
+                <div
+                  key={rf.adm}
+                  className="red-flag-card"
+                  style={{ animationDelay: `${idx * 55}ms` }}
+                >
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#1E293B' }}>{rf.name}</div>
-                    <div style={{ fontSize: 11, color: '#64748B' }}>ADM: {rf.adm}</div>
+                    <div className="red-flag-name">{rf.name}</div>
+                    <div className="red-flag-adm">ADM: {rf.adm}</div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#E11D48' }}>{rf.absent_count}</div>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: '#FB7185', textTransform: 'uppercase' }}>Absences</div>
+                  <div className="red-flag-count">
+                    <div>{rf.absent_count}</div>
+                    <span>Absences</span>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 15, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <Link href="/attendance" className="btn btn-sm btn-ghost" style={{ color: '#E11D48', fontWeight: 800 }}>View Full Report →</Link>
-               <button className="btn btn-sm btn-danger" onClick={notifyParents} disabled={busy} style={{ background: '#E11D48' }}>
+            <div className="red-flag-actions">
+               <Link href="/attendance" className="btn btn-sm btn-ghost red-link">View Full Report →</Link>
+               <button className="btn btn-sm btn-danger red-action" onClick={notifyParents} disabled={busy}>
                  {busy ? '⏳ Notifying...' : '📱 Notify All Parents via SMS'}
                </button>
             </div>
@@ -185,9 +179,9 @@ function DashboardContent() {
 
       {/* ── Super Admin Oversight Info ── */}
       {isSuper && (
-        <div className="panel" style={{ marginBottom: 18, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 15 }}>
-          <div className="panel-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-             <div style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>👑 You are in Platform Oversight Mode. Access the Command Center for global metrics.</div>
+        <div className="panel oversight-panel">
+          <div className="panel-body oversight-body">
+             <div className="oversight-copy">👑 You are in Platform Oversight Mode. Access the Command Center for global metrics.</div>
              <Link href="/super-admin" className="btn btn-primary btn-sm">Enter Command Center</Link>
           </div>
         </div>
@@ -195,10 +189,10 @@ function DashboardContent() {
 
       {!isSuper && (
         <>
-          <div className="panel" style={{ marginBottom: 22 }}>
-            <div className="panel-hdr" style={{ background: `linear-gradient(135deg, ${themePrimary}, #0F172A)`, border: 'none' }}>
-              <h3 style={{ color: '#fff' }}>🚀 Module Hub — All Platform Features</h3>
-              <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.15)', padding: '3px 10px', borderRadius: 20, color: '#fff' }}>{ALL_NAV.filter(n => n.roles.includes(user.role)).length} Active Modules</span>
+          <div className="panel module-panel">
+            <div className="panel-hdr module-hdr" style={{ '--home-accent': themePrimary }}>
+              <h3>🚀 Module Hub — All Platform Features</h3>
+              <span>{ALL_NAV.filter(n => n.roles.includes(user.role)).length} Active Modules</span>
             </div>
             <div className="panel-body hub-grid">
               {ALL_NAV.filter(n => n.roles.includes(user.role)).map((t, idx) => (
@@ -215,7 +209,7 @@ function DashboardContent() {
             </div>
           </div>
 
-          <div className="sg sg4">
+          <div className="sg sg4 home-stat-grid">
             <StatCard 
               icon="🎓" 
               bg="#EFF6FF" 
@@ -232,20 +226,20 @@ function DashboardContent() {
             <StatCard icon="💬" bg="#EFF6FF" value={unread} label="Messages" onClick={() => router.push('/messages')} />
           </div>
 
-          <div className="sg sg2">
+          <div className="sg sg2 home-insight-grid">
             {user.role === 'admin' && (
-              <div className="panel">
+              <div className="panel insight-panel">
                 <div className="panel-hdr"><h3>📚 Enrolment</h3></div>
                 <div className="panel-body">
                   {ALL_GRADES.map(grade => {
                     const count = stats.enrolmentByGrade?.[grade] || 0;
                     const pct   = Math.min(100, count * 8);
                     return (
-                      <div key={grade} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6, fontSize: 11.5 }}>
-                        <div style={{ width: 78, color: 'var(--muted)', flexShrink: 0, fontSize: 10 }}>{grade}</div>
-                        <div style={{ flex: 1, background: '#EEF2FF', borderRadius: 4, height: 17, overflow: 'hidden' }}>
-                          <div style={{ width: `${Math.max(pct, 3)}%`, height: '100%', background: '#2563EB', borderRadius: 4, display: 'flex', alignItems: 'center', padding: '0 7px' }}>
-                            <span style={{ fontSize: 10, color: '#fff', fontWeight: 700 }}>{count}</span>
+                      <div key={grade} className="metric-row">
+                        <div className="metric-label">{grade}</div>
+                        <div className="metric-track">
+                          <div className="metric-fill enrolment-fill" style={{ width: `${Math.max(pct, 3)}%` }}>
+                            <span>{count}</span>
                           </div>
                         </div>
                       </div>
@@ -255,7 +249,7 @@ function DashboardContent() {
               </div>
             )}
             {user.role === 'admin' && (
-              <div className="panel">
+              <div className="panel insight-panel">
                 <div className="panel-hdr"><h3>💰 Fee Collection</h3></div>
                 <div className="panel-body">
                   {GRADE_GROUPS.map(({ label, color, grades }) => {
@@ -263,13 +257,13 @@ function DashboardContent() {
                     const groupExp  = grades.reduce((sum, g) => sum + (stats.enrolmentByGrade?.[g] || 0) * getAnnualFee(g), 0);
                     const groupPct  = groupExp ? Math.round((groupPaid / groupExp) * 100) : 0;
                     return (
-                      <div key={label} style={{ marginBottom: 14 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
-                          <span style={{ fontWeight: 600 }}>{label}</span>
-                          <span style={{ color: 'var(--muted)' }}>{fmtK(groupPaid)} / {fmtK(groupExp)}</span>
+                      <div key={label} className="fee-row">
+                        <div className="fee-meta">
+                          <span>{label}</span>
+                          <span>{fmtK(groupPaid)} / {fmtK(groupExp)}</span>
                         </div>
-                        <div style={{ height: 9, background: '#EEF2FF', borderRadius: 5, overflow: 'hidden' }}>
-                          <div style={{ width: `${groupPct}%`, height: '100%', background: color, borderRadius: 5 }} />
+                        <div className="fee-track">
+                          <div className="fee-fill" style={{ width: `${groupPct}%`, background: color }} />
                         </div>
                       </div>
                     );
@@ -282,12 +276,246 @@ function DashboardContent() {
       )}
 
       <style jsx>{`
+        .home-page {
+          --home-shadow: 0 18px 45px rgba(5, 15, 28, 0.08);
+        }
+        .home-hero {
+          position: relative;
+          padding: 4px 2px 8px;
+          animation: homeRise .42s ease-out both;
+        }
+        .home-hero h2 {
+          font-size: clamp(20px, 2vw, 28px);
+          letter-spacing: 0;
+        }
+        .home-refresh {
+          background: #fff;
+          box-shadow: 0 8px 24px rgba(15,23,42,.06);
+        }
+        .home-refresh:hover {
+          transform: translateY(-2px);
+        }
+        .home-alert,
+        .module-panel,
+        .oversight-panel {
+          margin-bottom: 22px;
+          border-radius: 16px;
+          box-shadow: var(--home-shadow);
+          animation: homeRise .46s ease-out both;
+        }
+        .announcement-panel {
+          background: #EFF6FF;
+          border: 1.5px solid #BFDBFE;
+        }
+        .announcement-panel[data-priority='high'] {
+          background: #FEFCE8;
+          border-color: #FDE68A;
+        }
+        .announcement-panel[data-priority='critical'] {
+          background: #FFF1F2;
+          border-color: #FDA4AF;
+        }
+        .announcement-panel::before,
+        .red-flag-panel::before,
+        .module-panel::before,
+        .oversight-panel::before {
+          content: '';
+          position: absolute;
+          inset: 0 auto 0 0;
+          width: 6px;
+          background: #3B82F6;
+        }
+        .announcement-panel[data-priority='high']::before { background: #F59E0B; }
+        .announcement-panel[data-priority='critical']::before { background: #E11D48; }
+        .alert-body {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          padding-left: 24px;
+        }
+        .alert-icon {
+          width: 42px;
+          height: 42px;
+          display: grid;
+          place-items: center;
+          border-radius: 14px;
+          background: rgba(255,255,255,.72);
+          font-size: 22px;
+          box-shadow: 0 10px 25px rgba(15,23,42,.08);
+        }
+        .alert-copy { flex: 1; min-width: 0; }
+        .alert-kicker {
+          color: var(--muted);
+          font-size: 10.5px;
+          font-weight: 800;
+          letter-spacing: .8px;
+          margin-bottom: 2px;
+          text-transform: uppercase;
+        }
+        .alert-message {
+          color: var(--navy);
+          font-size: 14px;
+          font-weight: 800;
+          line-height: 1.35;
+        }
+        .red-flag-panel {
+          background: #FFF7F8;
+          border: 1.5px solid #FDA4AF;
+        }
+        .red-flag-panel::before { background: #E11D48; }
+        .red-flag-hdr {
+          background: linear-gradient(135deg, #E11D48, #9F1239);
+          border: none;
+          color: #fff;
+        }
+        .red-flag-hdr h3 { color: #fff; }
+        .risk-pill {
+          padding: 3px 10px;
+          border-radius: 20px;
+          background: rgba(255,255,255,.18);
+          color: #fff;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: .5px;
+          text-transform: uppercase;
+        }
+        .red-flag-copy {
+          color: #881337;
+          font-size: 12px;
+          font-weight: 750;
+          margin-bottom: 14px;
+        }
+        .red-flag-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+          gap: 11px;
+        }
+        .red-flag-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 12px 14px;
+          border: 1px solid #FDA4AF;
+          border-radius: 14px;
+          background: #fff;
+          box-shadow: 0 10px 24px rgba(225,29,72,.06);
+          opacity: 0;
+          transform: translateY(10px);
+          animation: homeRise .42s ease-out forwards;
+          transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+        }
+        .red-flag-card:hover {
+          border-color: #E11D48;
+          box-shadow: 0 16px 30px rgba(225,29,72,.13);
+          transform: translateY(-3px);
+        }
+        .red-flag-name {
+          color: #1E293B;
+          font-size: 13px;
+          font-weight: 850;
+        }
+        .red-flag-adm {
+          color: #64748B;
+          font-size: 11px;
+        }
+        .red-flag-count {
+          color: #E11D48;
+          text-align: right;
+          flex-shrink: 0;
+        }
+        .red-flag-count div {
+          font-size: 21px;
+          font-weight: 900;
+          line-height: 1;
+        }
+        .red-flag-count span {
+          color: #FB7185;
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: .5px;
+          text-transform: uppercase;
+        }
+        .red-flag-actions {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 16px;
+          flex-wrap: wrap;
+        }
+        .red-link {
+          color: #E11D48 !important;
+          font-weight: 850;
+        }
+        .red-action {
+          background: linear-gradient(135deg, #E11D48, #BE123C) !important;
+          box-shadow: 0 10px 22px rgba(225,29,72,.18);
+        }
+        .oversight-panel {
+          background: linear-gradient(135deg, #FFFFFF, #F8FAFC);
+          border: 1.5px solid #E2E8F0;
+        }
+        .oversight-panel::before { background: var(--gold); }
+        .oversight-body {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+        }
+        .oversight-copy {
+          color: #475569;
+          font-size: 13px;
+          font-weight: 800;
+        }
+        .module-panel {
+          border-color: rgba(15,23,42,.08);
+          background: #fff;
+        }
+        .module-panel::before { display: none; }
+        .module-hdr {
+          overflow: hidden;
+          position: relative;
+          border: none;
+          background:
+            linear-gradient(135deg, var(--home-accent), #0F172A),
+            radial-gradient(circle at 85% 0%, rgba(255,255,255,.28), transparent 34%);
+          color: #fff;
+        }
+        .module-hdr::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.16) 42%, transparent 72%);
+          transform: translateX(-120%);
+          animation: sheen 4.8s ease-in-out infinite;
+          pointer-events: none;
+        }
+        .module-hdr h3 {
+          color: #fff;
+          position: relative;
+          z-index: 1;
+        }
+        .module-hdr span {
+          position: relative;
+          z-index: 1;
+          padding: 4px 11px;
+          border: 1px solid rgba(255,255,255,.18);
+          border-radius: 999px;
+          background: rgba(255,255,255,.14);
+          color: #fff;
+          font-size: 10px;
+          font-weight: 850;
+          letter-spacing: .4px;
+          text-transform: uppercase;
+        }
         .hub-grid {
           display: grid; 
-          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
-          gap: 12px;
-          background: #F1F5F9;
-          padding: 16px;
+          grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); 
+          gap: 14px;
+          background:
+            linear-gradient(180deg, #F8FAFF 0%, #F1F5F9 100%);
+          padding: 18px;
         }
         .hub-btn { 
           display: flex; 
@@ -295,46 +523,232 @@ function DashboardContent() {
           align-items: center; 
           justify-content: center;
           gap: 10px; 
-          padding: 24px 10px; 
-          background: #fff; 
-          border-radius: 20px; 
+          min-height: 128px;
+          padding: 22px 12px; 
+          background:
+            linear-gradient(180deg, #fff 0%, #FBFDFF 100%);
+          border-radius: 16px; 
           text-decoration: none; 
           color: var(--navy); 
-          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-          border: 1px solid #E2E8F0; 
+          transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .28s ease, background .28s ease; 
+          border: 1px solid #E2E8F0;
           text-align: center; 
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+          box-shadow: 0 8px 18px rgba(15,23,42,.04);
           opacity: 0;
-          transform: translateY(10px);
-          animation: hubFadeIn 0.5s ease-out forwards;
-        }
-        @keyframes hubFadeIn {
-          to { opacity: 1; transform: translateY(0); }
+          transform: translateY(14px) scale(.98);
+          animation: hubFadeIn .56s cubic-bezier(.2,.8,.2,1) forwards;
         }
         .hub-btn:hover { 
-          background: #fff; 
+          background: linear-gradient(180deg, #fff 0%, #EFF6FF 100%);
           border-color: #2563EB; 
-          transform: translateY(-6px) scale(1.02); 
-          box-shadow: 0 20px 25px -5px rgba(37,99,235,0.15), 0 10px 10px -5px rgba(37,99,235,0.08); 
+          transform: translateY(-6px); 
+          box-shadow: 0 22px 38px rgba(37,99,235,0.16), 0 8px 12px rgba(37,99,235,0.08); 
+        }
+        .hub-btn:focus-visible {
+          outline: 3px solid rgba(37,99,235,.24);
+          outline-offset: 3px;
         }
         .hub-icon { 
-          font-size: 34px; 
+          width: 52px;
+          height: 52px;
+          display: grid;
+          place-items: center;
+          border-radius: 15px;
+          background: linear-gradient(135deg, #F8FAFC, #EFF6FF);
+          font-size: 28px; 
           filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); 
-          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+          transition: transform .28s cubic-bezier(.2,.8,.2,1), background .28s ease; 
         }
         .hub-btn:hover .hub-icon { 
-          transform: translateY(-4px) scale(1.15); 
+          background: #fff;
+          transform: translateY(-4px) scale(1.08); 
         }
         .hub-label { 
-          font-size: 11px; 
-          font-weight: 800; 
+          font-size: 11.2px; 
+          font-weight: 850; 
           color: #475569; 
           text-transform: uppercase; 
-          letter-spacing: 0.5px; 
+          letter-spacing: .4px; 
           line-height: 1.2;
         }
         .hub-btn:hover .hub-label {
           color: #2563EB;
+        }
+        :global(.home-stat-grid .stat-card) {
+          position: relative;
+          overflow: hidden;
+          border-color: rgba(226,232,240,.92);
+          box-shadow: 0 12px 28px rgba(15,23,42,.06);
+          animation: homeRise .5s ease-out both;
+          transition: transform .24s ease, box-shadow .24s ease, border-color .24s ease;
+        }
+        :global(.home-stat-grid .stat-card::after) {
+          content: '';
+          position: absolute;
+          inset: auto 0 0;
+          height: 3px;
+          background: linear-gradient(90deg, var(--maroon), var(--blue), var(--teal));
+          opacity: .72;
+          transform: scaleX(.2);
+          transform-origin: left;
+          transition: transform .26s ease;
+        }
+        :global(.home-stat-grid .stat-card:hover) {
+          transform: translateY(-5px);
+          border-color: rgba(37,99,235,.25);
+          box-shadow: 0 22px 44px rgba(15,23,42,.12);
+        }
+        :global(.home-stat-grid .stat-card:hover::after) {
+          transform: scaleX(1);
+        }
+        :global(.home-stat-grid .sc-icon) {
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,.65), 0 12px 22px rgba(15,23,42,.08);
+          transition: transform .24s ease;
+        }
+        :global(.home-stat-grid .stat-card:hover .sc-icon) {
+          transform: rotate(-4deg) scale(1.06);
+        }
+        .home-insight-grid {
+          align-items: stretch;
+        }
+        .insight-panel {
+          border-color: rgba(226,232,240,.9);
+          box-shadow: 0 14px 34px rgba(15,23,42,.06);
+          animation: homeRise .55s ease-out both;
+        }
+        .metric-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 8px;
+          font-size: 11.5px;
+        }
+        .metric-label {
+          width: 82px;
+          flex-shrink: 0;
+          color: var(--muted);
+          font-size: 10.5px;
+          font-weight: 750;
+        }
+        .metric-track,
+        .fee-track {
+          position: relative;
+          flex: 1;
+          overflow: hidden;
+          border-radius: 999px;
+          background: #EEF2FF;
+        }
+        .metric-track { height: 18px; }
+        .metric-fill,
+        .fee-fill {
+          height: 100%;
+          border-radius: inherit;
+          transform-origin: left;
+          animation: barGrow .72s cubic-bezier(.2,.8,.2,1) both;
+        }
+        .metric-fill {
+          display: flex;
+          align-items: center;
+          min-width: 26px;
+          padding: 0 8px;
+          background: linear-gradient(90deg, #2563EB, #1D4ED8);
+          color: #fff;
+          font-size: 10px;
+          font-weight: 850;
+        }
+        .fee-row {
+          margin-bottom: 15px;
+        }
+        .fee-meta {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 6px;
+          font-size: 12px;
+        }
+        .fee-meta span:first-child {
+          color: var(--text);
+          font-weight: 750;
+        }
+        .fee-meta span:last-child {
+          color: var(--muted);
+          font-weight: 650;
+          white-space: nowrap;
+        }
+        .fee-track { height: 10px; }
+        .fee-fill {
+          min-width: 8px;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+        }
+        @keyframes homeRise {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes hubFadeIn {
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes barGrow {
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
+        }
+        @keyframes sheen {
+          0%, 55% { transform: translateX(-120%); }
+          100% { transform: translateX(120%); }
+        }
+        @media (max-width: 760px) {
+          .home-hero {
+            align-items: flex-start;
+          }
+          .home-refresh {
+            width: 100%;
+            justify-content: center;
+          }
+          .hub-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            padding: 12px;
+          }
+          .hub-btn {
+            min-height: 112px;
+            padding: 18px 8px;
+            border-radius: 14px;
+          }
+          .hub-icon {
+            width: 46px;
+            height: 46px;
+            font-size: 25px;
+          }
+          .home-insight-grid {
+            grid-template-columns: 1fr;
+          }
+          .alert-body,
+          .oversight-body {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+          .red-flag-actions .btn {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .home-hero,
+          .home-alert,
+          .module-panel,
+          .oversight-panel,
+          .hub-btn,
+          .red-flag-card,
+          .insight-panel,
+          :global(.home-stat-grid .stat-card),
+          .metric-fill,
+          .fee-fill {
+            animation: none;
+            opacity: 1;
+            transform: none;
+          }
+          .module-hdr::after {
+            animation: none;
+          }
         }
       `}</style>
     </div>

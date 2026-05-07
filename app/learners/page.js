@@ -72,6 +72,8 @@ export default function LearnersPage() {
     return () => window.removeEventListener('paav:sync', handler);
   }, [load]);
 
+  const [selAdms, setSelAdms] = useState([]);
+
   /* ── Filtered list ── */
   const filtered = learners.filter(l => {
     const q = query.toLowerCase();
@@ -80,6 +82,14 @@ export default function LearnersPage() {
     const gradeMatch = !gradeF || l.grade === gradeF;
     return (!q || nameMatch || admMatch) && gradeMatch;
   });
+
+  const toggleSelect = adm => {
+    setSelAdms(prev => prev.includes(adm) ? prev.filter(a => a !== adm) : [...prev, adm]);
+  };
+  const toggleAll = () => {
+    if (selAdms.length === filtered.length) setSelAdms([]);
+    else setSelAdms(filtered.map(l => l.adm));
+  };
 
   /* ── Fee helpers ── */
   function getAnnualFee(grade) { return feeCfg[grade]?.annual || 5000; }
@@ -104,6 +114,11 @@ export default function LearnersPage() {
             <p>All enrolled learners — {curr.name}</p>
           </div>
           <div className="page-hdr-acts">
+            {selAdms.length > 0 && user?.role === 'admin' && (
+              <button className="btn btn-teal btn-sm" onClick={() => setModal('reassign')}>
+                🌊 Reassign Stream ({selAdms.length})
+              </button>
+            )}
             <button className="btn btn-ghost btn-sm" onClick={() => router.push('/learners/bulk')}>
               📋 Bulk Add
             </button>
@@ -117,9 +132,6 @@ export default function LearnersPage() {
                 </button>
               </>
             )}
-            <button className="btn btn-ghost btn-sm" onClick={() => router.push('/profile?tab=learner')}>
-              🔍 Advanced Directory
-            </button>
             <button className="btn btn-primary btn-sm" onClick={() => setModal('add')}>
               ➕ Add Learner
             </button>
@@ -156,13 +168,15 @@ export default function LearnersPage() {
             <table>
               <thead>
                 <tr>
-                  <th style={{ padding: '6px 8px' }}>#</th>
+                  <th style={{ padding: '6px 8px' }}>
+                    <input type="checkbox" checked={selAdms.length > 0 && selAdms.length === filtered.length} onChange={toggleAll} />
+                  </th>
                   <th style={{ padding: '6px 8px' }}>Adm</th>
                   <th style={{ padding: '6px 8px' }}>Name</th>
                   <th style={{ padding: '6px 8px' }}>Grade</th>
+                  <th style={{ padding: '6px 8px' }}>Stream</th>
                   <th style={{ padding: '6px 8px' }}>Gender</th>
                   <th style={{ padding: '6px 8px' }}>Age</th>
-                  <th style={{ padding: '6px 8px' }}>Class Teacher</th>
                   <th style={{ padding: '6px 8px' }}>Parent</th>
                   <th style={{ padding: '6px 8px' }}>Phone</th>
                   {user?.role === 'admin' && <th style={{ padding: '6px 8px' }}>Fee Status</th>}
@@ -172,15 +186,18 @@ export default function LearnersPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={user?.role === 'admin' ? 11 : 10} style={{ textAlign: 'center', padding: 20, color: 'var(--muted)' }}>
+                    <td colSpan={user?.role === 'admin' ? 12 : 11} style={{ textAlign: 'center', padding: 20, color: 'var(--muted)' }}>
                       No learners found
                     </td>
                   </tr>
                 ) : filtered.map((l, i) => {
                   const bal = getBal(l);
+                  const isSelected = selAdms.includes(l.adm);
                   return (
-                    <tr key={l.adm + i}>
-                      <td style={{ padding: '6px 8px' }}>{i + 1}</td>
+                    <tr key={l.adm + i} className={isSelected ? 'selected-row' : ''} style={{ background: isSelected ? 'var(--blue-light)' : '' }}>
+                      <td style={{ padding: '6px 8px' }}>
+                        <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(l.adm)} />
+                      </td>
                       <td style={{ padding: '6px 8px' }}><strong>{l.adm}</strong></td>
                       <td style={{ padding: '6px 8px' }}>
                         <button
@@ -192,9 +209,11 @@ export default function LearnersPage() {
                       <td style={{ padding: '6px 8px' }}>
                         <span className="badge bg-blue" style={{ fontSize: 10 }}>{l.grade}</span>
                       </td>
+                      <td style={{ padding: '6px 8px' }}>
+                        <span className="badge bg-gray" style={{ fontSize: 10, background: '#F1F5F9', border: '1px solid #E2E8F0' }}>{l.stream || 'No Stream'}</span>
+                      </td>
                       <td style={{ padding: '6px 8px' }}>{l.sex === 'F' ? 'Female' : (l.sex === 'M' ? 'Male' : l.sex)}</td>
                       <td style={{ padding: '6px 8px' }}>{l.age}</td>
-                      <td style={{ fontSize: 11.5, padding: '6px 8px' }}>{l.teacher || '—'}</td>
                       <td style={{ fontSize: 11.5, padding: '6px 8px' }}>{l.parent  || '—'}</td>
                       <td style={{ fontSize: 11.5, padding: '6px 8px' }}>{l.phone   || '—'}</td>
                       {user?.role === 'admin' && (
@@ -218,25 +237,18 @@ export default function LearnersPage() {
                           </button>
                         )}
                         {user?.role === 'admin' && (
-                          <>
-                            <button className="btn btn-gold btn-sm"
-                              style={{ marginLeft: 4 }}
-                              onClick={() => router.push(`/fees/${encodeURIComponent(l.adm)}/receipt`)}>
-                              🧾
-                            </button>
-                            <button className="btn btn-danger btn-sm"
-                              style={{ marginLeft: 4 }}
-                              onClick={async () => {
-                                if(!confirm(`Delete learner ${l.name}?`)) return;
-                                await fetch('/api/db', {
-                                  method:'POST', headers:{'Content-Type':'application/json'},
-                                  body: JSON.stringify({ requests:[{ type:'deleteLearner', adm: l.adm }] })
-                                });
-                                load();
-                              }}>
-                              🗑️
-                            </button>
-                          </>
+                          <button className="btn btn-danger btn-sm"
+                            style={{ marginLeft: 4 }}
+                            onClick={async () => {
+                              if(!confirm(`Delete learner ${l.name}?`)) return;
+                              await fetch('/api/db', {
+                                method:'POST', headers:{'Content-Type':'application/json'},
+                                body: JSON.stringify({ requests:[{ type:'deleteLearner', adm: l.adm }] })
+                              });
+                              load();
+                            }}>
+                            🗑️
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -251,6 +263,7 @@ export default function LearnersPage() {
       {/* ── Modals ── */}
       {modal === 'add'     && <AddLearnerModal     curr={curr} isAdmin={user.role === 'admin'} streams={streams} onClose={() => { setModal(null); load(); }} />}
       {modal === 'promote' && <PromoteLearnersModal curr={curr} onClose={() => { setModal(null); load(); }} learners={learners} />}
+      {modal === 'reassign' && <ReassignStreamModal streams={streams} adms={selAdms} learners={learners} onClose={() => { setModal(null); setSelAdms([]); load(); }} />}
       {modal === 'upgrade' && <UpgradeModal onClose={() => setModal(null)} school={school} currentCount={learners.length} />}
       {modal?.type === 'edit' && <EditLearnerModal curr={curr} isAdmin={user.role === 'admin'} streams={streams} onClose={() => { setModal(null); load(); }} learner={modal.learner} />}
     </>
@@ -718,6 +731,79 @@ function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
   );
 }
 
+
+/* ─── Reassign Stream Modal ────────────────────────────────────────────── */
+function ReassignStreamModal({ onClose, streams, adms, learners }) {
+  const [busy, setBusy] = useState(false);
+  const [targetStream, setTargetStream] = useState('');
+  
+  const selectedLearners = learners.filter(l => adms.includes(l.adm));
+  // Ensure all selected learners are from the same grade (recommended)
+  const grades = Array.from(new Set(selectedLearners.map(l => l.grade)));
+  const availableStreams = streams.filter(s => grades.includes(s.grade));
+
+  async function reassign() {
+    if (!targetStream) { alert('Please select a target stream'); return; }
+    if (!confirm(`Move ${adms.length} learners to stream "${targetStream}"?`)) return;
+    
+    setBusy(true);
+    try {
+      const updatedList = learners.map(l => {
+        if (adms.includes(l.adm)) {
+          return { ...l, stream: targetStream };
+        }
+        return l;
+      });
+
+      await fetch('/api/db', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ type: 'set', key: 'paav6_learners', value: updatedList }] }),
+      });
+
+      const { invalidateDB } = await import('@/lib/client-cache');
+      invalidateDB('paav6_learners');
+      window.dispatchEvent(new CustomEvent('paav:sync', { detail: { changed: ['paav6_learners'] } }));
+      
+      onClose();
+    } catch (e) {
+      alert('Failed to reassign stream');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <ModalOverlay title="🌊 Bulk Reassign Stream" onClose={onClose}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+          You are moving <strong>{adms.length}</strong> learners from 
+          {grades.length === 1 ? ` Grade ${grades[0]}` : ` multiple grades`}.
+        </p>
+
+        <div className="field">
+          <label>Target Stream</label>
+          <select value={targetStream} onChange={e => setTargetStream(e.target.value)}>
+            <option value="">Select Stream</option>
+            {availableStreams.map(s => (
+              <option key={s.name + s.grade} value={s.name}>{s.name} ({s.grade})</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="note-box" style={{ background: '#F0FDF4', borderLeft: '3px solid #16A34A', fontSize: 12 }}>
+          <strong>Tip:</strong> Moving learners between streams does not affect their marks or fee balances.
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button className="btn btn-teal btn-sm" onClick={reassign} disabled={busy || !targetStream}>
+            {busy ? '⏳ Moving...' : `🌊 Move ${adms.length} Learners`}
+          </button>
+        </div>
+      </div>
+    </ModalOverlay>
+  );
+}
 
 /* ─── Shared modal wrapper ──────────────────────────────────────────────── */
 function ModalOverlay({ title, onClose, children }) {
