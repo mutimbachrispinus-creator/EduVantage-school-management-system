@@ -20,6 +20,40 @@ const NotificationBell = dynamic(() => import('@/components/NotificationBell'), 
 const ProfileContext = createContext();
 export const useProfile = () => useContext(ProfileContext);
 
+function SystemLockout({ profile }) {
+  const router = useRouter();
+  const contactWhatsApp = 'https://wa.me/254792656579?text=Hello%20EduVantage%2C%20I%20need%20to%20upgrade%20my%20school%20subscription%20plan.';
+  
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15, 23, 42, 0.98)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div className="panel" style={{ maxWidth: 500, width: '100%', textAlign: 'center', padding: '40px 30px', border: '2px solid var(--secondary)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+        <div style={{ fontSize: 60, marginBottom: 20 }}>🔒</div>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 15, fontSize: 24, fontWeight: 800 }}>Institutional Access Locked</h2>
+        <p style={{ color: 'var(--muted)', marginBottom: 25, lineHeight: 1.6, fontSize: 15 }}>
+          Your school has <strong>{profile.learnerCount}</strong> students, which exceeds your current plan limit of <strong>{profile.learnerLimit}</strong>. 
+          To ensure platform stability and compliance, access has been restricted.
+        </p>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button className="btn btn-primary w-full" onClick={() => router.push('/billing')} style={{ height: 48, fontSize: 16 }}>
+            💳 Upgrade Subscription Now
+          </button>
+          <a href={contactWhatsApp} target="_blank" rel="noopener noreferrer" className="btn btn-gold w-full" style={{ height: 48, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+            💬 Contact Support (WhatsApp)
+          </a>
+          <button className="btn btn-ghost w-full" onClick={() => { localStorage.clear(); window.location.href = '/'; }}>
+            🚪 Log Out
+          </button>
+        </div>
+        
+        <div style={{ marginTop: 30, paddingTop: 20, borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)' }}>
+          EduVantage SaaS Network · Compliance & Security Engine
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Basic Error Boundary to prevent the entire portal from crashing
  */
@@ -508,7 +542,11 @@ export default function PortalShell({ children }) {
           </button>
         )}
         <ErrorBoundary>
-          {children}
+          {profile.learnerCount > profile.learnerLimit && user?.role !== 'super-admin' && !NO_NAV_PATHS.includes(pathname) && pathname !== '/billing' ? (
+            <SystemLockout profile={profile} />
+          ) : (
+            children
+          )}
         </ErrorBoundary>
       </div>
 
