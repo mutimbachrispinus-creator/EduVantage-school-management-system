@@ -498,8 +498,9 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave })
         const dayIdx = DAYS.indexOf(d);
         const dayMax = cfg.perDay[dayIdx] || cfg.perDay[0];
         for(let p=1; p<=dayMax; p++) {
-          if (result.grid[d]?.[p] && !result.grid[d][p].cont) {
-             newGradeTT[d][p] = { subject: result.grid[d][p].subject, teacher: result.grid[d][p].teacher || '' };
+          const slot = result.grid[d]?.[p];
+          if (slot && !slot.cont) {
+             newGradeTT[d][p] = { subject: slot.name || slot.subject, teacher: slot.teacher || '' };
           }
         }
       });

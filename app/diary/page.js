@@ -18,10 +18,10 @@ export default function StudentDiaryPage() {
     const keys = [
       'paav6_learners', 
       'paav6_marks', 
-      'paav6_att', 
+      'paav_student_attendance', 
       'paav6_paylog', 
       'paav_duties',
-      'paav_msgs',
+      'paav6_msgs',
       'paav_announcement'
     ];
     const data = await getCachedDBMulti(keys);
@@ -40,7 +40,7 @@ export default function StudentDiaryPage() {
 
     // If parent, find their children
     const children = user.role === 'parent' 
-      ? db.paav6_learners.filter(l => l.parentPhone === user.phone || l.adm === user.adm) 
+      ? db.paav6_learners.filter(l => l.phone === user.phone || l.adm === user.adm) 
       : db.paav6_learners;
 
     const events = [];
@@ -63,18 +63,20 @@ export default function StudentDiaryPage() {
 
     children.forEach(l => {
       // 1. Attendance
-      if (db.paav6_att) {
-        Object.entries(db.paav6_att).forEach(([date, attMap]) => {
-          if (attMap[l.adm]) {
+      if (db.paav_student_attendance) {
+        Object.entries(db.paav_student_attendance).forEach(([gda, status]) => {
+          const parts = gda.split('|');
+          if (parts.length >= 3 && parts[parts.length-1] === l.adm) {
+            const date = parts[1];
             events.push({
-              id: `att-${date}-${l.adm}`,
+              id: `att-${gda}`,
               date,
               student: l.name,
               type: 'attendance',
               icon: '📅',
               title: 'Attendance Marked',
-              desc: `${l.name} was marked ${attMap[l.adm]} today.`,
-              color: attMap[l.adm] === 'Present' ? '#059669' : '#DC2626'
+              desc: `${l.name} was marked ${status} today.`,
+              color: status === 'Present' ? '#059669' : '#DC2626'
             });
           }
         });
@@ -137,8 +139,8 @@ export default function StudentDiaryPage() {
     });
 
     // 5. Messages (filtered by relevance)
-    if (db.paav_msgs) {
-      db.paav_msgs.filter(m => m.to === user.username || m.from === user.username).forEach(m => {
+    if (db.paav6_msgs) {
+      db.paav6_msgs.filter(m => m.to === user.username || m.from === user.username).forEach(m => {
         events.push({
           id: `msg-${m.id}`,
           date: m.date || new Date(m.createdAt).toLocaleDateString('en-KE'),
