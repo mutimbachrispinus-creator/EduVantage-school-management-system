@@ -37,7 +37,8 @@ export default function EduVantageSignup() {
     phone: '',
     email: '',
     plan: 'trial', // Default to trial
-    curriculum: 'CBC'
+    curriculum: 'CBC',
+    estimatedStudents: 100 // Default estimate
   });
 
   const [showPayment, setShowPayment] = useState(false);
@@ -48,8 +49,9 @@ export default function EduVantageSignup() {
     if (form.phone) setPayPhone(form.phone);
   }, [form.phone]);
 
-  const selectedPlanData = plans.find(p => p.id === form.plan) || { price: form.plan === 'premium' ? 10000 : 0 };
-  const isPaid = selectedPlanData.price > 0;
+  const selectedPlanData = plans.find(p => p.id === form.plan) || { price: 0, billingModel: 'flat' };
+  const totalDue = selectedPlanData.billingModel === 'per-learner' ? selectedPlanData.price * (form.estimatedStudents || 0) : selectedPlanData.price;
+  const isPaid = totalDue > 0;
 
   const onSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -92,9 +94,9 @@ export default function EduVantageSignup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: payPhone,
-          amount: selectedPlanData.price,
+          amount: totalDue,
           reference: `REG-${form.adminUsername || 'SCHOOL'}`,
-          desc: `Subscription for ${form.schoolName}`
+          desc: `Activation for ${form.schoolName} (${selectedPlanData.name})`
         })
       });
       const json = await res.json();
@@ -134,7 +136,10 @@ export default function EduVantageSignup() {
             <div style={{ background: '#fff', padding: 35, borderRadius: 24, maxWidth: 400, width: '100%', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
               <div style={{ fontSize: 40, marginBottom: 15 }}>💳</div>
               <h2 style={{ margin: 0, fontSize: 20, color: '#0F172A' }}>Activate {selectedPlanData.name}</h2>
-              <p style={{ color: '#64748B', fontSize: 14, marginTop: 8 }}>To complete your registration, please pay <b>KES {selectedPlanData.price.toLocaleString()}</b> via M-Pesa.</p>
+              <p style={{ color: '#64748B', fontSize: 14, marginTop: 8 }}>To complete your registration, please pay <b>KES {totalDue.toLocaleString()}</b> via M-Pesa.</p>
+              {selectedPlanData.billingModel === 'per-learner' && (
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 5 }}>({form.estimatedStudents} students × KES {selectedPlanData.price})</p>
+              )}
               
               <div style={{ marginTop: 25, textAlign: 'left' }}>
                 <label style={{ fontSize: 11, fontWeight: 800, color: '#64748B', display: 'block', marginBottom: 8, textTransform: 'uppercase' }}>M-Pesa Number</label>
@@ -194,7 +199,11 @@ export default function EduVantageSignup() {
                       style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === p.id ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === p.id ? '#EFF6FF' : '#fff', transition: '0.2s', position: 'relative' }}
                     >
                       <div style={{ fontWeight: 800, fontSize: 13 }}>{p.name}</div>
-                      <div style={{ fontSize: 10, opacity: 0.7 }}>{p.price > 0 ? `KES ${p.price} / ${p.cycle}` : 'Free Access'}</div>
+                      <div style={{ fontSize: 10, opacity: 0.7 }}>
+                        {p.price > 0 ? (
+                          p.billingModel === 'per-learner' ? `KES ${p.price} / learner` : `KES ${p.price.toLocaleString()} / ${p.cycle}`
+                        ) : 'Free Access'}
+                      </div>
                       {p.id === 'free-term' && (
                         <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', background: '#F97316', color: '#fff', fontSize: 7, padding: '2px 6px', borderRadius: 4, fontWeight: 800, whiteSpace: 'nowrap' }}>NON-RENEWABLE</div>
                       )}
@@ -220,6 +229,27 @@ export default function EduVantageSignup() {
                 )}
               </div>
             </div>
+
+            {selectedPlanData.billingModel === 'per-learner' && (
+              <div className="form-group fade-in" style={{ padding: 20, background: '#F1F5F9', borderRadius: 16 }}>
+                <label>Institutional Population (Students)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                  <input 
+                    type="number" 
+                    required 
+                    min="1"
+                    placeholder="e.g. 250" 
+                    value={form.estimatedStudents} 
+                    onChange={e => setForm({...form, estimatedStudents: parseInt(e.target.value) || 0})} 
+                    style={{ flex: 1 }}
+                  />
+                  <div style={{ whiteSpace: 'nowrap', fontSize: 13, color: '#64748B' }}>
+                    Total: <b style={{ color: '#0F172A' }}>KES {totalDue.toLocaleString()}</b>
+                  </div>
+                </div>
+                <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 8 }}>This estimate will be used to calculate your initial activation fee.</p>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Education System / Curriculum</label>

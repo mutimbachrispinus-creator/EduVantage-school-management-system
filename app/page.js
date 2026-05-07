@@ -312,7 +312,9 @@ export default function LandingPage() {
                   key={p.id}
                   name={p.name} 
                   price={p.price} 
-                  desc={p.cycle === 'termly' ? 'Billed per student per term.' : 'One-time setup fee.'}
+                  desc={p.billingModel === 'per-learner' ? 'Billed per student.' : 'Flat rate per school.'}
+                  billingModel={p.billingModel}
+                  cycle={p.cycle}
                   featured={idx === 1}
                   features={p.features || ['Full Access', 'Dashboard', 'Support']}
                 />
@@ -595,7 +597,7 @@ function SolutionCard({ target, desc, features }) {
   );
 }
 
-function PriceCard({ name, price, desc, features, featured }) {
+function PriceCard({ name, price, desc, features, featured, billingModel, cycle }) {
   return (
     <div className={`p-card ${featured ? 'featured' : ''} ${name.includes('Free') ? 'free-tier' : ''}`}>
       {featured && <div className="feat-badge">MOST POPULAR</div>}
@@ -604,7 +606,11 @@ function PriceCard({ name, price, desc, features, featured }) {
         <h4 style={{ fontFamily: 'var(--font-sora, sans-serif)', fontSize: 24, fontWeight: 800, marginBottom: 12 }}>{name}</h4>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <span style={{ fontSize: 46, fontWeight: 900 }}>{price === 'Custom' || price === 0 ? '' : 'KES '}{price === 0 ? 'FREE' : price}</span>
-          {price !== 'Custom' && price !== 0 && <span style={{ opacity: 0.7, fontSize: 15 }}>/ student</span>}
+          {price !== 'Custom' && price !== 0 && (
+            <span style={{ opacity: 0.7, fontSize: 15 }}>
+              {billingModel === 'per-learner' ? '/ learner' : '/ school'}
+            </span>
+          )}
         </div>
         <p style={{ fontSize: 15, opacity: 0.8, marginTop: 16, lineHeight: 1.6 }}>{desc}</p>
         {name.includes('Free') && <div style={{ marginTop: 10, fontSize: 10, fontWeight: 900, color: '#F97316' }}>⚠️ ONE-TIME USE • NON-RENEWABLE</div>}

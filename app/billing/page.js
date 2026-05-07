@@ -65,10 +65,16 @@ export default function BillingPage() {
               <span style={{ color: SLATE, fontSize: 13 }}>Expiry Date</span>
               <span style={{ fontWeight: 700 }}>{new Date(subscription.expires_at).toLocaleDateString('en-KE', { dateStyle: 'long' })}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
               <span style={{ color: SLATE, fontSize: 13 }}>Billing Cycle</span>
               <span style={{ fontWeight: 700, textTransform: 'capitalize' }}>{isFreeTerm ? 'One-Time Term' : (subscription.details?.cycle || 'N/A')}</span>
             </div>
+            {subscription.details?.billingModel === 'per-learner' && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px dashed #CBD5E1', marginTop: 10 }}>
+                <span style={{ color: SLATE, fontSize: 13 }}>Cost Breakdown</span>
+                <span style={{ fontWeight: 800, color: M }}>{data.studentCount} students × KES {subscription.details.price}</span>
+              </div>
+            )}
           </div>
           
           {isFreeTerm && !isExpired && (
@@ -114,7 +120,12 @@ export default function BillingPage() {
             <div key={p.id} style={{ padding: 32, border: `2px solid ${idx === 1 ? M : 'rgba(0,0,0,0.05)'}`, borderRadius: 28, background: idx === 1 ? `${M}02` : '#fff', position: 'relative', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'pointer' }}>
               {idx === 1 && <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: M, color: '#fff', padding: '4px 14px', borderRadius: 99, fontSize: 10, fontWeight: 800 }}>RECOMMENDED</div>}
               <div style={{ fontWeight: 900, fontSize: 22, marginBottom: 12, color: NAVY }}>{p.name}</div>
-              <div style={{ fontSize: 32, fontWeight: 900, marginBottom: 20, color: NAVY }}>KES {p.price.toLocaleString()} <span style={{ fontSize: 14, color: SLATE, fontWeight: 600 }}>/ {p.cycle}</span></div>
+              <div style={{ fontSize: 32, fontWeight: 900, marginBottom: 20, color: NAVY }}>
+                KES {p.price.toLocaleString()} 
+                <span style={{ fontSize: 14, color: SLATE, fontWeight: 600 }}>
+                  {p.billingModel === 'per-learner' ? ' / learner' : ` / ${p.cycle}`}
+                </span>
+              </div>
               <ul style={{ padding: 0, listStyle: 'none', marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {(p.features || []).map(f => (
                   <li key={f} style={{ fontSize: 14, color: SLATE, display: 'flex', gap: 10, alignItems: 'center' }}>

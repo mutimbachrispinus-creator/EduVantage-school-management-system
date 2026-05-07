@@ -33,12 +33,21 @@ export async function POST(request) {
     // Prepare initial data
     const now = Math.floor(Date.now() / 1000);
     const expiresAt = new Date();
+    
+    // Fetch global config to get plan cycle
+    const { kvGet } = await import('@/lib/db');
+    const gConf = await kvGet('paav_global_config', {}, 'platform-master');
+    const planData = (gConf.plans || []).find(p => p.id === selectedPlan);
+    const cycle = planData?.cycle || 'termly';
+
     if (selectedPlan === 'trial') {
       expiresAt.setDate(expiresAt.getDate() + 30); // 30-day trial
     } else if (selectedPlan === 'free-term') {
       expiresAt.setMonth(expiresAt.getMonth() + 4); // 4 months for one term
-    } else {
+    } else if (cycle === 'annually' || cycle === 'annual') {
       expiresAt.setFullYear(expiresAt.getFullYear() + 1); // 1-year subscription
+    } else {
+      expiresAt.setMonth(expiresAt.getMonth() + 4); // 4 months for termly
     }
 
     const schoolProfile = JSON.stringify({
@@ -87,7 +96,7 @@ export async function POST(request) {
     return NextResponse.json({ 
       ok: true, 
       tenantId, 
-      message: `School registered successfully! You are on the ${selectedPlan === 'free-term' ? '1 Term Free' : '30-day free trial'} plan.`,
+      message: `School registered successfully! You are on the ${planData?.name || selectedPlan} plan.`,
       loginUrl: `/login?tenant=${tenantId}`
     });
 

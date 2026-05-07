@@ -19,10 +19,11 @@ export async function GET() {
     smsGateway: { apiKey: '', username: '', senderId: '' },
     pricing: { basic: 25000, premium: 50000 },
     plans: [
-      { id: 'trial', name: '30-Day Trial', price: 0, cycle: 'once', features: ['All Modules', 'Support'] },
-      { id: 'free-term', name: '1 Term Free', price: 0, cycle: 'once', features: ['Full Access', 'Curriculum Aware', '1 Term Only'] },
-      { id: 'basic', name: 'Basic', price: 150, cycle: 'termly', features: ['Academic Grading', 'SMS alerts'] },
-      { id: 'premium', name: 'Premium', price: 300, cycle: 'termly', features: ['Everything in Basic', 'M-Pesa Sync', 'Finance'] }
+      { id: 'trial', name: '30-Day Trial', price: 0, cycle: 'once', billingModel: 'flat', features: ['All Modules', 'Support'] },
+      { id: 'free-term', name: '1 Term Free', price: 0, cycle: 'once', billingModel: 'flat', features: ['Full Access', 'Curriculum Aware', '1 Term Only'] },
+      { id: 'basic', name: 'Basic (Flat)', price: 25000, cycle: 'termly', billingModel: 'flat', features: ['Academic Grading', 'SMS alerts'] },
+      { id: 'premium-learner', name: 'Premium (Per Learner)', price: 55, cycle: 'termly', billingModel: 'per-learner', features: ['Everything in Basic', 'M-Pesa Sync', 'Finance'] },
+      { id: 'annual-learner', name: 'Annual (Per Learner)', price: 45, cycle: 'annually', billingModel: 'per-learner', features: ['Full Year Access', 'Discounted Rate'] }
     ],
     platformPayments: [
       { type: 'Paybill', name: 'M-Pesa Subscription', shortcode: '400200', account: 'EDUVANTAGE' }

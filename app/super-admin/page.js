@@ -289,13 +289,22 @@ export default function SuperAdminPage() {
                           }}>
                             <option value="once">One-Time</option>
                             <option value="termly">Termly</option>
-                            <option value="annual">Annual</option>
+                            <option value="annually">Annual</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Billing Model</label>
+                          <select value={plan.billingModel || 'flat'} onChange={e => {
+                            const newPlans = [...globalConfig.plans]; newPlans[i].billingModel = e.target.value; setGlobalConfig({...globalConfig, plans: newPlans});
+                          }}>
+                            <option value="flat">Flat Fee (Per School)</option>
+                            <option value="per-learner">Per Learner (Variable)</option>
                           </select>
                         </div>
                       </div>
                     </div>
                   ))}
-                  <button className="btn btn-ghost" style={{ border: '1px dashed #CBD5E1' }} onClick={() => setGlobalConfig({...globalConfig, plans: [...(globalConfig.plans || []), { id: 'new_'+Date.now(), name: 'New Plan', price: 0, cycle: 'termly', features: [] }] })}>+ Add New Plan</button>
+                  <button className="btn btn-ghost" style={{ border: '1px dashed #CBD5E1' }} onClick={() => setGlobalConfig({...globalConfig, plans: [...(globalConfig.plans || []), { id: 'new_'+Date.now(), name: 'New Plan', price: 0, cycle: 'termly', billingModel: 'flat', features: [] }] })}>+ Add New Plan</button>
                 </div>
                 <button className="btn btn-primary" style={{ width: '100%', marginTop: 20 }} onClick={saveGlobalConfig} disabled={saving}>Save Plans</button>
               </div>

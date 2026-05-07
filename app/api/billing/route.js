@@ -26,11 +26,16 @@ export async function GET(request) {
     // Find details for current plan
     const currentPlanDetails = plans.find(p => p.id === subscription.plan) || { name: subscription.plan, price: 0, cycle: 'termly' };
 
+    // 3. Get Student Count
+    const countRes = await query('SELECT COUNT(*) as total FROM learners WHERE tenant_id = ?', [tid]);
+    const studentCount = countRes[0]?.total || 0;
+
     return NextResponse.json({
       subscription: {
         ...subscription,
         details: currentPlanDetails
       },
+      studentCount,
       platformPayments: paymentMethods,
       plans: plans.filter(p => p.id !== 'trial') // Don't show trial as an upgrade option
     });
