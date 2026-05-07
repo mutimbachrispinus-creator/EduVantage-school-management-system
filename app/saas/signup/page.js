@@ -260,6 +260,7 @@ export default function EduVantageSignup() {
               >
                 <option value="CBC">Kenya CBC (Competency-Based)</option>
                 <option value="BRITISH">British National Curriculum (IGCSE/A-Level)</option>
+                <option value="CAMBRIDGE">Cambridge International (Primary/IGCSE/A-Level)</option>
                 <option value="IB">International Baccalaureate (PYP/MYP/DP)</option>
               </select>
             </div>

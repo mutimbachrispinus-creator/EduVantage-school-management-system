@@ -12,7 +12,7 @@ const SLATE   = 'var(--lp-slate,   #64748B)';
 const VIBRANT = 'var(--lp-vibrant, #8B5CF6)';
 
 const ALL_FEATURES = [
-  { icon: '📊', title: 'CBC / IGCSE / IB Grading', desc: 'Auto-compute grades, levels & report cards for any curriculum.' },
+  { icon: '📊', title: 'CBC / Cambridge / IB Grading', desc: 'Auto-compute grades, levels & report cards for any curriculum.' },
   { icon: '💰', title: 'M-Pesa Auto-Reconciliation', desc: 'Real-time Paybill/Till sync — zero manual entry.' },
   { icon: '📅', title: 'AI Timetabling', desc: 'Conflict-free master timetables generated in minutes.' },
   { icon: '📲', title: 'Parent Portal & SMS', desc: 'Live fee balances, marks & instant absence alerts.' },
@@ -91,7 +91,7 @@ export default function LandingPage() {
             Stop Managing.<br/>Start <span className="text-gradient">Optimising.</span>
           </h1>
           <p className="hero-subtitle">
-            Experience the future of school management with EduVantage&apos;s unified AI platform. Instantly reconcile M-Pesa fees, generate multi-curriculum report cards (CBC, British, IB), and bridge the gap with parents—all in one place.
+            Experience the future of school management with EduVantage&apos;s unified AI platform. Instantly reconcile M-Pesa fees, generate multi-curriculum report cards (CBC, Cambridge, British, IB), and bridge the gap with parents—all in one place.
           </p>
           
           <div className="hero-actions">
@@ -180,7 +180,7 @@ export default function LandingPage() {
               <div className="mod-icon" style={{ background: '#EEF2FF', color: PRIMARY }}>📊</div>
               <div className="mod-content">
                 <h3>Multi-Curriculum Academic Analytics</h3>
-                <p>Don&apos;t wait weeks for report cards. Our grading engine instantly processes marks, generates beautiful termly reports, and ranks students perfectly—fully optimized for <strong>Kenya CBC</strong>, the <strong>British National Curriculum (IGCSE/A-Level)</strong>, and <strong>IB</strong> structures.</p>
+                <p>Don&apos;t wait weeks for report cards. Our grading engine instantly processes marks, generates beautiful termly reports, and ranks students perfectly—fully optimized for <strong>Kenya CBC</strong>, the <strong>Cambridge International</strong> system, <strong>British IGCSE/A-Level</strong>, and <strong>IB</strong> structures.</p>
                 <ul className="mod-features">
                   <li>Automated Dynamic Merit Lists</li>
                   <li>Subject-Level Trend Graphs for Parents</li>
@@ -286,7 +286,7 @@ export default function LandingPage() {
                  </thead>
                  <tbody>
                    <tr><td><strong>M-Pesa Fee Sync</strong></td><td>Manual Export/Import required</td><td className="hl">100% Automated & Real-Time</td></tr>
-                   <tr><td><strong>Global Analytics</strong></td><td>Slow, batch-processed</td><td className="hl">CBC, British & IB Report Cards</td></tr>
+                   <tr><td><strong>Global Analytics</strong></td><td>Slow, batch-processed</td><td className="hl">CBC, Cambridge, British & IB Reports</td></tr>
                    <tr><td><strong>Parent Experience</strong></td><td>Delayed SMS only</td><td className="hl">Live Portal + Auto-Receipts</td></tr>
                    <tr><td><strong>System Ecosystem</strong></td><td>Multiple disconnected logins</td><td className="hl">One unified multi-tenant app</td></tr>
                    <tr><td><strong>Speed & Offline</strong></td><td>Slow on poor connections</td><td className="hl">Lightning fast PWA Cache</td></tr>
@@ -325,7 +325,7 @@ export default function LandingPage() {
                   name="1 Term Free" 
                   price={0} 
                   desc="Experience the full platform for one term. No strings attached."
-                  features={['Full Platform Access', 'Bulk CSV Learner Uploads', 'M-Pesa Test Integration', 'CBC/British/IB Support', 'Standard Support']}
+                  features={['Full Platform Access', 'Bulk CSV Learner Uploads', 'M-Pesa Test Integration', 'CBC/Cambridge/British/IB Support', 'Standard Support']}
                 />
                 <PriceCard 
                   name="Basic" 
