@@ -152,6 +152,22 @@ export default function BulkLearnersPage() {
     }
   }
 
+  function matchGrade(input) {
+    if (!input) return '';
+    const clean = input.toUpperCase().trim().replace(/[^A-Z0-9]/g, '');
+    
+    // Fuzzy matching for Kindergarten & Common variations
+    if (clean.includes('KINDER')) return 'KINDERGARTEN';
+    if (clean === 'PP1' || clean === 'PREPRIMARY1') return 'PP1';
+    if (clean === 'PP2' || clean === 'PREPRIMARY2') return 'PP2';
+    
+    // Exact match in ALL_GRADES
+    const exact = ALL_GRADES.find(g => g.toUpperCase().replace(/[^A-Z0-9]/g, '') === clean);
+    if (exact) return exact;
+    
+    return input.toUpperCase(); // Fallback
+  }
+
   function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -177,7 +193,7 @@ export default function BulkLearnersPage() {
           adm: cols[0] || '',
           name: cols[1]?.toUpperCase() || '',
           dob: cols[2] || '',
-          grade: cols[3]?.toUpperCase() || bulkGrade || ALL_GRADES[0],
+          grade: matchGrade(cols[3]) || bulkGrade || ALL_GRADES[0],
           stream: cols[4]?.toUpperCase() || bulkStream || '',
           sex: cols[5]?.toUpperCase().startsWith('M') ? 'M' : 'F',
           parent: cols[6]?.toUpperCase() || '',

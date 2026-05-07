@@ -320,23 +320,23 @@ export default function LandingPage() {
             ) : (
               <>
                 <PriceCard 
+                  name="1 Term Free" 
+                  price={0} 
+                  desc="Experience the full platform for one term. No strings attached."
+                  features={['Full Platform Access', 'Bulk CSV Learner Uploads', 'M-Pesa Test Integration', 'CBC/British/IB Support', 'Standard Support']}
+                />
+                <PriceCard 
                   name="Basic" 
                   price="150" 
                   desc="Perfect for growing primary schools needing essential digital tools."
-                  features={['Learner Management', 'CBC Academic Grading', 'Basic Reporting', 'SMS Integration', 'Email Support']}
+                  features={['Everything in Free', 'Academic Analytics', 'M-Pesa Reconciliation', 'SMS Integration', 'Email Support']}
                 />
                 <PriceCard 
                   name="Premium" 
                   price="300" 
                   featured={true}
                   desc="Comprehensive control for top-tier institutions looking to automate."
-                  features={['Everything in Basic', 'Live M-Pesa Auto-Reconciliation', 'Bulk Payroll Engine', 'Advanced Data Analytics', 'Priority 24/7 Support', 'Custom Branding']}
-                />
-                <PriceCard 
-                  name="Enterprise" 
-                  price="Custom" 
-                  desc="For multi-campus networks & universities requiring scale."
-                  features={['Unlimited Institutions', 'Dedicated Database Instance', 'Custom API Integrations', 'On-Site Staff Training', 'White-Label Branding']}
+                  features={['Everything in Basic', 'Bulk Payroll Engine', 'Advanced Data Analytics', 'Priority 24/7 Support', 'Custom Branding']}
                 />
               </>
             )}
