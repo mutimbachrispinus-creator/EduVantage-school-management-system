@@ -60,6 +60,9 @@ export default function EduVantageSignup() {
   return (
     <div className="signup-page" style={{ background: '#F8FAFC', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div className="panel" style={{ maxWidth: 550, width: '100%', padding: 40, borderRadius: 24, boxShadow: '0 20px 50px rgba(15,23,42,0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 20 }}>
+          <button onClick={() => router.push('/')} className="btn-link" style={{ fontSize: 13, color: '#64748B', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
+        </div>
         <div style={{ textAlign: 'center', marginBottom: 35 }}>
           <img src="/ev-brand-v3.png" alt="EduVantage" style={{ width: 64, marginBottom: 16 }} />
           <h1 style={{ margin: 0, fontSize: 24, color: '#0F172A', fontWeight: 800 }}>Join the EduVantage Network</h1>
