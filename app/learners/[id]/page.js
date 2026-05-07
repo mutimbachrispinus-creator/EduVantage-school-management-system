@@ -37,6 +37,7 @@ export default function LearnerProfilePage() {
   const [marks,   setMarks]   = useState({});
   const [feeCfg,  setFeeCfg]  = useState({});
   const [gradCfg, setGradCfg] = useState(null);
+  const [extra,   setExtra]   = useState({});
   const [loading, setLoading] = useState(true);
   const [term,    setTerm]    = usePersistedState('paav_profile_term',   'T1');
   const [assess,  setAssess]  = usePersistedState('paav_profile_assess', 'mt1');
@@ -56,6 +57,7 @@ export default function LearnerProfilePage() {
               { type: 'get', key: 'paav6_marks'    },
               { type: 'get', key: 'paav6_feecfg'   },
               { type: 'get', key: 'paav8_grad'     },
+              { type: 'get', key: 'paav_profiles'  },
             ]}),
             signal: AbortSignal.timeout(15000)
           })
@@ -89,6 +91,8 @@ export default function LearnerProfilePage() {
         setMarks(  db.results[1]?.value || {});
         setFeeCfg( db.results[2]?.value || {});
         setGradCfg(db.results[3]?.value || null);
+        const profiles = db.results[4]?.value || {};
+        setExtra(profiles[found.adm] || {});
         setLoading(false);
       } catch (e) {
         console.error('[Profile] Load failed:', e);
@@ -181,7 +185,36 @@ export default function LearnerProfilePage() {
               <div key={k} style={{ display: 'flex', justifyContent: 'space-between',
                 padding: '6px 0', borderBottom: '1px dashed var(--border)', fontSize: 12.5 }}>
                 <span style={{ color: 'var(--muted)' }}>{k}</span>
-                <strong>{v}</strong>
+                <strong style={{ textAlign: 'right' }}>{v}</strong>
+              </div>
+            ))}
+
+            <h4 style={{ marginTop: 24, marginBottom: 12, fontSize: 13, color: 'var(--navy)', borderBottom: '2px solid var(--border)', paddingBottom: 4 }}>🏠 Extended Family & Transport</h4>
+            {[
+              ["Father's Name", extra.father || '—'],
+              ["Mother's Name", extra.mother || '—'],
+              ['Transport Means', extra.transport || '—'],
+              ['Physical Address', extra.address || learner.addr || '—'],
+              ['Tribe/Community', extra.tribe || '—'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between',
+                padding: '6px 0', borderBottom: '1px dashed var(--border)', fontSize: 12.5 }}>
+                <span style={{ color: 'var(--muted)' }}>{k}</span>
+                <strong style={{ textAlign: 'right' }}>{v}</strong>
+              </div>
+            ))}
+
+            <h4 style={{ marginTop: 24, marginBottom: 12, fontSize: 13, color: '#8B1A1A', borderBottom: '2px solid #8B1A1A', paddingBottom: 4 }}>🏥 Medical Profile</h4>
+            {[
+              ['Blood Group', extra.blood || learner.bloodGroup || '—'],
+              ['Medical Conditions', extra.medical || learner.medicalCondition || '—'],
+              ['Allergies', learner.allergies || '—'],
+              ['Emergency Contact', learner.emergencyContact || '—'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between',
+                padding: '6px 0', borderBottom: '1px dashed var(--border)', fontSize: 12.5 }}>
+                <span style={{ color: 'var(--muted)' }}>{k}</span>
+                <strong style={{ color: k === 'Medical Conditions' && v !== '—' ? '#8B1A1A' : 'inherit', textAlign: 'right' }}>{v}</strong>
               </div>
             ))}
           </div>

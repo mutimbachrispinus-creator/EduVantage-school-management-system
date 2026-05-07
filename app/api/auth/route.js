@@ -20,7 +20,7 @@ import {
   setSessionCookie, clearSessionCookie, getSession,
   ROLE_EMOJI, ROLE_COLOR,
 } from '@/lib/auth';
-import { kvGet, kvSet, ensureSchema, query, kvDeleteStaff } from '@/lib/db';
+import { kvGet, kvSet, ensureSchema, query, kvDeleteStaff, logAction } from '@/lib/db';
 import { sendCredentialsSMS } from '@/lib/sms-client';
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
@@ -484,6 +484,9 @@ async function handleRequestOtp(body, request) {
   // Store OTP in KV with 10 min expiry (simulated via timestamp)
   const otpData = { otp, expires: Date.now() + 10 * 60 * 1000 };
   await kvSet(`otp_reset_${username.toLowerCase()}`, otpData, tid);
+  
+  // Log the OTP request
+  await logAction({ tenant_id: tid, username: username.toLowerCase(), name: user.name, role: 'none' }, 'OTP Request', `OTP requested for password reset by ${username}`);
 
   // Send SMS
   const { sendSMS } = await import('@/lib/sms-client');
@@ -523,8 +526,11 @@ async function handleVerifyOtpReset({ username, otp, newPassword }, request) {
   await execute('UPDATE staff SET password = ? WHERE LOWER(username) = ? AND tenant_id = ?', [hashed, username.toLowerCase(), tid]);
 
   // Clear OTP
-  const { kvSet: kvSetInternal } = await import('@/lib/db');
+  const { kvSet: kvSetInternal, logAction: logActionInternal } = await import('@/lib/db');
   await kvSetInternal(`otp_reset_${username.toLowerCase()}`, null, tid);
+
+  // Log success
+  await logActionInternal({ tenant_id: tid, username: username.toLowerCase(), name: username, role: 'none' }, 'Password Reset', 'Password reset successful via OTP verification');
 
   return ok({ message: 'Password reset successful. You can now login.' });
 }

@@ -29,6 +29,7 @@ const ALL_FEATURES = [
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [stats, setStats] = useState({ schools: 0, learners: 0 });
+  const [plans, setPlans] = useState([]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -46,6 +47,7 @@ export default function LandingPage() {
         const res = await fetch('/api/saas/config?tenant=platform-master', { cache: 'no-store' });
         const data = await res.json();
         if (data.stats) setStats(data.stats);
+        if (data.plans) setPlans(data.plans);
       } catch (e) {}
     }
     loadStats();
@@ -304,25 +306,40 @@ export default function LandingPage() {
           </div>
 
           <div className="pricing-grid">
-            <PriceCard 
-              name="Basic" 
-              price="150" 
-              desc="Perfect for growing primary schools needing essential digital tools."
-              features={['Learner Management', 'CBC Academic Grading', 'Basic Reporting', 'SMS Integration', 'Email Support']}
-            />
-            <PriceCard 
-              name="Premium" 
-              price="300" 
-              featured={true}
-              desc="Comprehensive control for top-tier institutions looking to automate."
-              features={['Everything in Basic', 'Live M-Pesa Auto-Reconciliation', 'Bulk Payroll Engine', 'Advanced Data Analytics', 'Priority 24/7 Support', 'Custom Branding']}
-            />
-            <PriceCard 
-              name="Enterprise" 
-              price="Custom" 
-              desc="For multi-campus networks & universities requiring scale."
-              features={['Unlimited Institutions', 'Dedicated Database Instance', 'Custom API Integrations', 'On-Site Staff Training', 'White-Label Branding']}
-            />
+            {plans.length > 0 ? (
+              plans.map((p, idx) => (
+                <PriceCard 
+                  key={p.id}
+                  name={p.name} 
+                  price={p.price} 
+                  desc={p.cycle === 'termly' ? 'Billed per student per term.' : 'One-time setup fee.'}
+                  featured={idx === 1}
+                  features={p.features || ['Full Access', 'Dashboard', 'Support']}
+                />
+              ))
+            ) : (
+              <>
+                <PriceCard 
+                  name="Basic" 
+                  price="150" 
+                  desc="Perfect for growing primary schools needing essential digital tools."
+                  features={['Learner Management', 'CBC Academic Grading', 'Basic Reporting', 'SMS Integration', 'Email Support']}
+                />
+                <PriceCard 
+                  name="Premium" 
+                  price="300" 
+                  featured={true}
+                  desc="Comprehensive control for top-tier institutions looking to automate."
+                  features={['Everything in Basic', 'Live M-Pesa Auto-Reconciliation', 'Bulk Payroll Engine', 'Advanced Data Analytics', 'Priority 24/7 Support', 'Custom Branding']}
+                />
+                <PriceCard 
+                  name="Enterprise" 
+                  price="Custom" 
+                  desc="For multi-campus networks & universities requiring scale."
+                  features={['Unlimited Institutions', 'Dedicated Database Instance', 'Custom API Integrations', 'On-Site Staff Training', 'White-Label Branding']}
+                />
+              </>
+            )}
           </div>
           <p style={{ textAlign: 'center', marginTop: 40, opacity: 0.6, fontSize: 14, color: '#fff' }}>* Prices in KES per student per term. Annual discounts available.</p>
         </div>

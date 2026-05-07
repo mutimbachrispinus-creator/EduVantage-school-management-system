@@ -8,7 +8,8 @@ import { execute, query, batch } from '@/lib/db';
  */
 export async function POST(request) {
   try {
-    const { schoolName, adminName, adminUsername, adminPassword, phone, email, curriculum } = await request.json();
+    const { schoolName, adminName, adminUsername, adminPassword, phone, email, curriculum, plan } = await request.json();
+    const selectedPlan = plan || 'trial';
 
     if (!schoolName || !adminName || !adminUsername || !adminPassword) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -32,7 +33,11 @@ export async function POST(request) {
     // Prepare initial data
     const now = Math.floor(Date.now() / 1000);
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // 30-day trial
+    if (selectedPlan === 'trial') {
+      expiresAt.setDate(expiresAt.getDate() + 30); // 30-day trial
+    } else {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1); // 1-year subscription
+    }
 
     const schoolProfile = JSON.stringify({
       name: schoolName,
@@ -57,7 +62,7 @@ export async function POST(request) {
       // 1. Create Subscription (Trial)
       {
         sql: 'INSERT INTO subscriptions (tenant_id, plan, status, expires_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-        args: [tenantId, 'trial', 'active', expiresAt.toISOString(), now]
+        args: [tenantId, selectedPlan, 'active', expiresAt.toISOString(), now]
       },
       // 2. Create first Admin user
       {

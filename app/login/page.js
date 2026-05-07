@@ -353,7 +353,7 @@ function LoginContent() {
                 <>
                   <div className="field">
                     <label>6-Digit OTP</label>
-                    <input required value={resetForm.otp} onChange={e => RF('otp', e.target.value.replace(/\D/g, '').slice(0,6))} placeholder="000000" style={{ letterSpacing: 4, textAlign: 'center', fontSize: 20 }} />
+                    <input required autoFocus value={resetForm.otp} onChange={e => RF('otp', e.target.value.replace(/\D/g, '').slice(0,6))} placeholder="000000" style={{ letterSpacing: 4, textAlign: 'center', fontSize: 20 }} />
                   </div>
                   <div className="field">
                     <label>New Password</label>

@@ -112,6 +112,9 @@ export default function LearnersPage() {
                 🎓 Promote Learners
               </button>
             )}
+            <button className="btn btn-ghost btn-sm" onClick={() => router.push('/profile?tab=learner')}>
+              🔍 Advanced Directory
+            </button>
             <button className="btn btn-primary btn-sm" onClick={() => setModal('add')}>
               ➕ Add Learner
             </button>

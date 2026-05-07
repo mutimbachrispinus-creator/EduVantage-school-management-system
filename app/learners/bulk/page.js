@@ -7,16 +7,20 @@ export const runtime = 'edge';
  * ADM, Name, DOB, Grade, Stream, Parent Name, Phone
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAllGrades } from '@/lib/cbe';
-import { invalidateDB } from '@/lib/client-cache';
+import { getCachedDBMulti, invalidateDB } from '@/lib/client-cache';
 import { useProfile } from '@/app/PortalShell';
 
 export default function BulkLearnersPage() {
   const router = useRouter();
-  const { profile: school } = useProfile();
-  const ALL_GRADES = getAllGrades(school?.curriculum || 'CBC');
+  const { profile: school, user } = useProfile();
+  
+  // UseMemo for stable grades array
+  const ALL_GRADES = useMemo(() => {
+    return getAllGrades(school?.curriculum || 'CBC');
+  }, [school?.curriculum]);
 
   const EMPTY_ROW = { 
     adm: '', name: '', dob: '', grade: ALL_GRADES[0] || 'GRADE 1', sex: 'F', age: '', 
@@ -40,27 +44,24 @@ export default function BulkLearnersPage() {
   }, [ALL_GRADES, bulkGrade]);
 
   useEffect(() => {
-    async function check() {
-      const res = await fetch('/api/auth');
-      const auth = await res.json();
-      if (!auth.ok || !['admin','teacher','jss_teacher','senior_teacher'].includes(auth.user?.role)) {
+    if (!user) return;
+    
+    async function init() {
+      // 1. Fast Auth Check using existing session
+      if (!['admin','teacher','jss_teacher','senior_teacher','super-admin'].includes(user.role)) {
         router.push('/'); return;
       }
-      setIsAdmin(auth.user?.role === 'admin');
+      setIsAdmin(user.role === 'admin' || user.role === 'super-admin');
 
-      const dbRes = await fetch('/api/db', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [{ type: 'get', key: 'paav6_learners' }, { type: 'get', key: 'paav7_streams' }] })
-      });
-      const dbData = await dbRes.json();
-      setLearners(dbData.results[0]?.value || []);
-      setStreams(dbData.results[1]?.value || []);
-
+      // 2. High-Speed Cache Data retrieval
+      const dbData = await getCachedDBMulti(['paav6_learners', 'paav7_streams']);
+      setLearners(dbData.paav6_learners || []);
+      setStreams(dbData.paav7_streams || []);
+      
       setLoading(false);
     }
-    check();
-  }, [router]);
+    init();
+  }, [user, router]);
 
   function calculateAge(dobString) {
     if (!dobString) return '';
@@ -151,13 +152,13 @@ export default function BulkLearnersPage() {
     }
   }
 
-  if (loading) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading bulk registration...</div>;
+  // Removed: if (loading) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading bulk registration...</div>;
 
   return (
     <div className="page on">
       <div className="page-hdr">
         <div>
-          <h2>🎓 Bulk Add Learners</h2>
+          <h2>🎓 Bulk Add Learners {loading && <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)', marginLeft: 10 }}>Syncing...</span>}</h2>
           <p>Fill the grid below to register multiple students at once</p>
         </div>
         <div className="page-hdr-acts">

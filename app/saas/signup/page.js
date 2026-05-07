@@ -1,6 +1,6 @@
 'use client';
 export const runtime = 'edge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function EduVantageSignup() {
@@ -8,6 +8,18 @@ export default function EduVantageSignup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [plans, setPlans] = useState([]);
+
+  useEffect(() => {
+    async function loadPlans() {
+      try {
+        const res = await fetch('/api/saas/config?tenant=platform-master');
+        const data = await res.json();
+        if (data.plans) setPlans(data.plans);
+      } catch (e) {}
+    }
+    loadPlans();
+  }, []);
 
   const [form, setForm] = useState({
     schoolName: '',
@@ -76,21 +88,36 @@ export default function EduVantageSignup() {
 
             <div className="form-group">
               <label>Select Plan</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div 
-                  onClick={() => setForm({...form, plan: 'trial'})}
-                  style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === 'trial' ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === 'trial' ? '#EFF6FF' : '#fff' }}
-                >
-                  <div style={{ fontWeight: 800, fontSize: 14 }}>30-Day Trial</div>
-                  <div style={{ fontSize: 11, opacity: 0.7 }}>Free full access</div>
-                </div>
-                <div 
-                  onClick={() => setForm({...form, plan: 'premium'})}
-                  style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === 'premium' ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === 'premium' ? '#EFF6FF' : '#fff' }}
-                >
-                  <div style={{ fontWeight: 800, fontSize: 14 }}>Premium Plan</div>
-                  <div style={{ fontSize: 11, opacity: 0.7 }}>KES 10,000 / Year</div>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: plans.length > 2 ? '1fr 1fr 1fr' : '1fr 1fr', gap: 12 }}>
+                {plans.length > 0 ? (
+                  plans.map(p => (
+                    <div 
+                      key={p.id}
+                      onClick={() => setForm({...form, plan: p.id})}
+                      style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === p.id ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === p.id ? '#EFF6FF' : '#fff', transition: '0.2s' }}
+                    >
+                      <div style={{ fontWeight: 800, fontSize: 13 }}>{p.name}</div>
+                      <div style={{ fontSize: 10, opacity: 0.7 }}>{p.price > 0 ? `KES ${p.price} / ${p.cycle}` : 'Free Access'}</div>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div 
+                      onClick={() => setForm({...form, plan: 'trial'})}
+                      style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === 'trial' ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === 'trial' ? '#EFF6FF' : '#fff' }}
+                    >
+                      <div style={{ fontWeight: 800, fontSize: 14 }}>30-Day Trial</div>
+                      <div style={{ fontSize: 11, opacity: 0.7 }}>Free full access</div>
+                    </div>
+                    <div 
+                      onClick={() => setForm({...form, plan: 'premium'})}
+                      style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === 'premium' ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === 'premium' ? '#EFF6FF' : '#fff' }}
+                    >
+                      <div style={{ fontWeight: 800, fontSize: 14 }}>Premium Plan</div>
+                      <div style={{ fontSize: 11, opacity: 0.7 }}>KES 10,000 / Year</div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

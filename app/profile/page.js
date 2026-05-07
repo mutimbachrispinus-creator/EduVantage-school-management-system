@@ -16,7 +16,13 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('me');
+  const [tab, setTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('tab') || 'me';
+    }
+    return 'me';
+  });
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -236,6 +242,12 @@ export default function ProfilePage() {
 
   const filteredStaff = allStaff.filter(s => !staffQ || s.name?.toLowerCase().includes(staffQ.toLowerCase()) || s.role?.toLowerCase().includes(staffQ.toLowerCase()));
   const filteredLearners = learnerQ.length >= 2 ? allLearners.filter(l => l.name?.toLowerCase().includes(learnerQ.toLowerCase()) || l.adm?.toLowerCase().includes(learnerQ.toLowerCase())) : [];
+
+  useEffect(() => {
+    if ((tab === 'learner' || tab === 'bulk') && allLearners.length === 0 && user) {
+      handleTabChange(tab);
+    }
+  }, [tab, allLearners.length, user]);
 
   const handleTabChange = async (newTab) => {
     setTab(newTab);
@@ -476,7 +488,7 @@ export default function ProfilePage() {
                             <td style={{ fontWeight: 600 }}>{l.name}</td>
                             <td>{l.grade}</td>
                             <td>{l.stream || '—'}</td>
-                            <td><button className="btn btn-sm btn-maroon" onClick={() => setSelectedLearner(l)}>View</button></td>
+                            <td><button className="btn btn-sm btn-maroon" onClick={() => router.push(`/learners/${encodeURIComponent(l.adm)}`)}>View Profile</button></td>
                           </tr>
                         ))}
                       </tbody>

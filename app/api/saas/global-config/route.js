@@ -18,6 +18,14 @@ export async function GET() {
     platformMotto: 'The Future of Education Management',
     smsGateway: { apiKey: '', username: '', senderId: '' },
     pricing: { basic: 25000, premium: 50000 },
+    plans: [
+      { id: 'trial', name: '30-Day Trial', price: 0, cycle: 'once', features: ['All Modules', 'Support'] },
+      { id: 'basic', name: 'Basic', price: 150, cycle: 'termly', features: ['Academic Grading', 'SMS alerts'] },
+      { id: 'premium', name: 'Premium', price: 300, cycle: 'termly', features: ['Everything in Basic', 'M-Pesa Sync', 'Finance'] }
+    ],
+    platformPayments: [
+      { type: 'Paybill', name: 'M-Pesa Subscription', shortcode: '400200', account: 'EDUVANTAGE' }
+    ],
     maintenanceMode: false
   }, MASTER_TENANT);
 

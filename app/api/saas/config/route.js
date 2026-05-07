@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, kvGet } from '@/lib/db';
 
 /**
  * GET /api/saas/config?tenant=xxx
@@ -54,10 +54,17 @@ export async function GET(request) {
     
     const profile = { ...defaultProfile, ...(profileData || {}) };
 
+    let plans = [];
+    if (isMaster) {
+      const gConf = await kvGet('paav_global_config', {}, 'platform-master');
+      if (gConf && gConf.plans) plans = gConf.plans;
+    }
+
     const response = NextResponse.json({
       tenantId,
       profile,
       stats,
+      plans,
       announcement: config.paav_announcement?.text || 'Welcome to the School Network.',
       heroImg: config.paav_hero_img || '',
       theme: config.paav_theme || { 

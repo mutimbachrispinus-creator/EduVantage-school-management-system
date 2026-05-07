@@ -14,6 +14,7 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('overview');
   const [showConfig, setShowConfig] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const [editSchool, setEditSchool] = useState(null);
   const [paybillSchool, setPaybillSchool] = useState(null);
   const [paybills, setPaybills] = useState([]);
@@ -24,6 +25,8 @@ export default function SuperAdminPage() {
     platformName: '', platformMotto: '',
     smsGateway: { apiKey: '', username: '', senderId: '' },
     pricing: { basic: 25000, premium: 50000 },
+    plans: [],
+    platformPayments: [],
     maintenanceMode: false
   });
   const [announcement, setAnnouncement] = useState({ message: '', priority: 'normal', active: false });
@@ -170,6 +173,7 @@ export default function SuperAdminPage() {
       <div className="tabs" style={{ margin: '0 40px 30px', display: 'flex', gap: 10 }}>
         <TabBtn icon="📊" label="Overview" on={tab === 'overview'} onClick={() => setTab('overview')} />
         <TabBtn icon="🏫" label="Institutions" on={tab === 'schools'} onClick={() => setTab('schools')} />
+        <TabBtn icon="💳" label="Plans & Billing" on={tab === 'billing'} onClick={() => setTab('billing')} />
         <TabBtn icon="⚙️" label="Global Settings" on={tab === 'settings'} onClick={() => setTab('settings')} />
         <TabBtn icon="📢" label="Broadcasts" on={tab === 'broadcast'} onClick={() => setTab('broadcast')} />
         <TabBtn icon="🕵️" label="Audit Logs" on={tab === 'audit'} onClick={() => setTab('audit')} />
@@ -222,7 +226,10 @@ export default function SuperAdminPage() {
 
         {tab === 'schools' && (
           <div className="panel">
-            <div className="panel-hdr"><h3>🏫 All Institutional Partitions</h3></div>
+            <div className="panel-hdr" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>🏫 All Institutional Partitions</h3>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowRegister(true)}>+ Register School</button>
+            </div>
             <div className="tbl-wrap">
               <table>
                 <thead>
@@ -251,6 +258,84 @@ export default function SuperAdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {tab === 'billing' && (
+          <div className="sg sg2">
+            <div className="panel">
+              <div className="panel-hdr"><h3>📦 Subscription Plans</h3></div>
+              <div className="panel-body">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {(globalConfig.plans || []).map((plan, i) => (
+                    <div key={i} style={{ padding: 16, background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <input style={{ fontWeight: 800, border: 'none', background: 'transparent', width: '60%' }} value={plan.name} onChange={e => {
+                          const newPlans = [...globalConfig.plans]; newPlans[i].name = e.target.value; setGlobalConfig({...globalConfig, plans: newPlans});
+                        }} />
+                        <button className="btn btn-sm btn-ghost" style={{ color: '#EF4444' }} onClick={() => {
+                          const newPlans = globalConfig.plans.filter((_, idx) => idx !== i); setGlobalConfig({...globalConfig, plans: newPlans});
+                        }}>Remove</button>
+                      </div>
+                      <div className="field-row">
+                        <div className="field"><label>Price (KES)</label><input type="number" value={plan.price} onChange={e => {
+                          const newPlans = [...globalConfig.plans]; newPlans[i].price = e.target.value; setGlobalConfig({...globalConfig, plans: newPlans});
+                        }} /></div>
+                        <div className="field">
+                          <label>Cycle</label>
+                          <select value={plan.cycle} onChange={e => {
+                            const newPlans = [...globalConfig.plans]; newPlans[i].cycle = e.target.value; setGlobalConfig({...globalConfig, plans: newPlans});
+                          }}>
+                            <option value="once">One-Time</option>
+                            <option value="termly">Termly</option>
+                            <option value="annual">Annual</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button className="btn btn-ghost" style={{ border: '1px dashed #CBD5E1' }} onClick={() => setGlobalConfig({...globalConfig, plans: [...(globalConfig.plans || []), { id: 'new_'+Date.now(), name: 'New Plan', price: 0, cycle: 'termly', features: [] }] })}>+ Add New Plan</button>
+                </div>
+                <button className="btn btn-primary" style={{ width: '100%', marginTop: 20 }} onClick={saveGlobalConfig} disabled={saving}>Save Plans</button>
+              </div>
+            </div>
+
+            <div className="panel">
+              <div className="panel-hdr"><h3>💳 Platform Payment Methods</h3></div>
+              <div className="panel-body">
+                <p style={{ fontSize: 12, color: SLATE, marginBottom: 20 }}>These methods will be shown to schools when they need to pay their subscription fees.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {(globalConfig.platformPayments || []).map((pay, i) => (
+                    <div key={i} style={{ padding: 16, background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <select value={pay.type} onChange={e => {
+                          const newPay = [...globalConfig.platformPayments]; newPay[i].type = e.target.value; setGlobalConfig({...globalConfig, platformPayments: newPay});
+                        }} style={{ fontWeight: 800, border: 'none', background: 'transparent' }}>
+                          <option value="Paybill">M-Pesa Paybill</option>
+                          <option value="Till">M-Pesa Till</option>
+                          <option value="Bank">Bank Transfer</option>
+                        </select>
+                        <button className="btn btn-sm btn-ghost" style={{ color: '#EF4444' }} onClick={() => {
+                          const newPay = globalConfig.platformPayments.filter((_, idx) => idx !== i); setGlobalConfig({...globalConfig, platformPayments: newPay});
+                        }}>Remove</button>
+                      </div>
+                      <div className="field-row">
+                        <div className="field"><label>Label</label><input value={pay.name} onChange={e => {
+                          const newPay = [...globalConfig.platformPayments]; newPay[i].name = e.target.value; setGlobalConfig({...globalConfig, platformPayments: newPay});
+                        }} /></div>
+                        <div className="field"><label>{pay.type === 'Bank' ? 'Account No' : 'Shortcode'}</label><input value={pay.shortcode || pay.account} onChange={e => {
+                          const newPay = [...globalConfig.platformPayments]; 
+                          if (pay.type === 'Bank') newPay[i].account = e.target.value; else newPay[i].shortcode = e.target.value;
+                          setGlobalConfig({...globalConfig, platformPayments: newPay});
+                        }} /></div>
+                      </div>
+                    </div>
+                  ))}
+                  <button className="btn btn-ghost" style={{ border: '1px dashed #CBD5E1' }} onClick={() => setGlobalConfig({...globalConfig, platformPayments: [...(globalConfig.platformPayments || []), { type: 'Paybill', name: 'New Method', shortcode: '' }] })}>+ Add Payment Method</button>
+                </div>
+                <button className="btn btn-teal" style={{ width: '100%', marginTop: 20 }} onClick={saveGlobalConfig} disabled={saving}>Save Payment Methods</button>
+              </div>
             </div>
           </div>
         )}
@@ -366,6 +451,63 @@ export default function SuperAdminPage() {
           ))}
           <button className="btn btn-ghost btn-sm" style={{width:'100%', border:'1px dashed #E2E8F0'}} onClick={() => setPaybills([...paybills, {id: Date.now(), name:'', shortcode:'', passkey:'', type:'Paybill'}])}>+ Add Account</button>
         </div><div className="modal-ftr"><button className="btn btn-ghost" onClick={() => setPaybillSchool(null)}>Cancel</button><button className="btn btn-success" onClick={savePaybills} disabled={saving}>{saving ? 'Saving...' : 'Lock M-Pesa Config'}</button></div></div></div>
+      )}
+
+      {showRegister && (
+        <div className="modal-overlay open">
+          <div className="modal" style={{ maxWidth: 500 }}>
+            <div className="modal-hdr"><h3>🚀 Register New Institution</h3><button className="modal-close" onClick={() => setShowRegister(false)}>✕</button></div>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setSaving(true);
+              const fd = new FormData(e.target);
+              const payload = Object.fromEntries(fd);
+              try {
+                const res = await fetch('/api/saas/signup', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.ok) {
+                  setShowRegister(false);
+                  load();
+                  alert(`School registered! Login at /login?tenant=${data.tenantId}`);
+                } else alert(data.error);
+              } catch(e) { alert(e.message); }
+              finally { setSaving(false); }
+            }}>
+              <div className="modal-body">
+                <div className="field"><label>School Name</label><input required name="schoolName" placeholder="e.g. Hilltop Academy" /></div>
+                <div className="field-row">
+                  <div className="field">
+                    <label>Plan</label>
+                    <select name="plan">
+                      {(globalConfig.plans || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Curriculum</label>
+                    <select name="curriculum">
+                      <option value="CBC">Kenya CBC</option>
+                      <option value="BRITISH">British Curriculum</option>
+                      <option value="IB">International Baccalaureate</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="field-row">
+                  <div className="field"><label>Admin Username</label><input required name="adminUsername" placeholder="principal.admin" /></div>
+                  <div className="field"><label>Admin Password</label><input required name="adminPassword" type="password" placeholder="••••••••" /></div>
+                </div>
+                <div className="field"><label>Admin Full Name</label><input required name="adminName" placeholder="Full Name" /></div>
+              </div>
+              <div className="modal-ftr">
+                <button type="button" className="btn btn-ghost" onClick={() => setShowRegister(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Registering...' : 'Complete Onboarding'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       <style jsx>{`
