@@ -352,6 +352,10 @@ export default function BulkLearnersPage() {
             📁 Upload CSV
             <input type="file" accept=".csv" onChange={handleFileUpload} style={{ display: 'none' }} />
           </label>
+          <label className="btn btn-gold btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            🔄 Sync/Update
+            <input type="file" accept=".csv" onChange={handleUpdateDetails} style={{ display: 'none' }} />
+          </label>
           <button className="btn btn-ghost btn-sm" onClick={() => setRows([...rows, ...Array(10).fill(null).map(() => ({...EMPTY_ROW}))])}>➕ Add 10 Rows</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={busy}>
             {busy ? 'Saving...' : '💾 Save All Learners'}
@@ -389,10 +393,6 @@ export default function BulkLearnersPage() {
           <button className="btn btn-ghost btn-sm" onClick={applyGradeToAll} title="Apply this grade and stream to all existing rows">
             🪄 Apply Grade/Stream to All
           </button>
-          <label className="btn btn-sm btn-gold" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            🔄 Sync/Update via CSV
-            <input type="file" accept=".csv" onChange={handleUpdateDetails} style={{ display: 'none' }} />
-          </label>
 
           <div style={{ borderLeft: '1px solid var(--border)', height: 30, margin: '0 8px' }}></div>
 
