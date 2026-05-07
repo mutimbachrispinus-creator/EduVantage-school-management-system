@@ -10,7 +10,7 @@
 name = "eduvantage"
 compatibility_date = "2024-04-03"
 compatibility_flags = [ "nodejs_compat" ]
-# pages_build_output = ".vercel/output/static"
+pages_build_output = ".vercel/output/static"
 
 # NOTE: Set ALL secrets in Cloudflare Dashboard:
 #   Pages → eduvantage-portal → Settings → Environment Variables
