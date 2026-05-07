@@ -252,7 +252,7 @@ function DashboardContent() {
                     return (
                       <div key={label} style={{ marginBottom: 14 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
-                          <span style={{ fontWeight: 600 }}>{title || label}</span>
+                          <span style={{ fontWeight: 600 }}>{label}</span>
                           <span style={{ color: 'var(--muted)' }}>{fmtK(groupPaid)} / {fmtK(groupExp)}</span>
                         </div>
                         <div style={{ height: 9, background: '#EEF2FF', borderRadius: 5, overflow: 'hidden' }}>
