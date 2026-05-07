@@ -134,6 +134,31 @@ export default function BulkLearnersPage() {
     setShowPicker(false);
   }
 
+  function deduplicateRows() {
+    const valid = rows.filter(r => r.name && r.adm);
+    const seen = new Map();
+    const merged = [];
+    let count = 0;
+    
+    for (const r of valid) {
+      const key = `${r.name.toUpperCase()?.trim()}|${r.grade}`;
+      if (seen.has(key)) {
+        count++;
+        continue; 
+      }
+      seen.set(key, true);
+      merged.push(r);
+    }
+    
+    if (count > 0) {
+      if (confirm(`🔍 Found ${count} duplicates in the current list. Merge them into unique records?`)) {
+        setRows([...merged, ...Array(Math.max(5, 20 - merged.length)).fill(null).map(() => ({...EMPTY_ROW, grade: bulkGrade}))]);
+      }
+    } else {
+      alert('✅ No duplicates found in the current grid.');
+    }
+  }
+
   async function handleSave() {
     const validRows = rows.filter(r => r.adm && r.name && r.grade);
     if (validRows.length === 0) { alert('Please fill at least one row (ADM, Name, Grade required)'); return; }
@@ -389,6 +414,9 @@ export default function BulkLearnersPage() {
           </button>
           <button className="btn btn-primary btn-sm" onClick={loadExistingGrade} title="Load all existing learners in this grade for editing">
             ✏️ Load Class for Editing
+          </button>
+          <button className="btn btn-gold btn-sm" onClick={deduplicateRows} title="Instantly find and merge students with the same name in this list">
+            🪄 Deduplicate & Merge
           </button>
           <button className="btn btn-ghost btn-sm" onClick={applyGradeToAll} title="Apply this grade and stream to all existing rows">
             🪄 Apply Grade/Stream to All
