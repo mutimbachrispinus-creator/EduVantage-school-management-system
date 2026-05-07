@@ -19,6 +19,7 @@ export default function SuperAdminPage() {
   const [paybillSchool, setPaybillSchool] = useState(null);
   const [paybills, setPaybills] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [search, setFilter] = useState('');
 
   // Global Config State
   const [globalConfig, setGlobalConfig] = useState({
@@ -210,14 +211,17 @@ export default function SuperAdminPage() {
                 </div>
               </div>
               <div className="panel">
-                <div className="panel-hdr"><h3>🔔 Network Activity</h3></div>
+                <div className="panel-hdr"><h3>👥 Largest Populations</h3></div>
                 <div className="panel-body">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                    <div className="activity-item"><strong>New Signup:</strong> Bright Future Academy joined.</div>
-                    <div className="activity-item"><strong>Payment:</strong> St. Peters Academy renewed Premium.</div>
-                    <div className="activity-item"><strong>Alert:</strong> St. Marys nearing data limit.</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {[...schools].sort((a,b) => b.students - a.students).slice(0, 5).map(s => (
+                      <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#F8FAFC', borderRadius: 10 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>{s.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: M }}>{s.students} <span style={{ fontSize: 10, color: SLATE }}>Students</span></div>
+                      </div>
+                    ))}
                   </div>
-                  <button className="btn btn-primary" style={{ width: '100%', marginTop: 25 }} onClick={() => setTab('broadcast')}>Broadcast Message</button>
+                  <button className="btn btn-ghost" style={{ width: '100%', marginTop: 15 }} onClick={() => setTab('schools')}>View All Schools</button>
                 </div>
               </div>
             </div>
@@ -227,8 +231,16 @@ export default function SuperAdminPage() {
         {tab === 'schools' && (
           <div className="panel">
             <div className="panel-hdr" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3>🏫 All Institutional Partitions</h3>
-              <button className="btn btn-primary btn-sm" onClick={() => setShowRegister(true)}>+ Register School</button>
+              <div>
+                <h3>🏫 Institutional Registry</h3>
+                <input 
+                  placeholder="Filter by name or ID..." 
+                  value={search} 
+                  onChange={e => setFilter(e.target.value)}
+                  style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 13, width: 250 }}
+                />
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowRegister(true)}>+ Register Institution</button>
             </div>
             <div className="tbl-wrap">
               <table>
@@ -238,7 +250,7 @@ export default function SuperAdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {schools.map(s => (
+                  {schools.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.id.toLowerCase().includes(search.toLowerCase())).map(s => (
                     <tr key={s.id}>
                       <td><div style={{ fontWeight: 800 }}>{s.name}</div><div style={{ fontSize: 10, color: SLATE }}>ID: {s.id}</div></td>
                       <td><span style={{ fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, background: '#F1F5F9' }}>{s.curriculum}</span></td>
