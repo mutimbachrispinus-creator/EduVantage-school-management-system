@@ -85,6 +85,14 @@ export default function BulkLearnersPage() {
       row.age = calculateAge(val);
     }
     
+    // Auto-prefill if ADM matches existing learner
+    if (field === 'adm' && val) {
+      const existing = learners.find(l => l.adm.trim() === val.trim());
+      if (existing) {
+        row = { ...row, ...existing };
+      }
+    }
+    
     newRows[idx] = row;
     setRows(newRows);
   }
