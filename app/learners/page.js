@@ -101,23 +101,47 @@ export default function LearnersPage() {
         <div className="page-hdr">
           <div>
             <h2>🎓 Learners</h2>
-            <p>All enrolled learners — {curr.name}</p>
+            <p>All enrolled learners — {curr.name} {school.learnerLimit && (
+              <span style={{ 
+                marginLeft: 10, 
+                fontSize: 11, 
+                fontWeight: 800, 
+                padding: '3px 10px', 
+                borderRadius: 20, 
+                background: learners.length >= school.learnerLimit ? '#FEE2E2' : learners.length >= school.learnerLimit * 0.9 ? '#FEF3C7' : '#E2E8F0',
+                color: learners.length >= school.learnerLimit ? '#991B1B' : learners.length >= school.learnerLimit * 0.9 ? '#92400E' : '#475569',
+                border: '1.5px solid currentColor'
+              }}>
+                Usage: {learners.length} / {school.learnerLimit}
+              </span>
+            )}</p>
           </div>
           <div className="page-hdr-acts">
             <button className="btn btn-ghost btn-sm" onClick={() => router.push('/learners/bulk')}>
               📋 Bulk Add
             </button>
             {user?.role === 'admin' && (
-              <button className="btn btn-gold btn-sm" onClick={() => setModal('promote')}>
-                🎓 Promote Learners
-              </button>
+              <>
+                <button className="btn btn-ghost btn-sm" onClick={() => router.push('/learners/recycle-bin')}>
+                  🗑️ Recycle Bin
+                </button>
+                <button className="btn btn-gold btn-sm" onClick={() => setModal('promote')}>
+                  🎓 Promote Learners
+                </button>
+              </>
             )}
             <button className="btn btn-ghost btn-sm" onClick={() => router.push('/profile?tab=learner')}>
               🔍 Advanced Directory
             </button>
-            <button className="btn btn-primary btn-sm" onClick={() => setModal('add')}>
-              ➕ Add Learner
-            </button>
+            {school.learnerLimit && (learners.length >= school.learnerLimit) ? (
+              <button className="btn btn-gold btn-sm" onClick={() => setModal('upgrade')}>
+                🚀 Request Upgrade
+              </button>
+            ) : (
+              <button className="btn btn-primary btn-sm" onClick={() => setModal('add')}>
+                ➕ Add Learner
+              </button>
+            )}
           </div>
         </div>
 
@@ -246,8 +270,41 @@ export default function LearnersPage() {
       {/* ── Modals ── */}
       {modal === 'add'     && <AddLearnerModal     curr={curr} isAdmin={user.role === 'admin'} streams={streams} onClose={() => { setModal(null); load(); }} />}
       {modal === 'promote' && <PromoteLearnersModal curr={curr} onClose={() => { setModal(null); load(); }} learners={learners} />}
+      {modal === 'upgrade' && <UpgradeModal onClose={() => setModal(null)} school={school} currentCount={learners.length} />}
       {modal?.type === 'edit' && <EditLearnerModal curr={curr} isAdmin={user.role === 'admin'} streams={streams} onClose={() => { setModal(null); load(); }} learner={modal.learner} />}
     </>
+  );
+}
+
+/* ─── Upgrade Modal ────────────────────────────────────────────────────── */
+function UpgradeModal({ onClose, school, currentCount }) {
+  return (
+    <ModalOverlay title="🚀 Request Capacity Upgrade" onClose={onClose}>
+      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+        <div style={{ fontSize: 50, marginBottom: 15 }}>📈</div>
+        <h3 style={{ color: 'var(--navy)', marginBottom: 10 }}>Reached Your Limit!</h3>
+        <p style={{ color: 'var(--muted)', lineHeight: 1.6, marginBottom: 20 }}>
+          Your institution is currently managing <strong>{currentCount}</strong> students, which is your current paid limit. 
+          To add more students, you'll need to upgrade your capacity tier.
+        </p>
+        
+        <div className="note-box" style={{ background: '#F0F9FF', borderLeft: '3px solid #0369A1', textAlign: 'left', marginBottom: 25 }}>
+          <strong>Next Steps:</strong>
+          <ol style={{ paddingLeft: 20, marginTop: 8, fontSize: 13 }}>
+            <li>Contact our support team via WhatsApp or Email.</li>
+            <li>Specify the new student capacity you require.</li>
+            <li>Once confirmed, your limit will be updated instantly.</li>
+          </ol>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <a href="https://wa.me/254792656579" target="_blank" className="btn btn-primary btn-sm" style={{ textDecoration: 'none', background: '#25D366', border: 'none' }}>
+            💬 WhatsApp Support
+          </a>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Maybe Later</button>
+        </div>
+      </div>
+    </ModalOverlay>
   );
 }
 
@@ -287,10 +344,17 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
       medicalCondition: form.medicalCondition, emergencyContact: form.emergencyContact,
     });
 
-    await fetch('/api/db', {
+    const saveRes = await fetch('/api/db', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requests: [{ type: 'set', key: 'paav6_learners', value: list }] }),
     });
+    const saveData = await saveRes.json();
+    if (saveData.results?.[0]?.error) {
+      setErr(saveData.results[0].error);
+      setBusy(false);
+      return;
+    }
+
     setBusy(false);
     onClose();
   }
@@ -315,7 +379,7 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
       {err && <div className="alert alert-err show">{err}</div>}
       <div className="field-row">
         <div className="field"><label>Full Name</label>
-          <input value={form.name} onChange={e => F('name', e.target.value)} /></div>
+          <input autoComplete="off" value={form.name} onChange={e => F('name', e.target.value)} /></div>
         <div className="field"><label>Grade</label>
           <select value={form.grade} onChange={e => F('grade', e.target.value)}>
             <option value="">Select</option>
@@ -324,12 +388,12 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
       </div>
       <div className="field-row">
         <div className="field"><label>Date of Birth</label>
-          <input type="date" value={form.dob} onChange={e => {
+          <input autoComplete="off" type="date" value={form.dob} onChange={e => {
             const dob = e.target.value;
             setForm(f => ({ ...f, dob, age: calculateAge(dob) }));
           }} /></div>
         <div className="field"><label>Adm No (auto if blank)</label>
-          <input value={form.adm} onChange={e => F('adm', e.target.value)} placeholder="e.g. 2026001" /></div>
+          <input autoComplete="off" value={form.adm} onChange={e => F('adm', e.target.value)} placeholder="e.g. 2026001" /></div>
       </div>
       <div className="field-row">
         <div className="field"><label>Gender</label>
@@ -337,7 +401,7 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
             <option value="F">Female</option><option value="M">Male</option>
           </select></div>
         <div className="field"><label>Age</label>
-          <input type="number" value={form.age} onChange={e => F('age', e.target.value)} min="3" max="20" /></div>
+          <input autoComplete="off" type="number" value={form.age} onChange={e => F('age', e.target.value)} min="3" max="20" /></div>
         <div className="field">
           <label>Stream</label>
           <select value={form.stream} onChange={e => F('stream', e.target.value)}>
@@ -350,14 +414,14 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
       </div>
       <div className="field-row">
         <div className="field"><label>Parent / Guardian</label>
-          <input value={form.parent} onChange={e => F('parent', e.target.value)} /></div>
+          <input autoComplete="off" value={form.parent} onChange={e => F('parent', e.target.value)} /></div>
         <div className="field"><label>Phone</label>
-          <input value={form.phone} onChange={e => F('phone', e.target.value)} type="tel" placeholder="07XXXXXXXX" /></div>
+          <input autoComplete="off" value={form.phone} onChange={e => F('phone', e.target.value)} type="tel" placeholder="07XXXXXXXX" /></div>
       </div>
       <div className="field"><label>Parent Email (for receipts/reports)</label>
-        <input value={form.parentEmail} onChange={e => F('parentEmail', e.target.value)} type="email" placeholder="parent@example.com" /></div>
+        <input autoComplete="off" value={form.parentEmail} onChange={e => F('parentEmail', e.target.value)} type="email" placeholder="parent@example.com" /></div>
       <div className="field"><label>Address</label>
-        <input value={form.addr} onChange={e => F('addr', e.target.value)} /></div>
+        <input autoComplete="off" value={form.addr} onChange={e => F('addr', e.target.value)} /></div>
 
       <div style={{ padding: '10px 0', borderTop: '1.5px solid var(--border)', marginTop: 10 }}>
         <h4 style={{ fontSize: 12, color: 'var(--navy)', marginBottom: 8 }}>🏥 Medical Records (Confidential)</h4>

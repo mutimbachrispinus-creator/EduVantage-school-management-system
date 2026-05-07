@@ -8,8 +8,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   promotionStatus,
-  JSS_SCALE,
-  PRIMARY_SCALE,
 } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 import { useSchoolProfile } from '@/lib/school-profile';
@@ -35,7 +33,7 @@ export default function ReportCardPage() {
 
   const curr = getCurriculum(school?.curriculum || 'CBC');
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
-  const { DEFAULT_SUBJECTS, gInfo, maxPts } = curr;
+  const { DEFAULT_SUBJECTS, gInfo, maxPts, getScale, getGradeColors } = curr;
   const isJSSGrade = curr.isJSSGrade || curr.isSecondary || (() => false);
 
   useEffect(() => {
@@ -74,7 +72,7 @@ export default function ReportCardPage() {
   if (!learner) return null;
 
   const subjects  = DEFAULT_SUBJECTS[learner.grade] || [];
-  const scale     = isJSSGrade(learner.grade) ? JSS_SCALE : PRIMARY_SCALE;
+  const scale     = getScale ? getScale(learner.grade, gradCfg) : [];
   const annualFee = feeCfg[learner.grade]?.annual || 5000;
   const paid      = (learner.t1||0)+(learner.t2||0)+(learner.t3||0);
   const balance   = annualFee - paid;
@@ -333,10 +331,10 @@ export default function ReportCardPage() {
             </tbody>
           </table>
 
-          {/* ── CBC SCALE LEGEND ── */}
+          {/* ── GRADING SCALE LEGEND ── */}
           <div style={{ position:'relative', zIndex:1 }}>
             <div style={{ fontSize: 8.5, fontWeight: 700, textTransform:'uppercase', color:'#94a3b8',
-              marginBottom: 5, letterSpacing: .6 }}>{curr.name} Grading Scale:</div>
+              marginBottom: 5, letterSpacing: .6 }}>{curr.name || 'Education System'} Grading Scale:</div>
             <div className="rc-scale-legend">
               {scale.map((s, i) => {
                 const nextMin = scale[i-1]?.min ?? 100;

@@ -143,6 +143,30 @@ function DashboardContent() {
         </div>
       )}
 
+      {/* ── Student Capacity Warning ── */}
+      {!isSuper && stats.learnerLimit && (stats.totalLearners >= stats.learnerLimit * 0.9) && (
+        <div className="panel" style={{ 
+          marginBottom: 18, 
+          background: stats.totalLearners >= stats.learnerLimit ? '#FEF2F2' : '#FFFBEB',
+          border: `2px solid ${stats.totalLearners >= stats.learnerLimit ? '#EF4444' : '#F59E0B'}`,
+          borderRadius: 15
+        }}>
+          <div className="panel-body" style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+            <div style={{ fontSize: 24 }}>{stats.totalLearners >= stats.learnerLimit ? '🚫' : '⚠️'}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 2 }}>Capacity Warning</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>
+                {stats.totalLearners >= stats.learnerLimit 
+                  ? `Your institution has reached its student limit (${stats.totalLearners} / ${stats.learnerLimit}).`
+                  : `Your institution is approaching its student limit (${stats.totalLearners} / ${stats.learnerLimit}).`}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>Upgrade your plan to add more students and ensure uninterrupted service.</div>
+            </div>
+            <button className="btn btn-sm btn-gold" onClick={() => router.push('/learners')}>Request Upgrade</button>
+          </div>
+        </div>
+      )}
+
       {/* ── Super Admin Oversight Info ── */}
       {isSuper && (
         <div className="panel" style={{ marginBottom: 18, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 15 }}>
@@ -169,7 +193,16 @@ function DashboardContent() {
           </div>
 
           <div className="sg sg4">
-            <StatCard icon="🎓" bg="#EFF6FF" value={stats.totalLearners || 0} label="Learners" onClick={() => router.push('/learners')} />
+            <StatCard 
+              icon="🎓" 
+              bg="#EFF6FF" 
+              value={stats.totalLearners || 0} 
+              label="Learners" 
+              sub={stats.learnerLimit ? `${stats.totalLearners} / ${stats.learnerLimit}` : null}
+              subBg={stats.totalLearners >= stats.learnerLimit ? '#FEE2E2' : stats.totalLearners >= stats.learnerLimit * 0.9 ? '#FEF3C7' : '#DBEAFE'}
+              subColor={stats.totalLearners >= stats.learnerLimit ? '#991B1B' : stats.totalLearners >= stats.learnerLimit * 0.9 ? '#92400E' : '#1E40AF'}
+              onClick={() => router.push('/learners')} 
+            />
             {user.role === 'admin' && (
               <>
                 <StatCard icon="💰" bg="#ECFDF5" value={fmtK(totalPaid)} label="Collected" sub={`${collectionPct}% Rate`} subBg="#ECFDF5" subColor="#059669" onClick={() => router.push('/fees')} />

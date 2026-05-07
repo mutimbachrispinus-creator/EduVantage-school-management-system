@@ -21,6 +21,10 @@ export async function GET(request) {
       [...keys, tenantId]
     );
 
+    // Fetch subscription details (learner limit)
+    const subRows = await query('SELECT learner_limit FROM subscriptions WHERE tenant_id = ?', [tenantId]);
+    const learnerLimit = Number(subRows[0]?.learner_limit || 50);
+
     const config = {};
     rows.forEach(r => {
       try { config[r.key] = JSON.parse(r.value); } catch { config[r.key] = r.value; }
@@ -52,7 +56,7 @@ export async function GET(request) {
       tagline: 'Global Education SaaS Network'
     };
     
-    const profile = { ...defaultProfile, ...(profileData || {}) };
+    const profile = { ...defaultProfile, ...(profileData || {}), learnerLimit };
 
     let plans = [];
     if (isMaster) {

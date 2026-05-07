@@ -190,6 +190,20 @@ async function handleRequest(req, auth, impTenant = null) {
       return { type: req.type, ok: true };
     }
 
+    case 'getDeletedLearners': {
+      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      const { getDeletedLearners } = await import('@/lib/db');
+      const list = await getDeletedLearners(tenantId);
+      return { type: req.type, ok: true, list };
+    }
+
+    case 'restoreLearner': {
+      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      const { restoreLearner } = await import('@/lib/db');
+      await restoreLearner(req.adm, tenantId);
+      return { type: req.type, ok: true };
+    }
+
     case 'updateMark': {
       const { kvUpdateMark } = await import('@/lib/db');
       await kvUpdateMark(req.gsa, req.adm, req.score, tenantId);
@@ -290,8 +304,12 @@ async function handleRequest(req, auth, impTenant = null) {
     case 'bulkAddLearners': {
       if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
       const { kvBulkAddLearners } = await import('@/lib/db');
-      await kvBulkAddLearners(req.learners, tenantId);
-      return { type: req.type, ok: true };
+      try {
+        await kvBulkAddLearners(req.learners, tenantId);
+        return { type: req.type, ok: true };
+      } catch (e) {
+        return { type: req.type, ok: false, error: e.message };
+      }
     }
 
     case 'storageUsage': {

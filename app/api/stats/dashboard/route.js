@@ -21,6 +21,10 @@ export async function GET() {
     const finRows = await query('SELECT SUM(t1 + t2 + t3) as totalPaid FROM learners WHERE tenant_id = ?', [tenantId]);
     const totalPaid = finRows[0].totalPaid || 0;
 
+    // 2.5 Fetch Learner Limit
+    const subRows = await query('SELECT learner_limit FROM subscriptions WHERE tenant_id = ?', [tenantId]);
+    const learnerLimit = Number(subRows[0]?.learner_limit || 50);
+
     // 3. Enrolment by grade
     const gradeRows = await query('SELECT grade, COUNT(*) as count FROM learners WHERE tenant_id = ? GROUP BY grade', [tenantId]);
     const enrolmentByGrade = {};
@@ -40,6 +44,7 @@ export async function GET() {
       ok: true,
       stats: {
         totalLearners,
+        learnerLimit,
         totalPaid,
         totalExpected,
         enrolmentByGrade,

@@ -85,13 +85,13 @@ export default function BulkLearnersPage() {
       row.age = calculateAge(val);
     }
     
-    // Auto-prefill if ADM matches existing learner
-    if (field === 'adm' && val) {
-      const existing = learners.find(l => l.adm.trim() === val.trim());
-      if (existing) {
-        row = { ...row, ...existing };
-      }
-    }
+    // Auto-prefill removed as per user request to avoid accidental data overwrites
+    // if (field === 'adm' && val) {
+    //   const existing = learners.find(l => l.adm.trim() === val.trim());
+    //   if (existing) {
+    //     row = { ...row, ...existing };
+    //   }
+    // }
     
     newRows[idx] = row;
     setRows(newRows);
@@ -179,7 +179,10 @@ export default function BulkLearnersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests: [{ type: 'bulkAddLearners', learners: validRows }] })
       });
-      if (!res.ok) throw new Error('API request failed');
+      const data = await res.json();
+      if (data.results?.[0]?.error) {
+        throw new Error(data.results[0].error);
+      }
       
       // Invalidate local cache and notify app
       invalidateDB('paav6_learners');
@@ -435,7 +438,7 @@ export default function BulkLearnersPage() {
 
           <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--navy)', marginBottom: 2 }}>👤 Add Individual Learner</div>
-            <input 
+            <input autoComplete="off" 
               type="text" 
               className="sc-inp" 
               placeholder="Search existing learner name..." 
@@ -487,13 +490,13 @@ export default function BulkLearnersPage() {
               {rows.map((r, i) => (
                 <tr key={i}>
                   <td>
-                    <input type="text" className="sc-inp" style={{ width: '100%' }} value={r.adm} onChange={e => updateRow(i, 'adm', e.target.value)} placeholder="000" />
+                    <input autoComplete="off" type="text" className="sc-inp" style={{ width: '100%' }} value={r.adm} onChange={e => updateRow(i, 'adm', e.target.value)} placeholder="000" />
                   </td>
                   <td>
-                    <input type="text" className="sc-inp" style={{ width: '100%', textAlign: 'left' }} value={r.name} onChange={e => updateRow(i, 'name', e.target.value.toUpperCase())} placeholder="STUDENT NAME" />
+                    <input autoComplete="off" type="text" className="sc-inp" style={{ width: '100%', textAlign: 'left' }} value={r.name} onChange={e => updateRow(i, 'name', e.target.value.toUpperCase())} placeholder="STUDENT NAME" />
                   </td>
                   <td>
-                    <input type="date" className="sc-inp" style={{ width: '100%' }} value={r.dob} onChange={e => updateRow(i, 'dob', e.target.value)} />
+                    <input autoComplete="off" type="date" className="sc-inp" style={{ width: '100%' }} value={r.dob} onChange={e => updateRow(i, 'dob', e.target.value)} />
                   </td>
                   <td>
                     <select className="sc-inp" style={{ width: '100%' }} value={r.grade} onChange={e => updateRow(i, 'grade', e.target.value)}>
@@ -517,10 +520,10 @@ export default function BulkLearnersPage() {
                     )}
                   </td>
                   <td>
-                    <input type="text" className="sc-inp" style={{ width: '100%', textAlign: 'left' }} value={r.parent} onChange={e => updateRow(i, 'parent', e.target.value.toUpperCase())} placeholder="PARENT NAME" />
+                    <input autoComplete="off" type="text" className="sc-inp" style={{ width: '100%', textAlign: 'left' }} value={r.parent} onChange={e => updateRow(i, 'parent', e.target.value.toUpperCase())} placeholder="PARENT NAME" />
                   </td>
                   <td>
-                    <input type="text" className="sc-inp" style={{ width: '100%' }} value={r.phone} onChange={e => updateRow(i, 'phone', e.target.value)} placeholder="07..." />
+                    <input autoComplete="off" type="text" className="sc-inp" style={{ width: '100%' }} value={r.phone} onChange={e => updateRow(i, 'phone', e.target.value)} placeholder="07..." />
                   </td>
                   {isAdmin && (
                     <td>
