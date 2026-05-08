@@ -92,6 +92,18 @@ export async function POST(request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (action === 'recover_orphans') {
+      const { recoverOrphanedData } = await import('@/lib/db');
+      const recovered = await recoverOrphanedData(tenantId);
+      return NextResponse.json({ ok: true, recovered });
+    }
+
+    if (action === 'sync_nexed') {
+      const { syncLearnersToNexed } = await import('@/lib/db');
+      const synced = await syncLearnersToNexed(tenantId);
+      return NextResponse.json({ ok: true, synced });
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
 
   } catch (err) {

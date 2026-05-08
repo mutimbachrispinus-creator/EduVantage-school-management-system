@@ -619,17 +619,36 @@ export default function SuperAdminPage() {
                           onClick={async () => {
                             if (!confirm(`Run deep recovery for ${s.name}?`)) return;
                             try {
-                              const res = await fetch('/api/saas/maintenance', { 
-                                method: 'POST', 
-                                headers: { 'Content-Type': 'application/json' }, 
-                                body: JSON.stringify({ tenantId: s.id }) 
+                              const res = await fetch(`/api/saas/manage`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'recover_orphans', tenantId: s.id })
                               });
                               const json = await res.json();
-                              alert(`Recovered ${json.recovered || 0} records.`);
+                              if (json.ok) alert(`Recovery complete! Re-linked ${json.recovered} records.`);
+                              else alert(json.error);
                             } catch (e) { alert(e.message); }
                           }}
                         >
-                          🔧 Repair
+                          🔧 Recover
+                        </button>
+                        <button 
+                          className="btn btn-ghost btn-sm" 
+                          style={{ marginLeft: 5, color: '#0EA5E9' }}
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/saas/manage`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'sync_nexed', tenantId: s.id })
+                              });
+                              const json = await res.json();
+                              if (json.ok) alert(`Nexed sync complete! ${json.synced} students updated.`);
+                              else alert(json.error);
+                            } catch (e) { alert(e.message); }
+                          }}
+                        >
+                          🔄 Sync Nexed
                         </button>
                       </td>
                     </tr>
