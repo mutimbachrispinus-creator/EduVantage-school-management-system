@@ -12,18 +12,18 @@ const SLATE   = 'var(--lp-slate,   #64748B)';
 const VIBRANT = 'var(--lp-vibrant, #8B5CF6)';
 
 const ALL_FEATURES = [
-  { icon: '🚀', title: 'Unified Communication Hub', desc: 'Merge SMS, bulk alerts & internal messaging in one flow.' },
-  { icon: '📈', title: 'Performance & Insights', desc: 'Deep analytics + rankings for CBC, Cambridge & IB.' },
-  { icon: '💰', title: 'M-Pesa Auto-Reconciliation', desc: 'Real-time Paybill/Till sync — zero manual entry.' },
-  { icon: '📅', title: 'AI Timetabling', desc: 'Conflict-free master timetables generated in minutes.' },
-  { icon: '🤖', title: 'Recovery Engine', desc: 'Optimised database operations for lightning-fast loading.' },
-  { icon: '🎥', title: 'Live Classes', desc: 'Built-in video conferencing for remote & hybrid teaching.' },
-  { icon: '📲', title: 'Parent Portal', desc: 'Live fee balances, marks & instant digital diary.' },
-  { icon: '🛡️', title: 'Welfare & Portfolio', desc: 'Track student wellness, incidents & digital portfolios.' },
-  { icon: '📋', title: 'Staff Duties', desc: 'Assign, track & approve duty rosters digitally.' },
-  { icon: '🏆', title: 'Merit Lists', desc: 'Auto-generated class & school-wide merit tables.' },
-  { icon: '📈', title: 'Finance & Payroll', desc: 'Expenses, invoicing, payslips & budget management.' },
-  { icon: '🌐', title: 'Multi-Tenant SaaS', desc: 'One platform powering unlimited school instances.' },
+  { icon: '⚖️', title: 'Curriculum-Aware Grading', desc: 'Auto-calculates weighted averages for CBC, Cambridge, British & IB.' },
+  { icon: '🗓️', title: 'Dynamic School Calendars', desc: 'Define your own institutional terms and 14-week cycles with ease.' },
+  { icon: '🚀', title: 'Unified Comms Hub', desc: 'Consolidated SMS, bulk alerts & internal messaging in one premium flow.' },
+  { icon: '📊', title: 'Institutional Insights', desc: 'Deep analytics, gender parity reports & class rankings at a glance.' },
+  { icon: '💰', title: 'M-Pesa Auto-Reconciliation', desc: 'Real-time Paybill/Till sync — zero manual ledger entries.' },
+  { icon: '📅', title: 'AI-Powered Timetabling', desc: 'Conflict-free master timetables generated in minutes, not weeks.' },
+  { icon: '🛡️', title: 'Administrative Oversight', desc: 'Granular role-based access and global audit trails for total security.' },
+  { icon: '📲', title: 'Real-Time Parent Portal', desc: 'Live fee balances, digital report cards & instant SMS notifications.' },
+  { icon: '🏆', title: 'Premium Merit Lists', desc: 'Curriculum-specific rankings with institutional excellence markers.' },
+  { icon: '💼', title: 'Staff & Finance Hub', desc: 'Automated payroll, expense tracking & digital duty rosters.' },
+  { icon: '🤖', title: 'High-Speed Recovery', desc: 'Proprietary engine to link orphaned marks and restore historical data.' },
+  { icon: '🌐', title: 'Multi-Tenant SaaS', desc: 'Enterprise-grade infrastructure powering institutions across Africa.' },
 ];
 
 export default function LandingPage() {
@@ -91,7 +91,7 @@ export default function LandingPage() {
             Stop Managing.<br/>Start <span className="text-gradient">Optimising.</span>
           </h1>
           <p className="hero-subtitle">
-            Experience the future of school management with EduVantage&apos;s unified AI platform. Instantly reconcile M-Pesa fees, generate multi-curriculum report cards (CBC, Cambridge, British, IB), and bridge the gap with parents—all in one place.
+            Experience the future of school management with EduVantage&apos;s unified AI platform. Define your own <strong>institutional calendars</strong>, configure <strong>curriculum-aware grading weights</strong>, and bridge the gap with parents—all in one place.
           </p>
           
           <div className="hero-actions">
@@ -179,8 +179,8 @@ export default function LandingPage() {
             <div className="module-card">
               <div className="mod-icon" style={{ background: '#EEF2FF', color: PRIMARY }}>📊</div>
               <div className="mod-content">
-                <h3>Unified Performance & Insights</h3>
-                <p>Gain total institutional clarity. Our merged analytics engine provides both high-level trend visualizations and granular academic rankings—fully optimized for <strong>Kenya CBC</strong>, <strong>Cambridge International</strong>, <strong>British IGCSE</strong>, and <strong>IB</strong> structures.</p>
+                <h3>Curriculum-Aware Insights</h3>
+                <p>Gain total institutional clarity. Our merged analytics engine provides both high-level trend visualizations and granular academic rankings—fully adaptive for <strong>Kenya CBC</strong>, <strong>Cambridge International</strong>, <strong>British IGCSE</strong>, and <strong>IB</strong> structures.</p>
                 <ul className="mod-features">
                   <li>Visual Subject Mastery Heatmaps</li>
                   <li>Instant Class-Wide Merit Rankings</li>
@@ -286,10 +286,10 @@ export default function LandingPage() {
                  </thead>
                  <tbody>
                    <tr><td><strong>M-Pesa Fee Sync</strong></td><td>Manual Export/Import required</td><td className="hl">100% Automated & Real-Time</td></tr>
-                   <tr><td><strong>Global Analytics</strong></td><td>Slow, batch-processed</td><td className="hl">CBC, Cambridge, British & IB Reports</td></tr>
+                   <tr><td><strong>Grading Intelligence</strong></td><td>Static, hardcoded rules</td><td className="hl">Curriculum-Aware Weighting (CBC/IB/Cambridge)</td></tr>
+                   <tr><td><strong>School Calendar</strong></td><td>Fixed term durations</td><td className="hl">Institutional Control (Custom Cycles)</td></tr>
                    <tr><td><strong>Parent Experience</strong></td><td>Delayed SMS only</td><td className="hl">Live Portal + Auto-Receipts</td></tr>
-                   <tr><td><strong>System Ecosystem</strong></td><td>Multiple disconnected logins</td><td className="hl">One unified multi-tenant app</td></tr>
-                   <tr><td><strong>Speed & Offline</strong></td><td>Slow on poor connections</td><td className="hl">Lightning fast PWA Cache</td></tr>
+                   <tr><td><strong>Infrastructure</strong></td><td>Multiple disconnected logins</td><td className="hl">One unified multi-tenant app</td></tr>
                  </tbody>
                </table>
              </div>
