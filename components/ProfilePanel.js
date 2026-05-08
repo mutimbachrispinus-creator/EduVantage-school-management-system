@@ -2,6 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { useProfile } from '@/app/PortalShell';
 import { fetchWithRetry } from '@/lib/client-cache';
 
+async function safeJson(response, fallback = {}) {
+  if (!response) return fallback;
+  const text = await response.text();
+  if (!text) return fallback;
+  try {
+    return JSON.parse(text);
+  } catch {
+    const preview = text.slice(0, 120).replace(/\s+/g, ' ');
+    throw new Error(`Server response was not valid JSON (${response.status}): ${preview || 'empty response'}`);
+  }
+}
+
 export default function ProfilePanel({ user, onClose }) {
   const { setUser } = useProfile();
   const fileRef = useRef(null);
@@ -24,7 +36,7 @@ export default function ProfilePanel({ user, onClose }) {
           body: JSON.stringify({ requests: [{type:'get', key:'paav_profiles'}] }),
           timeout: 8000
         });
-        const db = await res.json();
+        const db = await safeJson(res);
         const pExtra = db.results?.[0]?.value?.[user.id] || {};
         setForm(f => ({ 
           ...f, 
@@ -62,7 +74,7 @@ export default function ProfilePanel({ user, onClose }) {
           body: JSON.stringify({ action: 'edit_user', id: user.id, avatar: dataUrl }),
           timeout: 20000 // Large payload (avatar) needs more time
         });
-        const d = await res.json();
+        const d = await safeJson(res);
         if (!d.ok) throw new Error(d.error || 'Failed to update photo');
 
         // Update in-memory user context + sessionStorage cache
@@ -88,7 +100,7 @@ export default function ProfilePanel({ user, onClose }) {
         body: JSON.stringify({ action:'edit_user', id: user.id, phone: form.phone, password: form.newPw || undefined }),
         timeout: 10000
       });
-      const d = await res.json();
+      const d = await safeJson(res);
       if (!d.ok) throw new Error(d.error || 'Failed to update credentials');
 
       // 2. Save extra profile details to paav_profiles
@@ -98,7 +110,7 @@ export default function ProfilePanel({ user, onClose }) {
         body: JSON.stringify({ requests: [{type:'get', key:'paav_profiles'}] }),
         timeout: 8000
       });
-      const pdb = await pRes.json();
+      const pdb = await safeJson(pRes);
       const profiles = pdb.results?.[0]?.value || {};
       profiles[user.id] = { 
         ...profiles[user.id], 

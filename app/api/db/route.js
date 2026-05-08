@@ -38,7 +38,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }
 
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
     const { requests } = body;
     const headerTenant = request.headers.get('x-tenant-id');
     const impTenant = (auth.role === 'super-admin' && headerTenant) ? headerTenant : null;
@@ -371,5 +376,4 @@ async function handleRequest(req, auth, impTenant = null) {
       return { error: `Unknown request type: ${req.type}` };
   }
 }
-
 

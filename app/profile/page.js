@@ -11,6 +11,21 @@ import { useRouter } from 'next/navigation';
 import { ALL_GRADES } from '@/lib/cbe';
 
 const M = '#8B1A1A', ML = '#FDF2F2';
+const PROFILE_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff', 'parent', 'super-admin'];
+const LEARNER_LOOKUP_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff'];
+const BULK_ENROLL_ROLES = ['admin'];
+
+async function safeJson(response, fallback = {}) {
+  if (!response) return fallback;
+  const text = await response.text();
+  if (!text) return fallback;
+  try {
+    return JSON.parse(text);
+  } catch {
+    const preview = text.slice(0, 120).replace(/\s+/g, ' ');
+    throw new Error(`Server response was not valid JSON (${response.status}): ${preview || 'empty response'}`);
+  }
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -70,15 +85,14 @@ export default function ProfilePage() {
           ]})
         })
       ]);
-      const auth = await authRes.json();
+      const auth = await safeJson(authRes);
       if (!auth.ok) { router.push('/login'); return; }
       
-      const allowed = ['admin', 'teacher', 'staff', 'parent', 'jss_teacher', 'senior_teacher', 'super-admin'];
-      if (!allowed.includes(auth.user?.role)) { router.push('/'); return; }
+      if (!PROFILE_ROLES.includes(auth.user?.role)) { router.push('/'); return; }
       
       setUser(auth.user);
 
-      const db = await dbRes.json();
+      const db = await safeJson(dbRes);
       const staff = db.results[0]?.value || [];
       const profiles = db.results[1]?.value || {};
 
@@ -153,7 +167,7 @@ export default function ProfilePage() {
         ] })
       });
       
-      const out = await res.json();
+      const out = await safeJson(res);
       if (!res.ok) throw new Error(out.error || 'API request failed');
       if (out.results?.some(r => r.error)) throw new Error(out.results.find(r => r.error).error);
       
@@ -180,7 +194,7 @@ export default function ProfilePage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'change_password', current: pwForm.current, next: pwForm.next })
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (data.ok) {
         setPwMsg({ type: 'ok', text: '✅ Password changed successfully!' });
         setPwForm({ current: '', next: '', confirm: '' });
@@ -203,7 +217,7 @@ export default function ProfilePage() {
           { type: 'get', key: 'paav_profiles' }
         ]})
       });
-      const db = await dbRes.json();
+      const db = await safeJson(dbRes);
       const currentLearners = db.results[0]?.value || [];
       const currentProfiles = db.results[1]?.value || {};
 
@@ -240,16 +254,7 @@ export default function ProfilePage() {
     finally { setBusy(false); }
   }
 
-  const filteredStaff = allStaff.filter(s => !staffQ || s.name?.toLowerCase().includes(staffQ.toLowerCase()) || s.role?.toLowerCase().includes(staffQ.toLowerCase()));
-  const filteredLearners = learnerQ.length >= 2 ? allLearners.filter(l => l.name?.toLowerCase().includes(learnerQ.toLowerCase()) || l.adm?.toLowerCase().includes(learnerQ.toLowerCase())) : [];
-
-  useEffect(() => {
-    if ((tab === 'learner' || tab === 'bulk') && allLearners.length === 0 && user) {
-      handleTabChange(tab);
-    }
-  }, [tab, allLearners.length, user]);
-
-  const handleTabChange = async (newTab) => {
+  const handleTabChange = useCallback(async (newTab) => {
     setTab(newTab);
     setSelectedLearner(null);
     setSelectedStaff(null);
@@ -262,7 +267,7 @@ export default function ProfilePage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ requests: [{ type: 'get', key: 'paav6_learners' }] })
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         setAllLearners(data.results[0]?.value || []);
       } catch (e) {
         console.error('Failed to load learners:', e);
@@ -270,24 +275,33 @@ export default function ProfilePage() {
         setTabLoading(false);
       }
     }
-  };
+  }, [allLearners.length]);
+
+  const filteredStaff = allStaff.filter(s => !staffQ || s.name?.toLowerCase().includes(staffQ.toLowerCase()) || s.role?.toLowerCase().includes(staffQ.toLowerCase()));
+  const filteredLearners = learnerQ.length >= 2 ? allLearners.filter(l => l.name?.toLowerCase().includes(learnerQ.toLowerCase()) || l.adm?.toLowerCase().includes(learnerQ.toLowerCase())) : [];
+
+  useEffect(() => {
+    if ((tab === 'learner' || tab === 'bulk') && allLearners.length === 0 && user) {
+      handleTabChange(tab);
+    }
+  }, [tab, allLearners.length, user, handleTabChange]);
 
   if (loading || !user) return <div className="page on"><p style={{ padding: 30 }}>Loading profile…</p></div>;
 
   const TABS = [
     { key: 'me', label: '👤 My Profile' },
     { key: 'pw', label: '🔒 Password' },
-    { key: 'staff', label: '👔 Staff Directory' },
-    ...(user?.role === 'admin' || user?.role === 'teacher' ? [{ key: 'learner', label: '🎓 Learner Lookup' }] : []),
-    ...(user?.role === 'admin' || user?.role === 'teacher' ? [{ key: 'bulk', label: '📥 Bulk Enroll' }] : []),
+    { key: 'staff', label: '👥 People Directory' },
+    ...(LEARNER_LOOKUP_ROLES.includes(user?.role) ? [{ key: 'learner', label: '🎓 Learner Lookup' }] : []),
+    ...(BULK_ENROLL_ROLES.includes(user?.role) ? [{ key: 'bulk', label: '📥 Bulk Enroll' }] : []),
   ];
 
   return (
     <div className="page on">
       <div className="page-hdr no-print">
         <div>
-          <h2>👤 Profile & Directory</h2>
-          <p>Manage your profile, lookup users, and enroll learners</p>
+          <h2>👤 Profiles & Directory</h2>
+          <p>Manage your profile and view people in your school community</p>
         </div>
         {(tab === 'learner' && selectedLearner || tab === 'staff' && selectedStaff) && (
           <div className="page-hdr-acts">
@@ -391,11 +405,11 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── Staff Directory ── */}
+      {/* ── People Directory ── */}
       {tab === 'staff' && !selectedStaff && (
         <div className="panel no-print">
           <div className="panel-hdr">
-            <h3>👔 Staff Directory</h3>
+            <h3>👥 People Directory</h3>
             <input className="field" style={{ margin: 0, width: 220 }} placeholder="Search by name or role…" value={staffQ} onChange={e => setStaffQ(e.target.value)} />
           </div>
           <div className="panel-body">
@@ -424,24 +438,25 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── View Staff Profile (Admin) ── */}
+      {/* ── View People Profile ── */}
       {tab === 'staff' && selectedStaff && (() => {
         const pExtra = allProfiles[selectedStaff.id] || {};
+        const photo = pExtra.photo || selectedStaff.avatar || '';
         return (
           <div>
             <button className="btn btn-ghost btn-sm no-print" style={{ marginBottom: 14 }} onClick={() => setSelectedStaff(null)}>← Back to Directory</button>
-            <div className="print-only" style={{ display:'none' }}>EduVantage - Staff Profile</div>
+            <div className="print-only" style={{ display:'none' }}>EduVantage - People Profile</div>
             <div className="sg sg2">
               <div className="panel" style={{ background: `linear-gradient(135deg, ${M}, #6B1212)`, color: '#fff' }}>
                 <div className="panel-body" style={{ textAlign:'center' }}>
-                  {pExtra.photo ? (
-                    <img src={pExtra.photo} style={{ width:100, height:100, borderRadius:20, objectFit:'cover', border:'3px solid rgba(255,255,255,.3)', marginBottom:12 }} />
+                  {photo ? (
+                    <img src={photo} alt="" style={{ width:100, height:100, borderRadius:20, objectFit:'cover', border:'3px solid rgba(255,255,255,.3)', marginBottom:12 }} />
                   ) : <div style={{ fontSize: 50, marginBottom: 8 }}>👔</div>}
                   <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 19, fontWeight: 800 }}>{selectedStaff.name}</div>
                   <div style={{ fontSize: 12, opacity: .8, marginTop: 4 }}>Role: {selectedStaff.role}</div>
                   <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6, background:'rgba(0,0,0,.15)', padding:12, borderRadius:12 }}>
                     <div style={{ display: 'flex', justifyContent:'space-between', fontSize: 12 }}><span style={{opacity:.7}}>Phone</span><strong>{pExtra.phone || selectedStaff.phone || '—'}</strong></div>
-                    <div style={{ display: 'flex', justifyContent:'space-between', fontSize: 12 }}><span style={{opacity:.7}}>Email</span><strong>{pExtra.email || '—'}</strong></div>
+                    <div style={{ display: 'flex', justifyContent:'space-between', fontSize: 12 }}><span style={{opacity:.7}}>Email</span><strong>{pExtra.email || selectedStaff.email || '—'}</strong></div>
                   </div>
                 </div>
               </div>
