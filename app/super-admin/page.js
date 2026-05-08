@@ -268,7 +268,7 @@ export default function SuperAdminPage() {
               <table>
                 <thead>
                   <tr style={{ background: '#F8FAFC' }}>
-                    <th>School Identity</th><th>Curriculum</th><th>Service Plan</th><th>Learners</th><th>Status</th><th>Net Revenue</th><th>Expected Pay</th><th>Operations</th>
+                    <th>School Identity</th><th>Curriculum</th><th>Service Plan</th><th>Learners</th><th>Activity</th><th>Status</th><th>Net Revenue</th><th>Expected Pay</th><th>Operations</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -283,6 +283,14 @@ export default function SuperAdminPage() {
                           <div style={{ width: '100%', height: 4, background: '#E2E8F0', borderRadius: 2, marginTop: 4 }}>
                             <div style={{ width: `${Math.min(100, (s.students / s.learnerLimit) * 100)}%`, height: '100%', background: s.students >= s.learnerLimit ? '#EF4444' : M, borderRadius: 2 }}></div>
                           </div>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 800, color: s.activityCount > s.students ? '#EF4444' : 'inherit' }}>
+                          {s.activityCount} <span style={{ fontSize: 10, fontWeight: 400 }}>Active</span>
+                        </div>
+                        {s.activityCount > s.students && (
+                          <div style={{ fontSize: 9, color: '#EF4444', fontWeight: 700 }}>⚠️ Discrepancy!</div>
                         )}
                       </td>
                       <td><span className={`badge ${s.status === 'active' ? 'bg-green' : 'bg-red'}`}>{s.status.toUpperCase()}</span></td>
