@@ -24,7 +24,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'A school with a similar name already exists. Please choose a slightly different name.' }, { status: 409 });
     }
 
-    // Check if adminUsername is taken globally (Zeraki-style global identity)
+    // Check if adminUsername is taken globally (Unified global identity)
     const existingUser = await query('SELECT id FROM staff WHERE LOWER(username) = ?', [adminUsername.toLowerCase().trim()]);
     if (existingUser.length) {
       return NextResponse.json({ error: `The username "${adminUsername}" is already taken. Please choose a different admin username.` }, { status: 409 });

@@ -663,8 +663,8 @@ export default function ParentHome() {
 
                       {acc.type === 'M-Pesa' && (
                         <button 
-                          className="btn btn-success btn-sm" 
-                          style={{ marginTop: 'auto', width: '100%', justifyContent: 'center' }}
+                          className="btn btn-success btn-sm pay-btn-glint" 
+                          style={{ marginTop: 'auto', width: '100%', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}
                           onClick={() => initiateMpesa(acc, 'Term ' + term.replace('T', ''))}
                         >
                           💚 Pay with STK Push
@@ -990,6 +990,41 @@ export default function ParentHome() {
             )}
           </div>
         </div>
+      )}
+      {showNav && user && (
+        <style jsx>{`
+          .page { animation: homeRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+          @keyframes homeRise {
+            from { opacity: 0; transform: translateY(12px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          :global(.stat-card) { 
+            background: #fff; border-radius: 16px; padding: 18px; border: 1.5px solid var(--border) !important; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04) !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          :global(.stat-card:hover) { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.08) !important; border-color: ${M}33 !important; }
+          :global(.sc-icon) { transition: transform 0.3s ease !important; }
+          :global(.stat-card:hover .sc-icon) { transform: scale(1.15) rotate(-5deg); }
+          .tab-btn { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+          .tab-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+          .tab-btn:active { transform: scale(0.94); }
+          .tab-btn.on::after {
+            content: ''; position: absolute; bottom: 2px; left: 25%; right: 25%; height: 2px; background: #fff; border-radius: 2px;
+            animation: tabUnderline 0.3s ease forwards;
+          }
+          @keyframes tabUnderline { from { width: 0; left: 50%; } to { width: 50%; left: 25%; } }
+          :global(.panel) { animation: homeRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+          :global(.panel:hover) { box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+          
+          .pay-btn-glint:hover { transform: translateY(-3px); box-shadow: 0 15px 35px ${M}44; }
+          .pay-btn-glint:active { transform: scale(0.96); }
+          .pay-btn-glint::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg) translateX(-100%); transition: none; pointer-events: none;
+          }
+          .pay-btn-glint:hover::after { transform: rotate(45deg) translateX(100%); transition: transform 0.6s ease-in-out; }
+        `}</style>
       )}
     </div>
   );

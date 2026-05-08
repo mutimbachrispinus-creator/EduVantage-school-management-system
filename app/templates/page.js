@@ -16,7 +16,7 @@ export const runtime = 'edge';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
-import { getAllGrades, getCurriculum, gInfo, getDefaultSubjects, maxPts, calcLearnerReportData, getMark, isJSSGrade, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled } from '@/lib/cbe';
+import { getAllGrades, getCurriculum, gInfo, getDefaultSubjects, maxPts, calcLearnerReportData, getMark, isJSSGrade, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled, buildMeritList } from '@/lib/cbe';
 import { useSchoolProfile } from '@/lib/school-profile';
 import { useProfile } from '@/app/PortalShell';
 
@@ -256,24 +256,7 @@ function PrintHeader({ title, grade, profile = {} }) {
 
 function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gradCfg, profile }) {
   const curr = profile?.curriculum || 'CBC';
-  const data = learners.map(l => {
-    let total = 0;
-    let totalMarks = 0;
-    let count = 0;
-    subjects.forEach(s => {
-      const score = getMark(marks, term, grade, s, assess, l.adm);
-      if (score !== null) {
-        total += gInfo(score, grade, gradCfg, curr).pts;
-        totalMarks += score;
-        count++;
-      }
-    });
-    const maxPoss = maxPts(grade, subjects, curr);
-    return { ...l, total, totalMarks, count, avg: count > 0 ? (total / (maxPoss || 1) * 100).toFixed(1) : 0 };
-  }).sort((a, b) => {
-    if (shouldRankByMarks(grade, curr)) return b.totalMarks - a.totalMarks;
-    return b.total - a.total;
-  });
+  const data = buildMeritList(learners, marks, grade, term, assess, gradCfg, curr);
 
   const colStats = subjects.map(s => {
     let sum = 0;
@@ -290,11 +273,11 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
     return { avgScore, avgInfo };
   });
 
-  const totalPtsSum = data.reduce((acc, l) => acc + l.total, 0);
+  const totalPtsSum = data.reduce((acc, l) => acc + l.totalPts, 0);
   const totalAvgPts = data.length > 0 ? Number((totalPtsSum / data.length).toFixed(2)) : 0;
   const totalMarksSum = data.reduce((acc, l) => acc + l.totalMarks, 0);
   const totalAvgMarks = data.length > 0 ? Number((totalMarksSum / data.length).toFixed(2)) : 0;
-  const avgPct = data.length > 0 ? (data.reduce((acc, l) => acc + parseFloat(l.avg), 0) / data.length).toFixed(1) : 0;
+  const avgPct = data.length > 0 ? (data.reduce((acc, l) => acc + (l.maxTotal > 0 ? (l.totalPts/l.maxTotal*100) : 0), 0) / data.length).toFixed(1) : 0;
 
   // Distribution stats — dynamically initialized based on curriculum
   const dist = getDistributionBuckets(grade, curr);
@@ -302,16 +285,15 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
   subjects.forEach(s => { subjectDistribution[s] = getDistributionBuckets(grade, curr); });
     
   data.forEach(l => {
-    const info = gInfo(parseFloat(l.avg), grade, gradCfg, curr);
+    const lPct = l.maxTotal > 0 ? (l.totalPts / l.maxTotal * 100) : 0;
+    const info = gInfo(lPct, grade, gradCfg, curr);
     if (dist[info.lv] !== undefined) dist[info.lv]++;
 
     // Subject-wise distribution
-    subjects.forEach(s => {
-      const score = getMark(marks, term, grade, s, assess, l.adm);
-      if (score !== null) {
-        const sInfo = gInfo(score, grade, gradCfg, curr);
-        if (subjectDistribution[s][sInfo.lv] !== undefined) {
-          subjectDistribution[s][sInfo.lv]++;
+    l.detail.forEach(d => {
+      if (d.score !== null && subjectDistribution[d.subj]) {
+        if (subjectDistribution[d.subj][d.lv] !== undefined) {
+          subjectDistribution[d.subj][d.lv]++;
         }
       }
     });
@@ -341,35 +323,38 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
         </thead>
         <tbody>
           {data.map((l, i) => {
-            const lInfo = gInfo(parseFloat(l.avg), grade, gradCfg, curr);
+            const lPct = l.maxTotal > 0 ? (l.totalPts / l.maxTotal * 100) : 0;
+            const lInfo = gInfo(lPct, grade, gradCfg, curr);
             return (
               <tr key={l.adm}>
-                <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center' }}>{i + 1}</td>
+                <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center' }}>{l.rank}</td>
                 <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center' }}>{l.adm}</td>
                 <td style={{ border: '1px solid #ddd', padding: 1.5 }}>{l.name}</td>
                 {subjects.map(s => {
-                  const score = marks[`${term}:${grade}|${s}|${assess}`]?.[l.adm];
-                  const info = score !== undefined ? gInfo(Number(score), grade, gradCfg, profile?.curriculum || 'CBC') : null;
+                  const d = l.detail.find(x => x.subj === s);
                   return (
                     <td key={s} style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center' }}>
-                      {score !== undefined ? (
+                      {d && d.score !== null ? (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 600 }}>{score}</span>
-                          {info && <span style={{ fontSize: 7.5, color: info.c || '#333', fontWeight: 800 }}>{info.lv || '—'}</span>}
+                          <span style={{ fontWeight: 600 }}>{d.score}</span>
+                          <span style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <span style={{ fontSize: 7.5, color: d.c || '#333', fontWeight: 800 }}>{d.lv || '—'}</span>
+                            {d.sRank && <span style={{ fontSize: 6.5, color: '#666', fontWeight: 700 }}>pos:{d.sRank}</span>}
+                          </span>
                         </div>
                       ) : '—'}
                     </td>
                   );
                 })}
                 <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center', fontWeight: 700, color: '#059669' }}>{l.totalMarks}</td>
-                <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center', fontWeight: 800, color: 'var(--navy)' }}>{l.total}</td>
+                <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center', fontWeight: 800, color: 'var(--navy)' }}>{l.totalPts}</td>
                 <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center', fontWeight: 700, color: '#0369A1' }}>
-                  {l.count > 0 ? (l.total / l.count).toFixed(2) : '0'}
+                  {l.enteredCount > 0 ? (l.totalPts / l.enteredCount).toFixed(2) : '0'}
                 </td>
                 <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center' }}>
                   <span style={{ color: lInfo.c, fontWeight: 800, fontSize: 8.5 }}>{lInfo.lv}</span>
                 </td>
-                <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center' }}>{l.avg}%</td>
+                <td style={{ border: '1px solid #ddd', padding: 1.5, textAlign: 'center' }}>{lPct.toFixed(1)}%</td>
               </tr>
             );
           })}

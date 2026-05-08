@@ -332,8 +332,13 @@ export default function MeritListPage() {
                             {d.score !== null ? (
                               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
                                 <span style={{ fontWeight:800, fontSize:11.5 }}>{d.score}</span>
-                                <span style={{ padding:'0.5px 4px', borderRadius:8, fontSize:8, fontWeight:900, background:d.bg||'#eee', color:d.c||'#333' }}>
-                                  {d.lv}
+                                <span style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                  <span style={{ padding:'0.5px 4px', borderRadius:8, fontSize:8, fontWeight:900, background:d.bg||'#eee', color:d.c||'#333' }}>
+                                    {d.lv}
+                                  </span>
+                                  {d.sRank && (
+                                    <span style={{ fontSize: 7.5, fontWeight: 800, color: '#64748B' }}>pos:{d.sRank}</span>
+                                  )}
                                 </span>
                               </div>
                             ) : '—'}

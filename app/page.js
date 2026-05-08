@@ -428,15 +428,41 @@ export default function LandingPage() {
         /* Buttons */
         .btn { padding: 12px 26px; border-radius: 14px; font-weight: 700; font-size: 15px; text-decoration: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .btn-primary { background: ${PRIMARY}; color: #fff; }
-        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(79, 70, 229, 0.3); background: #4338CA; }
+        .btn-primary:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 40px rgba(79, 70, 229, 0.4); background: #4338CA; }
+        .btn-primary:active { transform: scale(0.96) translateY(0); }
+        .btn-primary::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+          transform: rotate(45deg) translateX(-100%);
+          pointer-events: none;
+        }
+        .btn-primary:hover::after {
+          transform: rotate(45deg) translateX(100%);
+          transition: transform 0.65s ease-in-out;
+        }
         .btn-ghost { color: ${DARK}; background: transparent; }
         .btn-ghost:hover { background: rgba(0,0,0,0.05); }
         .btn-outline { border: 2px solid rgba(0,0,0,0.1); color: ${DARK}; background: #fff; }
-        .btn-outline:hover { background: ${DARK}; color: #fff; border-color: ${DARK}; }
+        .btn-outline:hover { background: ${DARK}; color: #fff; border-color: ${DARK}; transform: translateY(-3px); }
+        .btn-outline:active { transform: scale(0.98); }
         .btn-xl { padding: 18px 46px; font-size: 17px; border-radius: 18px; }
-        .btn-glow { position: relative; }
+        .btn-glow { position: relative; overflow: hidden; }
         .btn-glow::after { content: ''; position: absolute; inset: -2px; border-radius: 16px; background: linear-gradient(45deg, ${PRIMARY}, #06B6D4); z-index: -1; opacity: 0.5; filter: blur(8px); transition: 0.3s; }
         .btn-glow:hover::after { opacity: 0.8; filter: blur(12px); }
+        .btn-glow::before {
+          content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+          background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+          transform: rotate(45deg) translateX(-100%); pointer-events: none;
+        }
+        .btn-glow:hover::before {
+          transform: rotate(45deg) translateX(100%);
+          transition: transform 0.6s ease-in-out;
+        }
         
         .glass-btn { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); }
 

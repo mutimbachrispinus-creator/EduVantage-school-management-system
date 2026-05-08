@@ -62,7 +62,7 @@ export async function POST(request) {
     }
   } catch (e) {
     console.error('[api/auth] Server Error:', e);
-    return err(`Internal Server Error: ${e.message}`, 500);
+    return err(`Internal Server Error: ${e.message}${e.stack ? ' at ' + e.stack.split('\n')[1] : ''}`, 500);
   }
 }
 
@@ -86,7 +86,7 @@ async function handleLogin({ username, password }, request) {
   let user = null;
 
   // Global login attempt: search across all tenants
-  // ZERAKI-STYLE STRICT ISOLATION:
+  // STRICT INSTITUTIONAL ISOLATION:
   // If we have a specific tenant context, we ONLY search that tenant.
   // This prevents accounts from leaking across portals.
   if (tenantId && tenantId !== 'platform-master') {
@@ -161,15 +161,12 @@ async function handleLogin({ username, password }, request) {
   }
 
   // Prefetch common dashboard data to include in login response
-  // We use a safer approach: if one fails, we still allow login
-  let ann = null, msgs = [], hero = null, feecfg = {}, learners = [], profile = null, theme = null;
+  // We only fetch lightweight branding/config to keep login fast and avoid Edge memory limits.
+  let ann = null, hero = null, profile = null, theme = null;
   try {
-    [ann, msgs, hero, feecfg, learners, profile, theme] = await Promise.all([
+    [ann, hero, profile, theme] = await Promise.all([
       kvGet('paav_announcement', null, tenantId),
-      kvGet('paav6_msgs', [], tenantId),
       kvGet('paav_hero_img', null, tenantId),
-      kvGet('paav6_feecfg', {}, tenantId),
-      kvGet('paav6_learners', [], tenantId),
       kvGet('paav_school_profile', null, tenantId),
       kvGet('paav_theme', null, tenantId)
     ]);
@@ -185,9 +182,7 @@ async function handleLogin({ username, password }, request) {
     redirect: user.tenant_id === 'platform-master' ? '/super-admin' : (user.role === 'parent' ? '/parent-home' : '/dashboard'),
     initialData: {
       db_paav_announcement: ann,
-      db_paav6_msgs: msgs.slice(0, 50), // Send only last 50 messages
       db_paav_hero_img: hero,
-      db_paav6_feecfg: feecfg,
       db_paav_school_profile: profile,
       db_paav_theme: theme
     }
@@ -374,14 +369,11 @@ async function handleWhoami() {
   const user = rows[0];
   
   if (user) {
-    let ann = null, msgs = [], hero = null, feecfg = {}, learners = [], profile = null, theme = null;
+    let ann = null, hero = null, profile = null, theme = null;
     try {
-      [ann, msgs, hero, feecfg, learners, profile, theme] = await Promise.all([
+      [ann, hero, profile, theme] = await Promise.all([
         kvGet('paav_announcement', null, session.tenantId),
-        kvGet('paav6_msgs', [], session.tenantId),
         kvGet('paav_hero_img', null, session.tenantId),
-        kvGet('paav6_feecfg', {}, session.tenantId),
-        kvGet('paav6_learners', [], session.tenantId),
         kvGet('paav_school_profile', null, session.tenantId),
         kvGet('paav_theme', null, session.tenantId)
       ]);
@@ -394,9 +386,7 @@ async function handleWhoami() {
       user: publicUser(user),
       initialData: {
         db_paav_announcement: ann,
-        db_paav6_msgs: msgs.slice(0, 50),
         db_paav_hero_img: hero,
-        db_paav6_feecfg: feecfg,
         db_paav_school_profile: profile,
         db_paav_theme: theme
       }
@@ -405,8 +395,8 @@ async function handleWhoami() {
 
   // Fallback if not found in staff (e.g. parent/learner logic)
   if (session.role === 'parent') {
-    const learners = (await kvGet('paav6_learners')) || [];
-    const learner = learners.find(l => l.adm === session.username); // parents use child adm as username usually
+    const { getLearner } = await import('@/lib/db');
+    const learner = await getLearner(session.username, session.tenantId);
     if (learner) return NextResponse.json({ ok: true, user: { ...session, avatar: learner.avatar, emoji: ROLE_EMOJI.parent, color: ROLE_COLOR.parent } });
   }
 

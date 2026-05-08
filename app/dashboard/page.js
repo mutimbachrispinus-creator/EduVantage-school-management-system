@@ -118,7 +118,9 @@ function DashboardContent() {
           <p>{isSuper ? 'EduVantage Platform Oversight' : 'Here is your institutional overview for today.'}</p>
         </div>
         <div className="page-hdr-acts">
-           <button className="btn btn-ghost btn-sm home-refresh" onClick={load}>🔄 Refresh Data</button>
+           <button className="btn btn-ghost btn-sm home-refresh" onClick={load}>
+             <span className="refresh-icon">🔄</span> Refresh Data
+           </button>
         </div>
       </div>
 
@@ -305,7 +307,12 @@ function DashboardContent() {
         }
         .home-refresh:hover {
           transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(15,23,42,.12);
         }
+        .home-refresh:hover .refresh-icon {
+          animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .home-alert,
         .module-panel,
         .oversight-panel {
@@ -584,6 +591,27 @@ function DashboardContent() {
         }
         .hub-btn:hover .hub-label {
           color: #2563EB;
+          transform: scale(1.05);
+        }
+        .hub-btn:active {
+          transform: scale(0.95) translateY(0);
+          transition: transform 0.1s cubic-bezier(.2,.8,.2,1);
+        }
+        .hub-btn::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+          transform: rotate(45deg) translateX(-100%);
+          transition: none;
+          pointer-events: none;
+        }
+        .hub-btn:hover::after {
+          transform: rotate(45deg) translateX(100%);
+          transition: transform 0.6s ease-in-out;
         }
         :global(.home-stat-grid .stat-card) {
           position: relative;
@@ -617,7 +645,15 @@ function DashboardContent() {
           transition: transform .24s ease;
         }
         :global(.home-stat-grid .stat-card:hover .sc-icon) {
-          transform: rotate(-4deg) scale(1.06);
+          transform: rotate(-8deg) scale(1.15);
+          box-shadow: 0 15px 30px rgba(37,99,235,0.2);
+        }
+        :global(.home-stat-grid .sc-n) {
+          transition: transform 0.2s ease;
+        }
+        :global(.home-stat-grid .stat-card:hover .sc-n) {
+          transform: translateX(4px);
+          color: #2563EB;
         }
         .home-insight-grid {
           align-items: stretch;

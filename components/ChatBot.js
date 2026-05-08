@@ -42,7 +42,7 @@ export default function ChatBot() {
       let botResponse = responses.default;
       const q = userMsg.toLowerCase();
       
-      if (q.includes('feature') || q.includes('what can you do') || q.includes('zeraki')) botResponse = responses.features;
+      if (q.includes('feature') || q.includes('what can you do')) botResponse = responses.features;
       else if (q.includes('analytic') || q.includes('report') || q.includes('mark') || q.includes('cbc') || q.includes('grade')) botResponse = responses.analytics;
       else if (q.includes('finance') || q.includes('fee') || q.includes('m-pesa') || q.includes('mpesa') || q.includes('pay') || q.includes('receipt')) botResponse = responses.finance;
       else if (q.includes('timetable') || q.includes('schedule') || q.includes('conflict')) botResponse = responses.timetable;

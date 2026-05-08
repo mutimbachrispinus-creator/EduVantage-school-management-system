@@ -3,7 +3,7 @@ export const runtime = 'edge';
 /**
  * app/fees/pay/page.js — Parent self-service M-Pesa payment
  *
- * Like Zeraki, fees are broken down termly. Parents see exactly what each
+ * Fees are broken down termly. Parents see exactly what each
  * term costs, what they've paid, and the outstanding balance per term.
  *
  * The STK push works for ANY admission number format:
@@ -213,7 +213,7 @@ export default function PayPage() {
                 </div>
               </div>
 
-              {/* Termly fee breakdown (like Zeraki) */}
+              {/* Termly fee breakdown */}
               <div style={{ marginBottom: 18 }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: '#6B7280', textTransform: 'uppercase',
                   letterSpacing: 1, marginBottom: 10 }}>Fee Breakdown by Term</div>
