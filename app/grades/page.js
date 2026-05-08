@@ -61,10 +61,12 @@ export default function GradesPage() {
   
   const [dirtyMarks, setDirtyMarks] = useState([]); // Array of { gsa, adm, score }
   const dirtyMarksRef = useRef([]);
+  const loadCountRef = useRef(0);
   useEffect(() => { dirtyMarksRef.current = dirtyMarks; }, [dirtyMarks]);
 
   /* ── Load data ── */
   const load = useCallback(async () => {
+    const myCount = ++loadCountRef.current;
     try {
       const [u, db] = await Promise.all([
         getCachedUser(),
@@ -77,6 +79,8 @@ export default function GradesPage() {
           'paav8_subj'
         ])
       ]);
+
+      if (myCount < loadCountRef.current) return; // Abort if newer load started
 
       if (!u) { router.push('/login'); return; }
       if (!['admin', 'teacher', 'senior_teacher', 'jss_teacher'].includes(u.role)) {
@@ -104,7 +108,7 @@ export default function GradesPage() {
     } catch (e) {
       console.error('Grades load error:', e);
     } finally {
-      setLoading(false);
+      if (myCount === loadCountRef.current) setLoading(false);
     }
   }, [router, grade]);
 
@@ -152,6 +156,7 @@ export default function GradesPage() {
   const isLocked      = !!locked[`${term}:${grade}:${assess}`];
 
   /* ── Score change ── */
+  const cacheTimerRef = useRef(null);
   function setScore(admNo, subj, value) {
     if (isSubjLocked(subj) && user?.role !== 'admin') return;
     const gsa = `${term}:${grade}|${subj}|${assess}`;
@@ -164,16 +169,21 @@ export default function GradesPage() {
     dirtyMarksRef.current = nextDirty;
     setDirtyMarks(nextDirty);
     
-    // 2. Update local UI state and persist to cache
+    // 2. Update local UI state
+    let nextMarks;
     setMarks(prev => {
-      const nextMarks = {
+      nextMarks = {
         ...prev,
         [gsa]: { ...(prev[gsa] || {}), [admNo]: score },
       };
-      // Persist to cache (triggers sync event)
-      updateLocalDBCache('paav6_marks', nextMarks, Date.now());
       return nextMarks;
     });
+
+    // 3. Persist to cache (debounced to avoid heavy JSON ops on every keystroke)
+    if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current);
+    cacheTimerRef.current = setTimeout(() => {
+      updateLocalDBCache('paav6_marks', nextMarks);
+    }, 1000);
   }
 
   function getScore(admNo, subj) {
@@ -224,7 +234,15 @@ export default function GradesPage() {
       if (data.error) throw new Error(data.error);
 
       // Clear dirty marks that were successfully synced (deep check)
-      setDirtyMarks(prev => prev.filter(m => !marksToSync.some(ms => ms.gsa === m.gsa && ms.adm === m.adm)));
+      const remainingDirty = dirtyMarksRef.current.filter(m => !marksToSync.some(ms => ms.gsa === m.gsa && ms.adm === m.adm));
+      dirtyMarksRef.current = remainingDirty;
+      setDirtyMarks(remainingDirty);
+
+      // CRITICAL: Update local cache with confirmed state to ensure load() gets fresh data
+      setMarks(current => {
+        updateLocalDBCache('paav6_marks', current);
+        return current;
+      });
 
       if (!isAuto) {
         // Ensure "Saving..." is visible for at least 600ms
@@ -431,8 +449,13 @@ export default function GradesPage() {
       <div className="page-hdr">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <h2>📊 Marks Entry</h2>
-          {saving && <span style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, animation: 'pulse 1.5s infinite' }}>☁️ Syncing...</span>}
-          {!saving && <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, opacity: 0.7 }}>✅ Synced</span>}
+          {saving ? (
+            <span style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, animation: 'pulse 1.5s infinite' }}>☁️ Syncing...</span>
+          ) : dirtyMarks.length > 0 ? (
+            <span style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700 }}>⏳ Pending sync...</span>
+          ) : (
+            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, opacity: 0.7 }}>✅ Synced</span>
+          )}
         </div>
         <p>{curr.name} — {grade}</p>
         <div className="page-hdr-acts">

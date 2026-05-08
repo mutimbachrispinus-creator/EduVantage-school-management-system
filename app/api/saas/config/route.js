@@ -23,11 +23,16 @@ export async function GET(request) {
 
     // Fetch subscription details (learner limit) and actual count
     const [subRows, countRows] = await Promise.all([
-      query('SELECT learner_limit FROM subscriptions WHERE tenant_id = ?', [tenantId]),
+      query('SELECT plan, cycle, amount, billing_model, learner_limit FROM subscriptions WHERE tenant_id = ?', [tenantId]),
       query('SELECT COUNT(*) as count FROM learners WHERE tenant_id = ?', [tenantId])
     ]);
-    const learnerLimit = Number(subRows[0]?.learner_limit || 50);
+    const sub = subRows[0] || {};
+    const learnerLimit = sub.learner_limit === null ? 0 : Number(sub.learner_limit || 0);
     const learnerCount = Number(countRows[0]?.count || 0);
+    const planName = sub.plan || 'trial';
+    const planCycle = sub.cycle || 'termly';
+    const planAmount = sub.amount || 0;
+    const billingModel = sub.billing_model || 'flat';
 
     const config = {};
     rows.forEach(r => {
@@ -60,7 +65,16 @@ export async function GET(request) {
       tagline: 'Global Education SaaS Network'
     };
     
-    const profile = { ...defaultProfile, ...(profileData || {}), learnerLimit, learnerCount };
+    const profile = { 
+      ...defaultProfile, 
+      ...(profileData || {}), 
+      learnerLimit, 
+      learnerCount,
+      plan: planName,
+      cycle: planCycle,
+      amount: planAmount,
+      billingModel: billingModel
+    };
 
     let plans = [];
     if (isMaster) {

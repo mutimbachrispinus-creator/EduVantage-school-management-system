@@ -7,9 +7,9 @@ import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 const M = '#8B1A1A', M2 = '#6B1212', ML = '#FDF2F2', MB = '#F5E6E6';
 
 const PLANS = [
-  { id: 'lite', name: 'Lite', price: '2,500', features: ['Learner Mgmt', 'Attendance', 'Messaging'], bg: '#F8FAFC', color: '#475569' },
-  { id: 'standard', name: 'Standard', price: '7,500', features: ['+ Exams & Analytics', 'Merit Lists', 'Sms Integration'], bg: '#F0F9FF', color: '#0369A1' },
-  { id: 'premium', name: 'Premium (SaaS)', price: '15,000', features: ['+ Finance & Payroll', 'CBC Visual Portfolio', 'AI Warning System'], bg: ML, color: M }
+  { id: 'lite', name: 'Lite', price: '2,500', cycle: 'Term', features: ['Learner Mgmt', 'Attendance', 'Messaging'], bg: '#F8FAFC', color: '#475569' },
+  { id: 'standard', name: 'Standard', price: '7,500', cycle: 'Term', features: ['+ Exams & Analytics', 'Merit Lists', 'Sms Integration'], bg: '#F0F9FF', color: '#0369A1' },
+  { id: 'premium', name: 'Premium (SaaS)', price: '15,000', cycle: 'Year', features: ['+ Finance & Payroll', 'CBC Visual Portfolio', 'AI Warning System'], bg: ML, color: M }
 ];
 
 export default function BillingPage() {
@@ -27,6 +27,22 @@ export default function BillingPage() {
     const u = await getCachedUser();
     if (!u || u.role !== 'admin') { router.push('/'); return; }
     setUser(u);
+
+    try {
+      const tid = u.tenantId || u.tenant_id;
+      const res = await fetch(`/api/saas/config?tenant=${tid}`);
+      const data = await res.json();
+      if (data.profile) {
+        setSubscription({
+          plan: data.profile.plan || 'Trial',
+          cycle: data.profile.cycle || 'Termly',
+          status: 'Active', // Status could be fetched from sub as well
+          expiry: '2026-12-31', // Placeholder or fetch from expiresAt
+          daysLeft: 245 // Placeholder
+        });
+      }
+    } catch (e) {}
+
     setLoading(false);
   }, [router]);
 
@@ -42,7 +58,7 @@ export default function BillingPage() {
           <p>Manage your school's platform access and licensing</p>
         </div>
         <div className={`badge ${subscription.status === 'Active' ? 'bg-green' : 'bg-red'}`} style={{ padding: '8px 15px', fontSize: 13 }}>
-          {subscription.status.toUpperCase()} — {subscription.plan}
+          {subscription.status.toUpperCase()} — {subscription.plan} ({subscription.cycle})
         </div>
       </div>
 
@@ -65,7 +81,7 @@ export default function BillingPage() {
           <div key={p.id} className="panel" style={{ border: subscription.plan.toLowerCase() === p.id ? `2px solid ${p.color}` : '1px solid #eee' }}>
             <div className="panel-hdr" style={{ background: p.bg, color: p.color, textAlign: 'center', display: 'block' }}>
               <h2 style={{ margin: 0 }}>{p.name}</h2>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>KES {p.price} / Term</div>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>KES {p.price} / {p.cycle || 'Term'}</div>
             </div>
             <div className="panel-body">
               <ul style={{ padding: 0, margin: '0 0 20px 0', listStyle: 'none' }}>

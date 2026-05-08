@@ -17,7 +17,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { action, tenantId, amount, cycle, plan, status, expiresAt, paybills, learnerLimit } = body;
+    const { action, tenantId, amount, cycle, billingModel, plan, status, expiresAt, paybills, learnerLimit } = body;
 
     if (!tenantId) return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
     if (tenantId === 'platform-master') return NextResponse.json({ error: 'Cannot manage platform-master' }, { status: 400 });
@@ -37,12 +37,13 @@ export async function POST(request) {
     if (action === 'update_billing') {
       const { curriculum } = body;
       const sqlSub = `
-        INSERT INTO subscriptions (tenant_id, plan, status, amount, cycle, expires_at, learner_limit, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))
+        INSERT INTO subscriptions (tenant_id, plan, status, amount, billing_model, cycle, expires_at, learner_limit, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))
         ON CONFLICT(tenant_id) DO UPDATE SET
           plan = excluded.plan,
           status = excluded.status,
           amount = excluded.amount,
+          billing_model = excluded.billing_model,
           cycle = excluded.cycle,
           expires_at = excluded.expires_at,
           learner_limit = excluded.learner_limit,
@@ -53,9 +54,10 @@ export async function POST(request) {
         plan || 'basic', 
         status || 'active', 
         Number(amount || 0), 
+        billingModel || 'flat',
         cycle || 'annual', 
         expiresAt || null,
-        Number(learnerLimit || 50)
+        Number(learnerLimit || 0)
       ]);
 
       if (curriculum) {

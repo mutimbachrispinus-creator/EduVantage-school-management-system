@@ -201,7 +201,7 @@ export default function EduVantageSignup() {
                       <div style={{ fontWeight: 800, fontSize: 13 }}>{p.name}</div>
                       <div style={{ fontSize: 10, opacity: 0.7 }}>
                         {p.price > 0 ? (
-                          p.billingModel === 'per-learner' ? `KES ${p.price} / learner` : `KES ${p.price.toLocaleString()} / ${p.cycle}`
+                          `${p.billingModel === 'per-learner' ? `KES ${p.price} / student` : `KES ${p.price.toLocaleString()} / school`} / ${p.cycle || 'term'}`
                         ) : 'Free Access'}
                       </div>
                       {p.id === 'free-term' && (
@@ -249,7 +249,7 @@ export default function EduVantageSignup() {
                 )}
               </div>
               <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 8 }}>
-                <b>Important:</b> This number sets your initial system limit. If your actual student count exceeds this number, the portal will lock until you upgrade.
+                <b>Note:</b> This number helps us estimate your initial setup. You can add as many students as you need without restriction.
               </p>
             </div>
 

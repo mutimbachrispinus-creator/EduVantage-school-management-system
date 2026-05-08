@@ -73,8 +73,18 @@ export async function POST(request) {
       // 1. Create Subscription — learner_limit is NULL (unlimited).
       // registered_learners records initial headcount for renewal billing purposes.
       {
-        sql: 'INSERT INTO subscriptions (tenant_id, plan, status, expires_at, learner_limit, registered_learners, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?)',
-        args: [tenantId, selectedPlan, 'active', expiresAt.toISOString(), parseInt(estimatedStudents) || 0, now]
+        sql: 'INSERT INTO subscriptions (tenant_id, plan, status, amount, billing_model, cycle, expires_at, learner_limit, registered_learners, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)',
+        args: [
+          tenantId, 
+          selectedPlan, 
+          'active', 
+          planData?.price || 0, 
+          planData?.billingModel || 'flat', 
+          cycle, 
+          expiresAt.toISOString(), 
+          parseInt(estimatedStudents) || 0, 
+          now
+        ]
       },
       // 2. Create first Admin user
       {

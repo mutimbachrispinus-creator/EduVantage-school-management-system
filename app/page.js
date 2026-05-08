@@ -607,9 +607,14 @@ function PriceCard({ name, price, desc, features, featured, billingModel, cycle 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <span style={{ fontSize: 46, fontWeight: 900 }}>{price === 'Custom' || price === 0 ? '' : 'KES '}{price === 0 ? 'FREE' : price}</span>
           {price !== 'Custom' && price !== 0 && (
-            <span style={{ opacity: 0.7, fontSize: 15 }}>
-              {billingModel === 'per-learner' ? '/ learner' : '/ school'}
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ opacity: 0.7, fontSize: 13, fontWeight: 800, textTransform: 'uppercase' }}>
+                / {cycle || 'term'}
+              </span>
+              <span style={{ opacity: 0.5, fontSize: 11 }}>
+                {billingModel === 'per-learner' ? 'per student' : 'per school'}
+              </span>
+            </div>
           )}
         </div>
         <p style={{ fontSize: 15, opacity: 0.8, marginTop: 16, lineHeight: 1.6 }}>{desc}</p>

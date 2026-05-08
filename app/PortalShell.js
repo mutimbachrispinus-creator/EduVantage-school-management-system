@@ -24,6 +24,9 @@ function SystemLockout({ profile }) {
   const router = useRouter();
   const contactWhatsApp = 'https://wa.me/254792656579?text=Hello%20EduVantage%2C%20I%20need%20to%20upgrade%20my%20school%20subscription%20plan.';
   
+  if (!profile.learnerLimit || profile.learnerLimit <= 0) return null;
+  if (profile.learnerCount <= profile.learnerLimit) return null;
+  
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15, 23, 42, 0.98)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div className="panel" style={{ maxWidth: 500, width: '100%', textAlign: 'center', padding: '40px 30px', border: '2px solid var(--secondary)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>

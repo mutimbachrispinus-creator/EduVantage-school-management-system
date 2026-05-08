@@ -268,7 +268,7 @@ export default function SuperAdminPage() {
               <table>
                 <thead>
                   <tr style={{ background: '#F8FAFC' }}>
-                    <th>School Identity</th><th>Curriculum</th><th>Service Plan</th><th>Learners</th><th>Status</th><th>Net Revenue</th><th>Operations</th>
+                    <th>School Identity</th><th>Curriculum</th><th>Service Plan</th><th>Learners</th><th>Status</th><th>Net Revenue</th><th>Expected Pay</th><th>Operations</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -278,13 +278,16 @@ export default function SuperAdminPage() {
                       <td><span style={{ fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, background: '#F1F5F9' }}>{s.curriculum}</span></td>
                       <td><span className={`badge ${s.plan === 'Premium' ? 'bg-gold' : 'bg-blue'}`}>{s.plan.toUpperCase()}</span></td>
                       <td>
-                        <div style={{ fontWeight: 800 }}>{s.students} <span style={{ color: SLATE, fontWeight: 400 }}>/ {s.learnerLimit}</span></div>
-                        <div style={{ width: '100%', height: 4, background: '#E2E8F0', borderRadius: 2, marginTop: 4 }}>
-                          <div style={{ width: `${Math.min(100, (s.students / s.learnerLimit) * 100)}%`, height: '100%', background: s.students >= s.learnerLimit ? '#EF4444' : M, borderRadius: 2 }}></div>
-                        </div>
+                        <div style={{ fontWeight: 800 }}>{s.students} <span style={{ color: SLATE, fontWeight: 400 }}>{s.learnerLimit > 0 ? `/ ${s.learnerLimit}` : '(Unlimited)'}</span></div>
+                        {s.learnerLimit > 0 && (
+                          <div style={{ width: '100%', height: 4, background: '#E2E8F0', borderRadius: 2, marginTop: 4 }}>
+                            <div style={{ width: `${Math.min(100, (s.students / s.learnerLimit) * 100)}%`, height: '100%', background: s.students >= s.learnerLimit ? '#EF4444' : M, borderRadius: 2 }}></div>
+                          </div>
+                        )}
                       </td>
                       <td><span className={`badge ${s.status === 'active' ? 'bg-green' : 'bg-red'}`}>{s.status.toUpperCase()}</span></td>
                       <td style={{ fontWeight: 900, color: EMERALD }}>KES {s.revenue.toLocaleString()}</td>
+                      <td style={{ fontWeight: 900, color: M }}>KES {s.expectedPay?.toLocaleString()}</td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button className="btn btn-sm btn-primary" onClick={() => { localStorage.setItem('paav_impersonate_id', s.id); window.location.href = '/dashboard'; }}>Login</button>
@@ -541,7 +544,78 @@ export default function SuperAdminPage() {
       </div>
 
       {showConfig && editSchool && (
-        <div className="modal-overlay open"><div className="modal" style={{ maxWidth: 400 }}><div className="modal-hdr"><h3>⚙️ Billing Config: {editSchool.name}</h3><button className="modal-close" onClick={() => setShowConfig(false)}>✕</button></div><div className="modal-body"><div className="field-row"><div className="field"><label>Service Plan</label><select value={editSchool.plan} onChange={e => setEditSchool({...editSchool, plan: e.target.value})}><option value="trial">Trial</option><option value="Basic">Basic</option><option value="Premium">Premium</option></select></div><div className="field"><label>Education System</label><select value={editSchool.curriculum || 'CBC'} onChange={e => setEditSchool({...editSchool, curriculum: e.target.value})}><option value="CBC">Kenya CBC</option><option value="BRITISH">British Curriculum</option><option value="CAMBRIDGE">Cambridge International</option><option value="IB">International Baccalaureate</option></select></div></div><div className="field-row"><div className="field"><label>Amount (KES)</label><input type="number" value={editSchool.amount} onChange={e => setEditSchool({...editSchool, amount: e.target.value})} /></div><div className="field"><label>Billing Cycle</label><select value={editSchool.cycle} onChange={e => setEditSchool({...editSchool, cycle: e.target.value})}><option value="termly">Termly</option><option value="annual">Annual</option></select></div></div><div className="field-row"><div className="field"><label>Status</label><select value={editSchool.status} onChange={e => setEditSchool({...editSchool, status: e.target.value})}><option value="active">Active</option><option value="expired">Expired</option><option value="suspended">Suspended</option></select></div><div className="field"><label>Learner Limit</label><input type="number" value={editSchool.learnerLimit} onChange={e => setEditSchool({...editSchool, learnerLimit: e.target.value})} /></div></div><div className="field" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}><input type="checkbox" checked={editSchool.skipLimit} onChange={e => setEditSchool({...editSchool, skipLimit: e.target.checked})} /><label style={{ margin: 0, fontWeight: 700, color: '#EF4444' }}>🚨 Skip Learner Limit Check (Bypass Lockout)</label></div></div><div className="modal-ftr"><button className="btn btn-ghost" onClick={() => setShowConfig(false)}>Cancel</button><button className="btn btn-primary" onClick={saveConfig} disabled={saving}>{saving ? 'Saving...' : 'Save Configuration'}</button></div></div></div>
+        <div className="modal-overlay open">
+          <div className="modal" style={{ maxWidth: 450 }}>
+            <div className="modal-hdr">
+              <h3>⚙️ Billing Config: {editSchool.name}</h3>
+              <button className="modal-close" onClick={() => setShowConfig(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="field-row">
+                <div className="field">
+                  <label>Service Plan</label>
+                  <select value={editSchool.plan} onChange={e => setEditSchool({...editSchool, plan: e.target.value})}>
+                    <option value="trial">Trial</option>
+                    <option value="Basic">Basic</option>
+                    <option value="Premium">Premium</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Education System</label>
+                  <select value={editSchool.curriculum || 'CBC'} onChange={e => setEditSchool({...editSchool, curriculum: e.target.value})}>
+                    <option value="CBC">Kenya CBC</option>
+                    <option value="BRITISH">British Curriculum</option>
+                    <option value="CAMBRIDGE">Cambridge International</option>
+                    <option value="IB">International Baccalaureate</option>
+                  </select>
+                </div>
+              </div>
+              <div className="field-row">
+                <div className="field">
+                  <label>Amount (KES)</label>
+                  <input type="number" value={editSchool.amount} onChange={e => setEditSchool({...editSchool, amount: e.target.value})} />
+                </div>
+                <div className="field">
+                  <label>Billing Cycle</label>
+                  <select value={editSchool.cycle} onChange={e => setEditSchool({...editSchool, cycle: e.target.value})}>
+                    <option value="termly">Termly</option>
+                    <option value="annual">Annual</option>
+                  </select>
+                </div>
+              </div>
+              <div className="field-row">
+                <div className="field">
+                  <label>Billing Model</label>
+                  <select value={editSchool.billingModel || 'flat'} onChange={e => setEditSchool({...editSchool, billingModel: e.target.value})}>
+                    <option value="flat">Flat Fee (School)</option>
+                    <option value="per-learner">Per Learner (Variable)</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Status</label>
+                  <select value={editSchool.status} onChange={e => setEditSchool({...editSchool, status: e.target.value})}>
+                    <option value="active">Active</option>
+                    <option value="expired">Expired</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
+              <div className="field">
+                <label>Learner Limit (0 = Unlimited)</label>
+                <input type="number" value={editSchool.learnerLimit} onChange={e => setEditSchool({...editSchool, learnerLimit: e.target.value})} />
+                <p style={{ fontSize: 10, color: SLATE, marginTop: 4 }}>Setting this to 0 disables automated lockouts for this school.</p>
+              </div>
+              <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+                <input type="checkbox" checked={editSchool.skipLimit} onChange={e => setEditSchool({...editSchool, skipLimit: e.target.checked})} />
+                <label style={{ margin: 0, fontWeight: 700, color: '#EF4444' }}>🚨 Skip Learner Limit Check (Bypass Lockout)</label>
+              </div>
+            </div>
+            <div className="modal-ftr">
+              <button className="btn btn-ghost" onClick={() => setShowConfig(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveConfig} disabled={saving}>{saving ? 'Saving...' : 'Save Configuration'}</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {paybillSchool && (

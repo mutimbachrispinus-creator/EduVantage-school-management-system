@@ -52,17 +52,24 @@ export async function GET() {
         args: [s.tenant_id]
       });
 
+      const studentsCount = Number(learnerCount.rows[0]?.count || 0);
+      const planAmount = s.amount || 0;
+      const billingModel = s.billing_model || 'flat';
+      const expectedPay = billingModel === 'per-learner' ? studentsCount * planAmount : planAmount;
+
       return {
         id: s.tenant_id,
         name: name,
         plan: s.plan,
         curriculum: curriculum,
         status: s.status,
-        amount: s.amount || 0,
+        amount: planAmount,
+        billingModel: billingModel,
+        expectedPay: expectedPay,
         cycle: s.cycle || 'annual',
         expiresAt: s.expires_at,
-        students: Number(learnerCount.rows[0]?.count || 0),
-        learnerLimit: Number(s.learner_limit || 50),
+        students: studentsCount,
+        learnerLimit: Number(s.learner_limit || 0), // 0 means unlimited
         revenue: Number(revenueRes.rows[0]?.total || 0),
         lastSync: s.updated_at ? new Date(s.updated_at * 1000).toLocaleString() : 'Never'
       };
