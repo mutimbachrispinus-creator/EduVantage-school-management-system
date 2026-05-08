@@ -122,19 +122,19 @@ export default function TimetableSettingsPage() {
             {config.breaks.length === 0 && <p style={{color:'var(--muted)', fontSize:12, textAlign:'center', padding:20}}>No breaks defined for this level.</p>}
             {config.breaks.map((b, i) => (
               <div key={i} style={{ display:'flex', gap:10, marginBottom:15, borderBottom:'1px solid #eee', paddingBottom:10 }}>
-                <div style={{ flex:2 }} className="field" style={{marginBottom:0}}>
+                <div className="field" style={{ flex:2, marginBottom:0 }}>
                   <label>Break Name</label>
                   <input value={b.name} onChange={e => {
                     const nb = [...config.breaks]; nb[i].name = e.target.value; F('breaks', nb);
                   }} />
                 </div>
-                <div style={{ flex:1 }} className="field" style={{marginBottom:0}}>
+                <div className="field" style={{ flex:1, marginBottom:0 }}>
                   <label>Starts At</label>
                   <input type="time" value={b.startTime} onChange={e => {
                     const nb = [...config.breaks]; nb[i].startTime = e.target.value; F('breaks', nb);
                   }} />
                 </div>
-                <div style={{ flex:1 }} className="field" style={{marginBottom:0}}>
+                <div className="field" style={{ flex:1, marginBottom:0 }}>
                   <label>Mins</label>
                   <input type="number" value={b.duration} onChange={e => {
                     const nb = [...config.breaks]; nb[i].duration = Number(e.target.value); F('breaks', nb);

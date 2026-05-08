@@ -97,7 +97,7 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
         </div>
         <div>
           <div className="tb-sname" style={(user.role === 'super-admin' && !impersonateId) ? {
-            fontFamily: 'var(--font-sora), sans-serif', fontSize: 18, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px'
+            fontFamily: 'var(--font-sora), sans-serif', fontSize: 18, fontWeight: 800, color: '#F8FAFC'
           } : {}}>
             {(user.role === 'super-admin' && !impersonateId) ? 'EduVantage Master' : (profile.name?.toUpperCase() || 'SCHOOL PORTAL')}
             {(user.role !== 'super-admin' || impersonateId) && ` — ${new Date().getFullYear()}`}

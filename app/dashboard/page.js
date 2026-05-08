@@ -41,14 +41,14 @@ function DashboardContent() {
       const u = await getCachedUser();
       if (!u) { router.push('/login'); return; }
       setUser(u);
-      
+
       const tid = u.tenant_id || u.tenantId;
       const isSuper = tid === 'platform-master' && u.role === 'super-admin';
 
       // 2. Fetch CORE data in parallel
       const [db, glob, statRes] = await Promise.all([
         getCachedDBMulti(['paav_theme', 'paav_school_profile']),
-        isSuper 
+        isSuper
           ? fetch('/api/saas/global-config').then(r => r.json()).catch(() => ({}))
           : Promise.resolve({}),
         fetch('/api/stats/dashboard').then(r => r.json()).catch(() => ({ stats: {} }))
@@ -59,7 +59,7 @@ function DashboardContent() {
 
       const s = statRes.stats || {};
       setStats(s);
-      
+
       // Warm up other common keys
       prefetchKeys(['paav_hero_img', 'paav6_fin_config']);
 
@@ -81,7 +81,7 @@ function DashboardContent() {
   async function notifyParents() {
     if (!stats.redFlags?.length) return;
     if (!confirm(`Send SMS alerts to parents of ${stats.redFlags.length} flagged students?`)) return;
-    
+
     setBusy(true);
     try {
       const alerts = stats.redFlags.map(rf => ({ phone: rf.phone, name: rf.name, count: rf.absent_count }));
@@ -206,11 +206,11 @@ function DashboardContent() {
                 const activeRoles = [user.role];
                 const isImpersonating = (user.role === 'super-admin' && typeof window !== 'undefined' && localStorage.getItem('paav_impersonate_id'));
                 if (isImpersonating) activeRoles.push('admin');
-                
+
                 return ALL_NAV.filter(n => n.roles.some(r => activeRoles.includes(r))).map((t, idx) => (
-                  <Link 
-                    key={t.key} 
-                    href={t.key === 'classes' ? '/classes' : `/${t.key}`} 
+                  <Link
+                    key={t.key}
+                    href={t.key === 'classes' ? '/classes' : `/${t.key}`}
                     className="hub-btn"
                     style={{ animationDelay: `${idx * 40}ms` }}
                   >
@@ -223,12 +223,12 @@ function DashboardContent() {
           </div>
 
           <div className="sg sg4 home-stat-grid">
-            <StatCard 
-              icon="🎓" 
-              bg="#EFF6FF" 
-              value={stats.totalLearners || 0} 
-              label="Learners" 
-              onClick={() => router.push('/learners')} 
+            <StatCard
+              icon="🎓"
+              bg="#EFF6FF"
+              value={stats.totalLearners || 0}
+              label="Learners"
+              onClick={() => router.push('/learners')}
             />
             {user.role === 'admin' && (
               <>
@@ -528,69 +528,97 @@ function DashboardContent() {
           text-transform: uppercase;
         }
         .hub-grid {
-          display: grid; 
-          grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); 
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
           gap: 14px;
           background:
-            linear-gradient(180deg, #F8FAFF 0%, #F1F5F9 100%);
+            radial-gradient(circle at 12% 18%, rgba(14,165,233,.08), transparent 28%),
+            radial-gradient(circle at 90% 0%, rgba(20,184,166,.10), transparent 30%),
+            linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 100%);
           padding: 18px;
         }
-        .hub-btn { 
-          display: flex; 
-          flex-direction: column; 
-          align-items: center; 
+        .hub-btn {
+          --hub-accent: #2563EB;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
           justify-content: center;
-          gap: 10px; 
+          gap: 10px;
           min-height: 128px;
-          padding: 22px 12px; 
+          padding: 22px 12px;
           background:
-            linear-gradient(180deg, #fff 0%, #FBFDFF 100%);
-          border-radius: 16px; 
-          text-decoration: none; 
-          color: var(--navy); 
-          transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .28s ease, background .28s ease; 
-          border: 1px solid #E2E8F0;
-          text-align: center; 
-          box-shadow: 0 8px 18px rgba(15,23,42,.04);
+            linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(248,250,252,.96) 100%);
+          border-radius: 16px;
+          text-decoration: none;
+          color: var(--navy);
+          transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .28s ease, background .28s ease, color .28s ease;
+          border: 1px solid rgba(148,163,184,.26);
+          text-align: center;
+          box-shadow: 0 12px 28px rgba(15,23,42,.06);
           opacity: 0;
           transform: translateY(14px) scale(.98);
           animation: hubFadeIn .56s cubic-bezier(.2,.8,.2,1) forwards;
+          position: relative;
+          overflow: hidden;
+          isolation: isolate;
         }
-        .hub-btn:hover { 
-          background: linear-gradient(180deg, #fff 0%, #EFF6FF 100%);
-          border-color: #2563EB; 
-          transform: translateY(-6px); 
-          box-shadow: 0 22px 38px rgba(37,99,235,0.16), 0 8px 12px rgba(37,99,235,0.08); 
+        .hub-btn:nth-child(5n + 1) { --hub-accent: #2563EB; }
+        .hub-btn:nth-child(5n + 2) { --hub-accent: #0F766E; }
+        .hub-btn:nth-child(5n + 3) { --hub-accent: #D97706; }
+        .hub-btn:nth-child(5n + 4) { --hub-accent: #7C3AED; }
+        .hub-btn:nth-child(5n + 5) { --hub-accent: #E11D48; }
+        .hub-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(135deg, color-mix(in srgb, var(--hub-accent) 13%, transparent), transparent 55%),
+            linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,0));
+          opacity: .75;
+          z-index: -1;
+          transition: opacity .28s ease, transform .28s ease;
+        }
+        .hub-btn:hover {
+          background: linear-gradient(180deg, #fff 0%, color-mix(in srgb, var(--hub-accent) 9%, #FFFFFF) 100%);
+          border-color: color-mix(in srgb, var(--hub-accent) 42%, #FFFFFF);
+          transform: translateY(-6px);
+          box-shadow: 0 22px 42px color-mix(in srgb, var(--hub-accent) 20%, transparent), 0 10px 18px rgba(15,23,42,0.08);
+        }
+        .hub-btn:hover::before {
+          opacity: 1;
+          transform: scale(1.08);
         }
         .hub-btn:focus-visible {
-          outline: 3px solid rgba(37,99,235,.24);
+          outline: 3px solid color-mix(in srgb, var(--hub-accent) 28%, transparent);
           outline-offset: 3px;
         }
-        .hub-icon { 
+        .hub-icon {
           width: 52px;
           height: 52px;
           display: grid;
           place-items: center;
           border-radius: 15px;
-          background: linear-gradient(135deg, #F8FAFC, #EFF6FF);
-          font-size: 28px; 
-          filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); 
-          transition: transform .28s cubic-bezier(.2,.8,.2,1), background .28s ease; 
+          background:
+            linear-gradient(135deg, #FFFFFF, color-mix(in srgb, var(--hub-accent) 12%, #F8FAFC));
+          font-size: 28px;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,.8), 0 12px 24px color-mix(in srgb, var(--hub-accent) 16%, transparent);
+          transition: transform .28s cubic-bezier(.2,.8,.2,1), background .28s ease, box-shadow .28s ease;
         }
-        .hub-btn:hover .hub-icon { 
+        .hub-btn:hover .hub-icon {
           background: #fff;
-          transform: translateY(-4px) scale(1.08); 
+          transform: translateY(-4px) scale(1.08);
+          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hub-accent) 18%, #FFFFFF), 0 18px 30px color-mix(in srgb, var(--hub-accent) 22%, transparent);
         }
-        .hub-label { 
-          font-size: 11.2px; 
-          font-weight: 850; 
-          color: #475569; 
-          text-transform: uppercase; 
-          letter-spacing: .4px; 
+        .hub-label {
+          font-size: 11.2px;
+          font-weight: 850;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: .4px;
           line-height: 1.2;
         }
         .hub-btn:hover .hub-label {
-          color: #2563EB;
+          color: var(--hub-accent);
           transform: scale(1.05);
         }
         .hub-btn:active {
@@ -756,14 +784,19 @@ function DashboardContent() {
             padding: 12px;
           }
           .hub-btn {
-            min-height: 112px;
-            padding: 18px 8px;
-            border-radius: 14px;
+            min-height: 108px;
+            padding: 16px 8px;
+            border-radius: 16px;
+            box-shadow: 0 10px 22px rgba(15,23,42,.07);
           }
           .hub-icon {
-            width: 46px;
-            height: 46px;
-            font-size: 25px;
+            width: 44px;
+            height: 44px;
+            font-size: 24px;
+          }
+          .hub-label {
+            font-size: 10px;
+            letter-spacing: .25px;
           }
           .home-insight-grid {
             grid-template-columns: 1fr;
