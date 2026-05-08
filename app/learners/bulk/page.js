@@ -143,12 +143,14 @@ export default function BulkLearnersPage() {
     }
 
     for (const r of valid) {
-      const isDuplicate = merged.some(m => m.grade === r.grade && isFuzzyMatch(m.name, r.name));
-      if (isDuplicate) {
+      const existingIdx = merged.findIndex(m => m.grade === r.grade && isFuzzyMatch(m.name, r.name));
+      if (existingIdx !== -1) {
+        // Overwrite existing with latest (latest wins)
+        merged[existingIdx] = { ...merged[existingIdx], ...r };
         count++;
-        continue; 
+      } else {
+        merged.push(r);
       }
-      merged.push(r);
     }
     
     if (count > 0) {
@@ -157,6 +159,38 @@ export default function BulkLearnersPage() {
       }
     } else {
       alert('✅ No potential duplicates found in the current grid.');
+    }
+  }
+
+  async function handleDeleteGrade() {
+    if (!bulkGrade) return;
+    const count = learners.filter(l => l.grade === bulkGrade).length;
+    if (count === 0) { alert(`No learners found in ${bulkGrade}`); return; }
+    
+    if (!confirm(`⚠️ WARNING: This will DELETE all ${count} learners in ${bulkGrade} and move them to the Recycle Bin. This action cannot be easily undone.\n\nAre you sure you want to proceed?`)) return;
+    
+    setBusy(true);
+    try {
+      const res = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ type: 'deleteGradeLearners', grade: bulkGrade }] })
+      });
+      const data = await res.json();
+      if (data.results?.[0]?.error) throw new Error(data.results[0].error);
+      
+      invalidateDB('paav6_learners');
+      window.dispatchEvent(new CustomEvent('paav:sync', { detail: { changed: ['paav6_learners'] } }));
+      
+      alert(`✅ Successfully deleted ${count} learners from ${bulkGrade}.`);
+      setRows(Array(20).fill(null).map(() => ({ ...EMPTY_ROW, grade: bulkGrade })));
+      // Refresh local learners list
+      const dbData = await getCachedDBMulti(['paav6_learners']);
+      setLearners(dbData.paav6_learners || []);
+    } catch (e) {
+      alert('❌ Error: ' + e.message);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -218,25 +252,43 @@ export default function BulkLearnersPage() {
       const newRows = [];
       
       // 1. Analyze header to find indices (Keyword detection)
-      const headerLine = lines[0].toLowerCase();
-      const headers = lines[0].split(',').map(c => c.trim().toLowerCase());
+      const headerLine = lines[0].toUpperCase();
+      const headers = lines[0].split(',').map(c => c.trim().toUpperCase());
       
-      // Heuristic: Is the first line a header?
-      const isHeader = headers.some(h => ['adm', 'name', 'dob', 'birth', 'grade', 'level', 'stream', 'sex', 'parent', 'phone', 'arrears'].some(k => h.includes(k)));
-      
+      // 1. Keyword-based Mapping
       const map = {
-        adm: headers.findIndex(h => h.includes('adm')),
-        name: headers.findIndex(h => h.includes('name')),
-        dob: headers.findIndex(h => h.includes('dob') || h.includes('birth') || h.includes('date')),
-        grade: headers.findIndex(h => h.includes('grade') || h.includes('level') || h.includes('class')),
-        stream: headers.findIndex(h => h.includes('stream') || h.includes('house')),
-        sex: headers.findIndex(h => h.includes('sex') || h.includes('gender')),
-        parent: headers.findIndex(h => h.includes('parent') || h.includes('guardian')),
-        phone: headers.findIndex(h => h.includes('phone') || h.includes('contact') || h.includes('mobile')),
-        arrears: headers.findIndex(h => h.includes('arrears') || h.includes('balance') || h.includes('debt'))
+        adm: headers.findIndex(h => h.includes('ADM') || h.includes('NO.') || h.includes('NUMBER')),
+        name: headers.findIndex(h => h.includes('NAME') || h.includes('STUDENT')),
+        dob: headers.findIndex(h => h.includes('DOB') || h.includes('BIRTH') || h.includes('DATE')),
+        grade: headers.findIndex(h => h.includes('GRADE') || h.includes('CLASS') || h.includes('LEVEL')),
+        stream: headers.findIndex(h => h.includes('STREAM') || h.includes('HOUSE') || h.includes('BRANCH')),
+        sex: headers.findIndex(h => h.includes('SEX') || h.includes('GENDER')),
+        parent: headers.findIndex(h => h.includes('PARENT') || h.includes('GUARDIAN') || h.includes('FATHER') || h.includes('MOTHER')),
+        phone: headers.findIndex(h => h.includes('PHONE') || h.includes('CONTACT') || h.includes('MOBILE') || h.includes('TEL')),
+        arrears: headers.findIndex(h => h.includes('ARREARS') || h.includes('BAL') || h.includes('DEBT') || h.includes('FEE'))
       };
 
-      // Fallback to defaults if not found (matching template order)
+      // 2. Content-Based Validation (If headers are ambiguous or missing)
+      // We check the first data row (usually row 1) to see if content matches the mapped header
+      const testRow = lines[1] ? lines[1].split(',').map(c => c.trim().replace(/^"|"$/g, '')) : [];
+      
+      const isDate = (s) => /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s) || /^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(s);
+      const isGrade = (s) => /GRADE|PP|CLASS|PRIMARY|JSS|KINDER/i.test(s);
+      const isSex = (s) => /^(M|F|MALE|FEMALE)$/i.test(s);
+      const isPhone = (s) => /^(\+254|0)?[17]\d{8}$/.test(s.replace(/\s/g, ''));
+
+      // If map.grade and map.dob are swapped or misdetected
+      if (testRow.length > 0) {
+        headers.forEach((h, idx) => {
+          const val = testRow[idx] || '';
+          if (isDate(val) && map.dob === -1) map.dob = idx;
+          if (isGrade(val) && map.grade === -1) map.grade = idx;
+          if (isSex(val) && map.sex === -1) map.sex = idx;
+          if (isPhone(val) && map.phone === -1) map.phone = idx;
+        });
+      }
+
+      // Fallback to template defaults only if still not found
       if (map.adm === -1) map.adm = 0;
       if (map.name === -1) map.name = 1;
       if (map.dob === -1) map.dob = 2;
@@ -247,6 +299,7 @@ export default function BulkLearnersPage() {
       if (map.phone === -1) map.phone = 7;
       if (map.arrears === -1) map.arrears = 8;
 
+      const isHeader = headers.some(h => ['ADM', 'NAME', 'DOB', 'GRADE', 'SEX', 'STREAM'].some(k => h.includes(k)));
       let startIdx = isHeader ? 1 : 0;
 
       for (let i = startIdx; i < lines.length; i++) {
@@ -254,15 +307,13 @@ export default function BulkLearnersPage() {
         if (!line) continue;
         const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
         
-        // Final sanity check: if DOB looks like a grade and Grade looks like a date, swap them
-        let rowDOB = cols[map.dob] || '';
+        // Final content-aware mapping per row (in case of shifts)
         let rowGrade = cols[map.grade] || '';
+        let rowDOB = cols[map.dob] || '';
         
-        const isDate = (s) => /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s) || /^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(s);
-        const isGrade = (s) => /GRADE|PP|CLASS|PRIMARY|KINDER/i.test(s);
-
-        if (isGrade(rowDOB) && isDate(rowGrade)) {
-          [rowDOB, rowGrade] = [rowGrade, rowDOB];
+        // Swap if they look reversed
+        if (isGrade(rowDOB) && !isGrade(rowGrade)) {
+          [rowGrade, rowDOB] = [rowDOB, rowGrade];
         }
 
         newRows.push({
@@ -280,7 +331,21 @@ export default function BulkLearnersPage() {
       }
       
       if (newRows.length > 0) {
-        if (confirm(`Detected ${newRows.length} learners. Overwrite current grid?`)) {
+        const choice = confirm(`Detected ${newRows.length} learners. \n\nClick OK to MERGE into current grid (LATEST CSV data wins).\nClick CANCEL to OVERWRITE entire grid.`);
+        if (choice) {
+          // MERGE: Latest (CSV) wins
+          const merged = [...rows.filter(r => r.adm || r.name)];
+          for (const nr of newRows) {
+            const idx = merged.findIndex(m => (m.adm && m.adm === nr.adm) || (m.name && m.grade === nr.grade && m.name === nr.name));
+            if (idx !== -1) {
+              merged[idx] = { ...merged[idx], ...nr };
+            } else {
+              merged.push(nr);
+            }
+          }
+          setRows([...merged, ...Array(5).fill(null).map(() => ({...EMPTY_ROW}))]);
+        } else {
+          // OVERWRITE
           setRows([...newRows, ...Array(5).fill(null).map(() => ({...EMPTY_ROW}))]);
         }
       }
@@ -419,6 +484,11 @@ export default function BulkLearnersPage() {
           <button className="btn btn-primary btn-sm" onClick={loadExistingGrade} title="Load all existing learners in this grade for editing">
             ✏️ Load Class for Editing
           </button>
+          {isAdmin && (
+            <button className="btn btn-danger btn-sm" onClick={handleDeleteGrade} title="Delete all learners in this grade">
+              🗑️ Delete Grade Learners
+            </button>
+          )}
           <button className="btn btn-gold btn-sm" onClick={deduplicateRows} title="Instantly find and merge students with the same name in this list">
             🪄 Deduplicate & Merge (Safety Check)
           </button>

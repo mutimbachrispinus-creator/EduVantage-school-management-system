@@ -217,6 +217,13 @@ async function handleRequest(req, auth, impTenant = null) {
       await kvDeleteLearner(req.adm, tenantId);
       return { type: req.type, ok: true };
     }
+    
+    case 'deleteGradeLearners': {
+      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      const { kvDeleteGradeLearners } = await import('@/lib/db');
+      await kvDeleteGradeLearners(req.grade, tenantId);
+      return { type: req.type, ok: true };
+    }
 
     case 'getDeletedLearners':
     case 'get_deleted_learners': {

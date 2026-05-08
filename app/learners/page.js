@@ -632,7 +632,8 @@ function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
         onClose();
       }
     } catch (e) {
-      setErr('Failed to save changes');
+      console.error('EditLearner save error:', e);
+      setErr(e.message || 'Failed to save changes');
     } finally {
       setBusy(false);
     }
