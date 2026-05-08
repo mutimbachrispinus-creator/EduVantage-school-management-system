@@ -570,9 +570,9 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
             <thead>
               <tr style={{ background: themeColor, color: '#fff' }}>
                 <th style={{ padding: 8, textAlign: 'left', borderRadius: '8px 0 0 0' }}>Learning Area / Subject</th>
-                <th style={{ padding: 8 }}>Opener</th>
-                <th style={{ padding: 8 }}>Mid-Term</th>
-                <th style={{ padding: 8 }}>End-Term</th>
+                {(getCurriculum(curr).ASSESSMENT_TYPES || []).map(a => (
+                  <th key={a.key} style={{ padding: 8 }}>{a.label.replace(/^[^\s]+\s/, '')}</th>
+                ))}
                 <th style={{ padding: 8, background: 'rgba(255,255,255,0.1)' }}>Avg %</th>
                 <th style={{ padding: 8, borderRadius: '0 8px 0 0' }}>Performance Level</th>
               </tr>
@@ -583,15 +583,19 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
                 return (
                   <tr key={s.subj} style={{ background: idx % 2 === 0 ? '#fff' : '#F8FAFF' }}>
                     <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, fontWeight: 700, color: '#1E293B' }}>{s.subj}</td>
-                    <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center' }}>
-                      {s.op || '—'} <span style={{ fontSize: 8, color: colors[s.opLv] || '#94A3B8', fontWeight: 800 }}>{s.opLv}</span>
-                    </td>
-                    <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center' }}>
-                      {s.mt || '—'} <span style={{ fontSize: 8, color: colors[s.mtLv] || '#94A3B8', fontWeight: 800 }}>{s.mtLv}</span>
-                    </td>
-                    <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center' }}>
-                      {s.et || '—'} <span style={{ fontSize: 8, color: colors[s.etLv] || '#94A3B8', fontWeight: 800 }}>{s.etLv}</span>
-                    </td>
+                    {(getCurriculum(curr).ASSESSMENT_TYPES || []).map(a => {
+                      const score = s.scores[a.key];
+                      const info = s.infos[a.key];
+                      return (
+                        <td key={a.key} style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center' }}>
+                          {score !== null ? (
+                            <>
+                              {score} <span style={{ fontSize: 8, color: colors[info.lv] || '#94A3B8', fontWeight: 800 }}>{info.lv}</span>
+                            </>
+                          ) : '—'}
+                        </td>
+                      );
+                    })}
                     <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center', fontWeight: 800, background: 'rgba(0,0,0,0.02)' }}>{s.avg}</td>
                     <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center' }}>
                       <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 900, background: (colors[s.avgLv] || '#333') + '22', color: colors[s.avgLv] || '#333', border: `1px solid ${colors[s.avgLv] || '#333'}` }}>

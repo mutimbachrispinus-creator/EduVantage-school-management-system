@@ -1,19 +1,35 @@
 'use client';
 export const runtime = 'edge';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser } from '@/lib/client-cache';
+import { useSchoolProfile } from '@/lib/school-profile';
+import { getCurriculum } from '@/lib/curriculum';
 
 const NAVY = '#0F172A';
 const SLATE = '#64748B';
 
 export default function WeightsSettingsPage() {
   const router = useRouter();
+  const school = useSchoolProfile();
+  const curr = useMemo(() => getCurriculum(school?.curriculum || 'CBC'), [school?.curriculum]);
+  const assessments = useMemo(() => curr.ASSESSMENT_TYPES || [], [curr]);
+  
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [weights, setWeights] = useState({ op1: 33.33, mt1: 33.33, et1: 33.34 });
+  
+  // Default weights based on curriculum
+  const defaultWeights = useMemo(() => {
+    const w = {};
+    assessments.forEach(a => {
+      w[a.key] = (100 / assessments.length).toFixed(2);
+    });
+    return w;
+  }, [assessments]);
+
+  const [weights, setWeights] = useState({});
 
   const load = useCallback(async () => {
     try {
@@ -31,24 +47,31 @@ export default function WeightsSettingsPage() {
       });
       const data = await res.json();
       const val = data.results?.[0]?.value;
+      
       if (val) {
-        setWeights({
-          op1: val.op1 * 100,
-          mt1: val.mt1 * 100,
-          et1: val.et1 * 100
+        const loadedWeights = {};
+        assessments.forEach(a => {
+          loadedWeights[a.key] = (val[a.key] !== undefined) ? (val[a.key] * 100).toFixed(2) : (100 / assessments.length).toFixed(2);
         });
+        setWeights(loadedWeights);
+      } else {
+        setWeights(defaultWeights);
       }
     } catch (e) {
       console.error('Failed to load weights:', e);
+      setWeights(defaultWeights);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, assessments, defaultWeights]);
 
   useEffect(() => { load(); }, [load]);
 
-  const total = Number(weights.op1) + Number(weights.mt1) + Number(weights.et1);
-  const isValid = Math.abs(total - 100) < 0.01;
+  const total = useMemo(() => {
+    return Object.values(weights).reduce((acc, v) => acc + Number(v || 0), 0);
+  }, [weights]);
+
+  const isValid = Math.abs(total - 100) < 0.1;
 
   const save = async () => {
     if (!isValid) {
@@ -58,11 +81,10 @@ export default function WeightsSettingsPage() {
 
     setSaving(true);
     try {
-      const payload = {
-        op1: weights.op1 / 100,
-        mt1: weights.mt1 / 100,
-        et1: weights.et1 / 100
-      };
+      const payload = {};
+      Object.keys(weights).forEach(k => {
+        payload[k] = Number(weights[k]) / 100;
+      });
       
       const res = await fetch('/api/db', {
         method: 'POST',
@@ -71,7 +93,7 @@ export default function WeightsSettingsPage() {
       });
       const data = await res.json();
       if (data.results?.[0]?.ok) {
-        alert('✅ Assessment weights updated successfully!');
+        alert('✅ Assessment weights updated successfully for ' + (school?.curriculum || 'CBC') + ' curriculum!');
       } else {
         throw new Error('Failed to save weights');
       }
@@ -82,6 +104,8 @@ export default function WeightsSettingsPage() {
     }
   };
 
+  const COLORS = ['#3B82F6', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6'];
+
   if (loading) return <div className="page on"><p>Loading weights...</p></div>;
 
   return (
@@ -91,7 +115,7 @@ export default function WeightsSettingsPage() {
           <button onClick={() => router.back()} className="btn btn-ghost" style={{ color: '#fff', padding: 10 }}>←</button>
           <div>
             <h1 style={{ margin: 0, fontSize: 24 }}>⚖️ Assessment Weights</h1>
-            <p style={{ color: '#94A3B8', margin: '5px 0 0 0' }}>Configure how much each assessment type contributes to the final termly average.</p>
+            <p style={{ color: '#94A3B8', margin: '5px 0 0 0' }}>Configure contribution of each assessment type for <strong>{school?.curriculum || 'CBC'}</strong> curriculum.</p>
           </div>
         </div>
       </div>
@@ -99,14 +123,20 @@ export default function WeightsSettingsPage() {
       <div style={{ padding: '0 40px 40px', maxWidth: 600, margin: '0 auto' }}>
         <div className="panel" style={{ padding: 30 }}>
           <div style={{ marginBottom: 25 }}>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Termly Weight Distribution</h2>
+            <h2 style={{ margin: 0, fontSize: 18 }}>{school?.curriculum || 'CBC'} Weight Distribution</h2>
             <p style={{ margin: '5px 0 0', fontSize: 13, color: SLATE }}>Total must equal 100%.</p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <WeightInput label="Opener Assessment (OP1)" val={weights.op1} set={v => setWeights({...weights, op1: v})} color="#3B82F6" />
-            <WeightInput label="Mid-Term Assessment (MT1)" val={weights.mt1} set={v => setWeights({...weights, mt1: v})} color="#F59E0B" />
-            <WeightInput label="End-Term Assessment (ET1)" val={weights.et1} set={v => setWeights({...weights, et1: v})} color="#10B981" />
+            {assessments.map((a, idx) => (
+              <WeightInput 
+                key={a.key}
+                label={a.label} 
+                val={weights[a.key] || 0} 
+                set={v => setWeights({...weights, [a.key]: v})} 
+                color={COLORS[idx % COLORS.length]} 
+              />
+            ))}
           </div>
 
           <div style={{ marginTop: 30, padding: 20, background: isValid ? '#F0FDF4' : '#FEF2F2', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -146,7 +176,7 @@ function WeightInput({ label, val, set, color }) {
           onChange={e => set(e.target.value)}
           style={{ flex: 1, accentColor: color }}
         />
-        <div style={{ position: 'relative', width: 80 }}>
+        <div style={{ position: 'relative', width: 90 }}>
           <input 
             type="number" 
             value={val}

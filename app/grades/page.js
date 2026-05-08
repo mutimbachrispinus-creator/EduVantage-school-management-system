@@ -22,11 +22,7 @@ import { useProfile } from '@/app/PortalShell';
 import { getAllGrades } from '@/lib/cbe';
 
 
-const ASSESSMENTS = [
-  { key: 'op1', label: '📝 Opener'   },
-  { key: 'mt1', label: '📖 Mid-Term' },
-  { key: 'et1', label: '📋 End-Term' },
-];
+// Assessments are now fetched from the active curriculum
 
 export default function GradesPage() {
   const router = useRouter();
@@ -500,7 +496,7 @@ export default function GradesPage() {
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Assessment</label>
             <select value={assess} onChange={e => setAssess(e.target.value)}>
-              {ASSESSMENTS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
+              {(curr.ASSESSMENT_TYPES || []).map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
             </select>
           </div>
 
