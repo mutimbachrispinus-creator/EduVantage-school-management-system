@@ -2183,3 +2183,180 @@ input:focus, select:focus, textarea:focus {
     transition-duration:.001ms !important;
   }
 }
+
+/* Phone Panel Fit — keep cards inside the viewport */
+@media(max-width:600px){
+  html,
+  body{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+
+  #main,
+  .page{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+
+  .page{
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+
+  .page > *{
+    max-width:100%;
+  }
+
+  .panel,
+  .stat-card,
+  .receipt-card,
+  .print-container,
+  .quick-access-btn,
+  .duty-dept-card,
+  .assign-row,
+  .fee-cfg-row,
+  .profile-card,
+  .parent-banner,
+  .hero-banner,
+  .payslip,
+  .payslip-print-wrap{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    box-sizing:border-box;
+  }
+
+  .panel{
+    overflow:hidden;
+  }
+
+  .panel-hdr{
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .panel-hdr > *,
+  .panel-body > *,
+  .page-hdr > *,
+  .page-hdr-acts > *{
+    min-width:0;
+    max-width:100%;
+  }
+
+  .panel-hdr input,
+  .panel-hdr select,
+  .panel-hdr .field,
+  .page-hdr-acts .btn,
+  .page-hdr-acts select,
+  .page-hdr-acts input{
+    width:100% !important;
+    flex:1 1 100% !important;
+  }
+
+  .sg,
+  .sg1,
+  .sg2,
+  .sg3,
+  .sg4,
+  .sg5,
+  .sg-responsive,
+  .field-row,
+  .field-row3,
+  .rc-grid,
+  .rc-status-grid,
+  .rc-sigs,
+  .profile-field{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  .panel-body[style*="grid"],
+  .panel-body[style*="flex"],
+  .panel-hdr[style*="flex"],
+  .sg-responsive[style*="flex"]{
+    max-width:100% !important;
+  }
+
+  .tbl-wrap,
+  .merit-list-container{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:visible;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  table{
+    width:max-content;
+    min-width:100%;
+    max-width:none;
+  }
+
+  th,
+  td{
+    white-space:nowrap;
+  }
+
+  .profile-field{
+    gap:3px;
+  }
+
+  .profile-label{
+    width:auto;
+  }
+
+  .sc-inner,
+  .panel-body > div,
+  .modal-body > div{
+    min-width:0;
+  }
+
+  .modal-overlay{
+    padding:8px;
+    align-items:flex-end;
+  }
+
+  .modal,
+  .modal-lg,
+  .modal-xl{
+    width:100% !important;
+    max-width:100% !important;
+    max-height:94vh;
+  }
+
+  .modal-hdr,
+  .modal-body,
+  .modal-footer{
+    padding-left:14px;
+    padding-right:14px;
+  }
+
+  .modal-footer{
+    flex-wrap:wrap;
+  }
+
+  .modal-footer .btn{
+    flex:1 1 100%;
+    justify-content:center;
+  }
+
+  img,
+  canvas,
+  video,
+  svg{
+    max-width:100%;
+  }
+
+  input,
+  select,
+  textarea,
+  button{
+    max-width:100%;
+  }
+}
