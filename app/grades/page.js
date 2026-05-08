@@ -196,9 +196,9 @@ export default function GradesPage() {
     if (loading || saving || dirtyMarks.length === 0) return;
     const timer = setTimeout(() => {
       save(true); 
-    }, 1500);
+    }, 800);
     return () => clearTimeout(timer);
-  }, [dirtyMarks]);
+  }, [dirtyMarks, loading, saving]);
 
   /* ── Save ── */
   async function save(isAuto = false) {
@@ -627,6 +627,7 @@ export default function GradesPage() {
                                 min="0" max="100"
                                 value={sc ?? ''}
                                 onChange={e => setScore(l.adm, subj, e.target.value)}
+                                onBlur={() => save(true)}
                                 disabled={isSubjLocked(subj) && user?.role !== 'admin'}
                                 title={isSubjLocked(subj) && user?.role === 'admin' ? 'Admin override — you can edit' : ''}
                                 style={{
