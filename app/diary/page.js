@@ -26,7 +26,8 @@ export default function StudentDiaryPage() {
       'paav_duties',
       'paav6_msgs',
       'paav_announcement',
-      'paav_school_profile'
+      'paav_school_profile',
+      'paav_terms'
     ];
     const data = await getCachedDBMulti(keys);
     setDb(data);
@@ -45,9 +46,13 @@ export default function StudentDiaryPage() {
     if (!user || !db.paav6_learners) return [];
 
     // Filter learners by parent or role
-    let targetLearners = user.role === 'parent' 
-      ? db.paav6_learners.filter(l => l.phone === user.phone || l.adm === user.adm) 
-      : db.paav6_learners;
+    let targetLearners = db.paav6_learners || [];
+    if (user.role === 'parent') {
+      const parentLinks = user.links || [];
+      targetLearners = targetLearners.filter(l => 
+        parentLinks.some(link => String(link.adm) === String(l.adm))
+      );
+    }
 
     // Apply Search Filter (Name, Adm, Grade)
     if (searchQuery || selectedGrade) {
@@ -60,6 +65,33 @@ export default function StudentDiaryPage() {
     }
 
     const events = [];
+
+    // 0. Calendar Events (Academic Terms)
+    const terms = db.paav_terms || [];
+    if (Array.isArray(terms)) {
+      terms.forEach(t => {
+        events.push({
+          id: `term-${t.id}`,
+          date: t.start_date,
+          student: 'Academic Calendar',
+          type: 'calendar',
+          icon: '📅',
+          title: `Start of ${t.name}`,
+          desc: `Term milestone: ${t.name} begins. Ensure all records are prepared for the new session.`,
+          color: '#3B82F6'
+        });
+        events.push({
+          id: `term-end-${t.id}`,
+          date: t.end_date,
+          student: 'Academic Calendar',
+          type: 'calendar',
+          icon: '🏁',
+          title: `End of ${t.name}`,
+          desc: `Term milestone: ${t.name} concludes. Review final assessments and reports.`,
+          color: '#64748B'
+        });
+      });
+    }
 
     // 0. Announcements (Global - only show if no specific student is filtered, or if it matches the general context)
     if (!searchQuery && !selectedGrade) {

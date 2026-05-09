@@ -79,8 +79,33 @@ function LoginContent() {
 
   const [schools, setSchools] = useState([]);
   const [links, setLinks] = useState([{ schoolId: '', adm: '' }]);
+  const [learnerNames, setLearnerNames] = useState({}); // { 'schoolId|adm': 'Name' }
   const [usernameStatus, setUsernameStatus] = useState({ checking: false, taken: false });
   const [choices, setChoices] = useState(null);
+
+  useEffect(() => {
+    if (tab !== 'register') return;
+    const fetchNames = async () => {
+      const newNames = { ...learnerNames };
+      let changed = false;
+      for (const link of links) {
+        const key = `${link.schoolId}|${link.adm}`;
+        if (link.schoolId && link.adm && !newNames[key]) {
+          try {
+            const res = await fetch(`/api/saas/lookup-learner?schoolId=${link.schoolId}&adm=${link.adm}`);
+            const data = await res.json();
+            if (data.ok) {
+              newNames[key] = data.name;
+              changed = true;
+            }
+          } catch (e) {}
+        }
+      }
+      if (changed) setLearnerNames(newNames);
+    };
+    const timer = setTimeout(fetchNames, 600);
+    return () => clearTimeout(timer);
+  }, [links, tab]);
   const [form, setForm] = useState({
     username: '', password: '', 
     name: '', phone: '', role: 'parent', 
@@ -410,20 +435,30 @@ function LoginContent() {
 
                   <div style={{ background: '#F8FAFC', padding: 15, borderRadius: 12, marginBottom: 20, border: '1px solid #E2E8F0' }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', display: 'block', marginBottom: 10 }}>LINKED SCHOOLS & LEARNERS</label>
-                    {links.map((link, idx) => (
-                      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 30px', gap: 10, marginBottom: 8 }}>
-                        <select required value={link.schoolId} onChange={e => {
-                          const newLinks = [...links]; newLinks[idx].schoolId = e.target.value; setLinks(newLinks);
-                        }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }}>
-                          <option value="">Select School</option>
-                          {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                        <input required placeholder="Adm No." value={link.adm} onChange={e => {
-                          const newLinks = [...links]; newLinks[idx].adm = e.target.value; setLinks(newLinks);
-                        }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }} />
-                        {idx > 0 && <button type="button" onClick={() => setLinks(links.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>❌</button>}
-                      </div>
-                    ))}
+                    {links.map((link, idx) => {
+                      const name = learnerNames[`${link.schoolId}|${link.adm}`];
+                      return (
+                        <div key={idx} style={{ marginBottom: 12 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 30px', gap: 10, marginBottom: 4 }}>
+                            <select required value={link.schoolId} onChange={e => {
+                              const newLinks = [...links]; newLinks[idx].schoolId = e.target.value; setLinks(newLinks);
+                            }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }}>
+                              <option value="">Select School</option>
+                              {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                            <input required placeholder="Adm No." value={link.adm} onChange={e => {
+                              const newLinks = [...links]; newLinks[idx].adm = e.target.value; setLinks(newLinks);
+                            }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }} />
+                            {idx > 0 && <button type="button" onClick={() => setLinks(links.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>❌</button>}
+                          </div>
+                          {name && (
+                            <div style={{ fontSize: 11, color: '#059669', fontWeight: 800, padding: '0 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              ✅ Verifying: <span style={{ color: 'var(--primary)' }}>{name}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                     <button type="button" onClick={() => setLinks([...links, { schoolId: '', adm: '' }])} style={{ width: '100%', padding: '8px', background: '#fff', border: '1.5px dashed #CBD5E1', borderRadius: 8, fontSize: 11, fontWeight: 700, color: '#2563EB', cursor: 'pointer' }}>+ Add Another School</button>
                   </div>
 

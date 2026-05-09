@@ -78,9 +78,11 @@ export default function ParentHome() {
       const profile = db.results[8]?.value || {};
       const fullTTData = db.results[9]?.value || {};
 
-      const admList = Array.isArray(auth.user.childAdm)
-        ? auth.user.childAdm
-        : auth.user.childAdm ? String(auth.user.childAdm).split(',').map(s => s.trim()).filter(Boolean) : [];
+      const admList = auth.user.links 
+        ? auth.user.links.map(l => l.adm)
+        : (Array.isArray(auth.user.childAdm)
+          ? auth.user.childAdm
+          : auth.user.childAdm ? String(auth.user.childAdm).split(',').map(s => s.trim()).filter(Boolean) : []);
 
       const myKids = learners.filter(l => admList.includes(l.adm));
       setChildren(myKids);
@@ -527,139 +529,147 @@ export default function ParentHome() {
 
       {/* PAY FEES TAB */}
       {tab==='fees' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
-          {/* Fee Overview Card with Chart */}
-          <div className="panel" style={{ border: `1.5px solid #A7F3D0`, background: '#fff' }}>
-            <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #047857, #065F46)', color: '#fff' }}>
-              <h3 style={{ color: '#fff' }}>📊 Fee Status Overview</h3>
-            </div>
-            <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '25px 20px' }}>
-              <div style={{ 
-                width: 160, height: 160, borderRadius: '50%', 
-                background: `conic-gradient(#059669 ${Math.min(100, Math.round((paid/exp)*100))}%, #F1F5F9 0)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
-                boxShadow: '0 10px 25px rgba(4, 120, 87, 0.15)'
-              }}>
-                <div style={{ width: 130, height: 130, background: '#fff', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: '#065F46' }}>{Math.min(100, Math.round((paid/exp)*100))}%</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase' }}>Paid</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+            {/* Fee Overview Card with Chart */}
+            <div className="panel" style={{ border: `1.5px solid #A7F3D0`, background: '#fff', borderRadius: 20 }}>
+              <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #047857, #065F46)', color: '#fff', borderRadius: '20px 20px 0 0' }}>
+                <h3 style={{ color: '#fff' }}>📊 Fee Status Overview</h3>
+              </div>
+              <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '30px 25px' }}>
+                <div style={{ 
+                  width: 160, height: 160, borderRadius: '50%', 
+                  background: `conic-gradient(#059669 ${Math.min(100, Math.round((paid/exp)*100))}%, #F1F5F9 0)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
+                  boxShadow: '0 10px 25px rgba(4, 120, 87, 0.15)'
+                }}>
+                  <div style={{ width: 130, height: 130, background: '#fff', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: '#065F46' }}>{Math.min(100, Math.round((paid/exp)*100))}%</div>
+                    <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase' }}>Paid</div>
+                  </div>
+                </div>
+                
+                <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                   <div style={{ background: '#ECFDF5', padding: 14, borderRadius: 14, border: '1px solid #A7F3D0', textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#059669', fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>Paid So Far</div>
+                      <div style={{ fontSize: 18, fontWeight: 900, color: '#065F46' }}>{fmtK(paid)}</div>
+                   </div>
+                   <div style={{ background: bal > 0 ? '#FEF2F2' : '#ECFDF5', padding: 14, borderRadius: 14, border: bal > 0 ? '1px solid #FECACA' : '1px solid #A7F3D0', textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: bal > 0 ? '#B91C1C' : '#059669', fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>{bal > 0 ? 'Outstanding' : 'Status'}</div>
+                      <div style={{ fontSize: 18, fontWeight: 900, color: bal > 0 ? '#B91C1C' : '#065F46' }}>{bal > 0 ? fmtK(bal) : 'CLEARED'}</div>
+                   </div>
+                </div>
+                
+                <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', fontStyle: 'italic', background: '#F8FAFC', padding: '8px 16px', borderRadius: 20 }}>
+                  Annual fee requirement: <strong style={{color: 'var(--navy)'}}>{fmtK(exp)}</strong>
                 </div>
               </div>
-              
-              <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                 <div style={{ background: '#ECFDF5', padding: 12, borderRadius: 10, border: '1px solid #A7F3D0', textAlign: 'center' }}>
-                    <div style={{ fontSize: 10, color: '#059669', fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>Paid So Far</div>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: '#065F46' }}>{fmtK(paid)}</div>
-                 </div>
-                 <div style={{ background: bal > 0 ? '#FEF2F2' : '#ECFDF5', padding: 12, borderRadius: 10, border: bal > 0 ? '1px solid #FECACA' : '1px solid #A7F3D0', textAlign: 'center' }}>
-                    <div style={{ fontSize: 10, color: bal > 0 ? '#B91C1C' : '#059669', fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>{bal > 0 ? 'Remaining' : 'Status'}</div>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: bal > 0 ? '#B91C1C' : '#065F46' }}>{bal > 0 ? fmtK(bal) : 'CLEARED'}</div>
-                 </div>
-              </div>
-              
-              <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', fontStyle: 'italic' }}>
-                Annual requirement for {child.grade}: <strong>{fmtK(exp)}</strong>
-              </div>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Fee Statement */}
-            <div className="panel" style={{border:`1.5px solid ${MB}`}}>
-              <div className="panel-hdr" style={{background:`linear-gradient(135deg,#047857,#065F46)`,color:'#fff'}}>
-                <h3 style={{color:'#fff'}}>💰 Termly Progress</h3>
+            {/* Detailed Fee Analytics (Breakdown) */}
+            <div className="panel" style={{ border: `1.5px solid #E2E8F0`, background: '#fff', borderRadius: 20 }}>
+              <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #1E293B, #0F172A)', color: '#fff', borderRadius: '20px 20px 0 0' }}>
+                <h3 style={{ color: '#fff' }}>📝 Fee Structure Breakdown</h3>
               </div>
-              <div className="panel-body">
-                {[['Term 1',child?.t1||0],['Term 2',child?.t2||0],['Term 3',child?.t3||0]].map(([l,p])=>{
-                  const due = feeCfg[child?.grade]?.[l.toLowerCase().replace(' ','')]||Math.round(exp/3);
-                  const termPct = Math.min(100, Math.round((p/due)*100));
-                  return (
-                    <div key={l} style={{marginBottom:15}}>
-                      <div style={{display:'flex',justifyContent:'space-between',fontSize:11.5,marginBottom:6}}>
-                        <span style={{fontWeight:700, color: 'var(--navy)'}}>{l}</span>
-                        <span style={{fontWeight:800, color: p>=due ? '#059669' : '#1E40AF'}}>{fmtK(p)} / {fmtK(due)}</span>
-                      </div>
-                      <div style={{height:10,background:'#F1F5F9',borderRadius:5,overflow:'hidden'}}>
-                        <div style={{width:`${termPct}%`,height:'100%',background:p>=due?'#059669':'#3B82F6',borderRadius:5, transition: 'width 1s' }} />
-                      </div>
-                      <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>{termPct}% covered</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          
-          <div style={{ gridColumn: '1/-1' }}>
-            {/* Recent Payments Panel */}
-            <div className="panel" style={{ border: `1.5px solid ${MB}`, marginBottom: 16 }}>
-              <div className="panel-hdr" style={{ background: `linear-gradient(135deg, ${M}, ${M2})`, color: '#fff' }}>
-                <h3 style={{ color: '#fff' }}>📜 Recent Fee Payments</h3>
-              </div>
-              <div className="panel-body" style={{ padding: 0 }}>
+              <div className="panel-body" style={{ padding: 25 }}>
                 {(() => {
-                  const myPays = paylog.filter(p => p.adm === child.adm).sort((a,b) => new Date(b.time) - new Date(a.time));
-                  if (myPays.length === 0) return <div style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No payment history found.</div>;
+                  const cfg = feeCfg[child?.grade] || {};
+                  const items = [
+                    { label: 'Tuition & Basic', val: cfg.annual || 0 },
+                    { label: 'Transport / Bus', val: cfg.transport || 0 },
+                    { label: 'Lunch / Boarding', val: cfg.lunch || 0 },
+                    { label: 'Activities / Uniform', val: cfg.other || 0 },
+                    { label: 'Previous Arrears', val: child?.arrears || 0, isRed: true },
+                  ].filter(i => i.val > 0);
+
+                  if (items.length === 0) return <div style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '40px 0' }}>Detailed breakdown not yet configured.</div>;
+
                   return (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-                        <thead style={{ background: '#F8FAFC', borderBottom: '1.5px solid var(--border)' }}>
-                          <tr>
-                            <th style={{ padding: '12px 16px', textAlign: 'left' }}>Date</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left' }}>Ref</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Amount</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center' }}>Receipt</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {myPays.map((p, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                              <td style={{ padding: '12px 16px' }}>{new Date(p.time).toLocaleDateString()}</td>
-                              <td style={{ padding: '12px 16px', color: 'var(--muted)', fontFamily: 'monospace' }}>{p.ref || 'N/A'}</td>
-                              <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: '#059669' }}>{fmtK(p.amount)}</td>
-                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                <button className="btn btn-sm" style={{ background: MB, color: M, borderRadius: 6, fontWeight: 700 }} onClick={() => printReceipt(p)}>
-                                  📥 Download
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {items.map((it, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i === items.length - 1 ? 'none' : '1px dashed #E2E8F0' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#64748B' }}>{it.label}</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: it.isRed ? '#B91C1C' : 'var(--navy)' }}>KES {fmtK(it.val)}</span>
+                        </div>
+                      ))}
+                      <div style={{ marginTop: 10, padding: 12, background: '#F1F5F9', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>TOTAL REQUIREMENT</span>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--primary)' }}>KES {fmtK(exp + (child?.arrears || 0))}</span>
+                      </div>
                     </div>
                   );
                 })()}
               </div>
             </div>
+          </div>
 
-            {/* Payment instructions and Accounts */}
-            <div className="panel" style={{border:`1.5px solid #A7F3D0`}}>
-            <div className="panel-hdr" style={{background:'linear-gradient(135deg,#047857,#065F46)',color:'#fff'}}>
-              <h3 style={{color:'#fff'}}>💳 How to Pay</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+            {/* Termly Progress */}
+            <div className="panel" style={{ border: `1.5px solid #E2E8F0`, borderRadius: 20 }}>
+              <div className="panel-hdr" style={{ background: `linear-gradient(135deg, #4F46E5, #3730A3)`, color: '#fff', borderRadius: '20px 20px 0 0' }}>
+                <h3 style={{ color: '#fff' }}>📅 Termly Payment Cycle</h3>
+              </div>
+              <div className="panel-body" style={{ padding: 25 }}>
+                {[['Term 1',child?.t1||0],['Term 2',child?.t2||0],['Term 3',child?.t3||0]].map(([l,p], i)=>{
+                  const due = feeCfg[child?.grade]?.[l.toLowerCase().replace(' ','')]||Math.round(exp/3);
+                  const termPct = Math.min(100, Math.round((p/due)*100));
+                  return (
+                    <div key={l} style={{ marginBottom: 20 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 8 }}>
+                        <span style={{ fontWeight: 800, color: 'var(--navy)' }}>{l}</span>
+                        <span style={{ fontWeight: 800, color: p >= due ? '#059669' : '#1E40AF' }}>KES {fmtK(p)} / {fmtK(due)}</span>
+                      </div>
+                      <div style={{ height: 10, background: '#F1F5F9', borderRadius: 5, overflow: 'hidden' }}>
+                        <div style={{ width: `${termPct}%`, height: '100%', background: p >= due ? '#059669' : '#3B82F6', borderRadius: 5, transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="panel-body">
-              {/* M-Pesa Accounts */}
-              {(payInfo.accounts?.length > 0 || payInfo.profile?.bankAccounts?.length > 0) ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 15 }}>
-                  {/* M-Pesa Accounts */}
-                  {payInfo.accounts?.map(acc => (
-                    <div key={acc.id} style={{ background: '#fff', border: `2px solid ${acc.type === 'PesaPal' ? '#6366F1' : acc.type === 'Bank' ? '#BFDBFE' : '#A7F3D0'}`, borderRadius: 12, padding: 15, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase' }}>{acc.type === 'M-Pesa' ? 'Mobile Money' : acc.type === 'PesaPal' ? 'Card / Online' : 'Bank Transfer'}</div>
-                          <div style={{ fontSize: 24, fontWeight: 900, color: acc.type === 'PesaPal' ? '#4F46E5' : acc.type === 'Bank' ? '#1E40AF' : '#065F46' }}>
-                            {acc.shortcode || acc.accNo || acc.consumerKey?.substring(0, 8)}
+
+            {/* Payment Gateway (Configured by Admin) */}
+            <div className="panel" style={{ border: `1.5px solid #A7F3D0`, borderRadius: 20 }}>
+              <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #047857, #065F46)', color: '#fff', borderRadius: '20px 20px 0 0' }}>
+                <h3 style={{ color: '#fff' }}>💳 Institutional Payment Gateway</h3>
+              </div>
+              <div className="panel-body" style={{ padding: 25 }}>
+                {(payInfo.accounts?.length > 0 || payInfo.profile?.bankAccounts?.length > 0) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+                    {payInfo.accounts?.map(acc => (
+                      <div key={acc.id} style={{ background: '#fff', border: `1.5px solid #E2E8F0`, borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, transition: '0.2s' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: 1 }}>{acc.type === 'M-Pesa' ? 'STK Push Supported' : acc.type.toUpperCase()}</div>
+                            <div style={{ fontSize: 20, fontWeight: 900, color: '#065F46' }}>{acc.shortcode || acc.accNo}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>{acc.name}</div>
                           </div>
-                          <div style={{ fontSize: 12, fontWeight: 700 }}>{acc.name} {acc.bank ? `(${acc.bank})` : ''}</div>
+                          <div style={{ background: '#ECFDF5', padding: '4px 10px', borderRadius: 20, fontSize: 10, color: '#059669', fontWeight: 900 }}>{acc.type === 'M-Pesa' ? 'M-PESA' : 'BANK'}</div>
                         </div>
-                        <div style={{ background: acc.type === 'PesaPal' ? '#EEF2FF' : acc.type === 'Bank' ? '#EFF6FF' : '#ECFDF5', padding: '4px 8px', borderRadius: 8, fontSize: 10, color: acc.type === 'PesaPal' ? '#4F46E5' : acc.type === 'Bank' ? '#1D4ED8' : '#059669', fontWeight: 800 }}>
-                          {acc.type.toUpperCase()}
-                        </div>
+                        
+                        {acc.type === 'M-Pesa' && (
+                          <button 
+                            className="btn btn-success btn-sm w-full" 
+                            style={{ background: '#059669', border: 'none', height: 42, borderRadius: 10, fontWeight: 800, boxShadow: '0 4px 12px rgba(5,150,105,0.2)' }}
+                            onClick={() => initiateMpesa(acc, 'Term ' + term.replace('T', ''))}
+                          >
+                            🚀 Pay Now with M-Pesa
+                          </button>
+                        )}
                       </div>
-                      
-                      <div style={{ background: '#F8FAFF', padding: 8, borderRadius: 8, fontSize: 11 }}>
-                        Reference: <strong>{child?.adm}</strong>
-                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                    <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+                    <p style={{ fontSize: 13, color: '#64748B' }}>Institutional payment gateways are currently offline. Please contact the administrator for banking details.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
                       {acc.type === 'M-Pesa' && (
                         <button 

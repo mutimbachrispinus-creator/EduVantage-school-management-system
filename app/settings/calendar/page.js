@@ -3,7 +3,7 @@ export const runtime = 'edge';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCachedUser } from '@/lib/client-cache';
+import { getCachedUser, invalidateDB } from '@/lib/client-cache';
 
 const NAVY = '#0F172A';
 const SLATE = '#64748B';
@@ -56,7 +56,10 @@ export default function CalendarSettingsPage() {
       });
       const data = await res.json();
       if (data.results?.[0]?.ok) {
-        alert('✅ School Calendar updated successfully!');
+        // Sync cache
+        invalidateDB(['paav_terms']);
+        
+        alert('✅ School Calendar updated and synchronized successfully!');
         load();
       } else {
         throw new Error(data.results?.[0]?.error || 'Failed to save');
