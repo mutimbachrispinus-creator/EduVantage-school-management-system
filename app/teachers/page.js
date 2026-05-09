@@ -148,6 +148,7 @@ export default function TeachersPage() {
                           });
                           const data = await res.json();
                           if (data.ok) {
+                            invalidateDB(['paav6_staff']);
                             load();
                           } else {
                             alert(`❌ ${data.error}`);
