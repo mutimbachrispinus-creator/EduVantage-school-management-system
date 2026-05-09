@@ -91,20 +91,19 @@ export async function POST(req) {
 
       console.log(`[M-Pesa Callback] ✅ Payment recorded: adm=${adm}, amount=${result.amount}, ref=${result.mpesaCode}, tenant=${tenantId}`);
 
-      // Fire notification to admin
+      // Fire admin notification
       try {
         await fetch(`${req.nextUrl.origin}/api/notifications`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'create',
-            tenantId,
-            to: 'admin',
+            action: 'create', tenantId, to: 'admin',
             title: `M-Pesa Payment Received`,
             message: `Adm: ${adm} • KES ${result.amount.toLocaleString()} • Ref: ${result.mpesaCode}`,
-            icon: '💰', type: 'payment', link: '/fees'
+            icon: '💰', type: 'payment', link: '/nexed'
           })
         });
       } catch(e) { console.error('[Notification] Failed:', e); }
+
       // Clean up the pending record
       if (pendingKey) {
         try {
@@ -113,18 +112,41 @@ export async function POST(req) {
         } catch (e) { console.error('[M-Pesa Callback] Cleanup error:', e); }
       }
 
-      // Trigger email receipt silently
+      // ── Auto SMS Receipt to Parent ──────────────────────────────────────────
+      // Sends instantly after every successful M-Pesa payment — no manual step needed
       try {
         const learners = await kvGet('paav6_learners', [], tenantId) || [];
         const l = learners.find(x => x.adm === adm);
         const feeCfg = await kvGet('paav6_feecfg', {}, tenantId) || {};
-        const annual = feeCfg[l?.grade]?.annual || 5000;
+        const schoolProfile = await kvGet('paav_school_profile', {}, tenantId) || {};
+        const schoolName = schoolProfile?.name || 'EduVantage School';
+        const annual = (feeCfg[l?.grade]?.t1 || 0) + (feeCfg[l?.grade]?.t2 || 0) + (feeCfg[l?.grade]?.t3 || 0) || feeCfg[l?.grade]?.annual || 0;
         const paid   = (l?.t1||0) + (l?.t2||0) + (l?.t3||0);
-        const balance = annual - paid;
+        const balance = Math.max(0, annual + (l?.arrears || 0) - paid);
+        const parentPhone = l?.phone;
+
+        // Auto SMS receipt to parent
+        if (parentPhone && l) {
+          const { sendSMS } = await import('@/lib/sms-client');
+          const atCreds = await kvGet('paav_at_creds', null, tenantId);
+          const receiptMsg =
+            `✅ Payment Receipt\n` +
+            `${schoolName}\n` +
+            `Student: ${l.name} (${adm})\n` +
+            `Amount: KES ${Number(result.amount).toLocaleString()}\n` +
+            `M-Pesa Ref: ${result.mpesaCode}\n` +
+            `${term} payment confirmed.\n` +
+            `Balance: KES ${balance.toLocaleString()}\n` +
+            `Thank you!`;
+
+          const smsRes = await sendSMS({ to: parentPhone, message: receiptMsg, ...(atCreds || {}) });
+          console.log(`[M-Pesa Callback] SMS receipt ${smsRes.success ? 'sent' : 'failed'} to ${parentPhone}`);
+        }
+
+        // Also trigger email receipt if parent has email
         if (l?.parentEmail) {
           fetch(`${req.nextUrl.origin}/api/email/receipt`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ adm, amount: result.amount, term, ref: result.mpesaCode, balance })
           }).catch(e => console.error('[M-Pesa Callback] Email trigger error:', e));
         }

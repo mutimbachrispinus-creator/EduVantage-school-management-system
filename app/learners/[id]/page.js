@@ -1,30 +1,19 @@
 'use client';
 export const runtime = 'edge';
-/**
- * app/learners/[id]/page.js — Individual learner profile + academic results
- *
- * Shows:
- *   • Bio card (name, grade, age, sex, parent, phone, address)
- *   • Fee statement (term by term)
- *   • Marks across all subjects for each term/assessment
- *   • CBC grade levels and total points
- *   • Quick-action buttons (record payment, print report card)
- */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { fmtK } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 import { usePersistedState } from '@/components/TabState';
 import { useProfile } from '@/app/PortalShell';
-import { getCachedUser } from '@/lib/client-cache';
+import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 
 const ASSESSMENTS = [
   { key: 'op1', label: '📝 Opener' },
   { key: 'mt1', label: '📖 Mid-Term' },
   { key: 'et1', label: '📋 End-Term' },
 ];
-
 
 export default function LearnerProfilePage() {
   const router  = useRouter();
@@ -37,70 +26,42 @@ export default function LearnerProfilePage() {
   const [marks,   setMarks]   = useState({});
   const [feeCfg,  setFeeCfg]  = useState({});
   const [gradCfg, setGradCfg] = useState(null);
+  const [paylog,  setPaylog]  = useState([]);
+  const [attendance, setAttendance] = useState({});
   const [extra,   setExtra]   = useState({});
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   const [term,    setTerm]    = usePersistedState('paav_profile_term',   'T1');
-  const [assess,  setAssess]  = usePersistedState('paav_profile_assess', 'mt1');
+  const [assess,  setAssess]  = usePersistedState('paav_profile_assess', 'et1');
   const [error,   setError]   = useState(null);
 
   useEffect(() => {
     async function load() {
       try {
         setError(null);
-        const [u, dbRes] = await Promise.all([
+        const [u, db] = await Promise.all([
           getCachedUser(),
-          fetch('/api/db', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ requests: [
-              { type: 'get', key: 'paav6_learners' },
-              { type: 'get', key: 'paav6_marks'    },
-              { type: 'get', key: 'paav6_feecfg'   },
-              { type: 'get', key: 'paav8_grad'     },
-              { type: 'get', key: 'paav_profiles'  },
-            ]}),
-            signal: AbortSignal.timeout(15000)
-          })
+          getCachedDBMulti(['paav6_learners', 'paav6_marks', 'paav6_feecfg', 'paav8_grad', 'paav_profiles', 'paav6_paylog', 'paav6_attendance'])
         ]);
 
-        if (!u || dbRes.status === 401) { 
-          router.push('/login?callback=' + encodeURIComponent(window.location.pathname)); 
-          return; 
-        }
+        if (!u) { router.push('/login'); return; }
+        setUser(u);
 
-        if (!dbRes.ok) {
-          throw new Error(`Server error (${dbRes.status})`);
-        }
-
-        const ct = dbRes.headers.get('content-type');
-        if (!ct || !ct.includes('application/json')) throw new Error('Invalid server response (non-JSON)');
-        
-        const db = await dbRes.json();
-        if (!db.results || !Array.isArray(db.results)) throw new Error('Failed to parse database results');
-
-        const allLearners = db.results[0]?.value || [];
+        const allLearners = db.paav6_learners || [];
         const found = allLearners.find(l => String(l.adm) === String(admNo));
-        
-        if (!found) {
-          setError('Learner not found.');
-          setLoading(false);
-          return;
-        }
+        if (!found) { setError('Learner not found.'); setLoading(false); return; }
 
         setLearner(found);
-        setMarks(  db.results[1]?.value || {});
-        setFeeCfg( db.results[2]?.value || {});
-        setGradCfg(db.results[3]?.value || null);
-        const profiles = db.results[4]?.value || {};
-        setExtra(profiles[found.adm] || {});
+        setMarks(db.paav6_marks || {});
+        setFeeCfg(db.paav6_feecfg || {});
+        setGradCfg(db.paav8_grad || null);
+        setPaylog((db.paav6_paylog || []).filter(p => p.adm === admNo));
+        setAttendance(db.paav6_attendance || {});
+        const profiles = db.paav_profiles || {};
+        setExtra(profiles[admNo] || {});
         setLoading(false);
       } catch (e) {
-        console.error('[Profile] Load failed:', e);
-        let msg = 'Failed to load learner profile.';
-        if (e.name === 'TimeoutError' || e.message?.includes('timeout')) msg = 'Connection timed out. Please check your internet.';
-        else if (e.message) msg = e.message;
-        
-        setError(msg);
+        setError(e.message || 'Failed to load profile.');
         setLoading(false);
       }
     }
@@ -122,14 +83,10 @@ export default function LearnerProfilePage() {
 
   const subjects   = DEFAULT_SUBJECTS[learner.grade] || [];
   const cfg        = feeCfg[learner.grade] || {};
-  const t1Fee      = cfg.t1 || 0;
-  const t2Fee      = cfg.t2 || 0;
-  const t3Fee      = cfg.t3 || 0;
-  const annualFee  = (t1Fee + t2Fee + t3Fee) || cfg.annual || 5000;
+  const annualFee  = (cfg.t1 || 0) + (cfg.t2 || 0) + (cfg.t3 || 0) || cfg.annual || 5000;
   const totalPaid  = (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
   const balance    = annualFee + (learner.arrears || 0) - totalPaid;
 
-  /* ── Marks for selected term + assessment ── */
   const marksRows = subjects.map(subj => {
     const k1  = `${term}:${learner.grade}|${subj}|${assess}`;
     const k0  = `${learner.grade}|${subj}|${assess}`;
@@ -137,208 +94,308 @@ export default function LearnerProfilePage() {
     const inf = sc !== undefined ? gInfo(Number(sc), learner.grade, gradCfg) : null;
     return { subj, score: sc, inf };
   });
+  const entered  = marksRows.filter(r => r.score !== undefined);
+  const totalPts = entered.reduce((s, r) => s + (r.inf?.pts || 0), 0);
+  const maxTotal = maxPts(learner.grade, subjects);
 
-  const entered    = marksRows.filter(r => r.score !== undefined);
-  const totalPts   = entered.reduce((s, r) => s + (r.inf?.pts || 0), 0);
-  const maxTotal   = maxPts(learner.grade, subjects);
+  // Build the Progress Timeline
+  const timeline = buildTimeline(learner, marks, paylog, attendance, subjects, gInfo, gradCfg, TERMS, admNo);
+
+  const tabs = [
+    { key: 'overview', label: '📋 Overview' },
+    { key: 'marks', label: '📊 Marks' },
+    { key: 'timeline', label: '🕒 Timeline' },
+    { key: 'finance', label: '💰 Finance' },
+  ];
 
   return (
     <div className="page on">
       <div className="page-hdr">
-        <div>
-          <h2>🎓 {learner.name}</h2>
-          <p>{learner.grade} · Adm: {learner.adm}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {learner.avatar
+            ? <img src={learner.avatar} style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)' }} alt="avatar" />
+            : <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 900 }}>{(learner.name || '?')[0]}</div>
+          }
+          <div>
+            <h2 style={{ margin: 0 }}>🎓 {learner.name}</h2>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>{learner.grade} · Adm: {learner.adm} · {learner.sex === 'F' ? '👩' : '👦'} {learner.sex}</p>
+          </div>
         </div>
         <div className="page-hdr-acts">
-          <button className="btn btn-ghost btn-sm" onClick={() => router.push('/learners')}>
-            ← Back
-          </button>
-          <button className="btn btn-gold btn-sm"
-            onClick={() => router.push(`/grades/report-card/${encodeURIComponent(admNo)}`)}>
-            📋 Report Card
-          </button>
-          <button className="btn btn-ghost btn-sm no-print" onClick={() => window.print()}>
-            🖨️ Print
-          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => router.push('/learners')}>← Back</button>
+          <button className="btn btn-gold btn-sm no-print" onClick={() => router.push(`/report-card?adm=${encodeURIComponent(admNo)}&term=${term}&assess=${assess}`)}>📋 Report Card PDF</button>
         </div>
       </div>
 
-      <div className="sg sg2">
-        {/* ── Bio card ── */}
-        <div className="panel">
-          <div className="panel-hdr"><h3>📋 Profile</h3></div>
-          <div className="panel-body">
-            {[
-              ['Admission No.', learner.adm],
-              ['Full Name',     learner.name],
-              ['Grade',         learner.grade],
-              ['Gender',        learner.sex === 'F' ? 'Female' : (learner.sex === 'M' ? 'Male' : learner.sex)],
-              ['Age',           learner.age],
-              ['Date of Birth', learner.dob || '—'],
-              ['Stream',        learner.stream || '—'],
-              ['Class Teacher', learner.teacher || '—'],
-              ['Parent/Guardian', learner.parent || '—'],
-              ['Phone',         learner.phone || '—'],
-              ['Parent Email',  learner.parentEmail || '—'],
-              ['Address',       learner.addr  || '—'],
-            ].map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between',
-                padding: '6px 0', borderBottom: '1px dashed var(--border)', fontSize: 12.5 }}>
-                <span style={{ color: 'var(--muted)' }}>{k}</span>
-                <strong style={{ textAlign: 'right' }}>{v}</strong>
-              </div>
-            ))}
+      {/* Tab switcher */}
+      <div style={{ display: 'flex', gap: 6, background: '#F1F5F9', padding: 5, borderRadius: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+        {tabs.map(t => (
+          <button key={t.key}
+            className={`btn btn-sm ${activeTab === t.key ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setActiveTab(t.key)}
+          >{t.label}</button>
+        ))}
+      </div>
 
-            <h4 style={{ marginTop: 24, marginBottom: 12, fontSize: 13, color: 'var(--navy)', borderBottom: '2px solid var(--border)', paddingBottom: 4 }}>🏠 Extended Family & Transport</h4>
-            {[
-              ["Father's Name", extra.father || '—'],
-              ["Mother's Name", extra.mother || '—'],
-              ['Transport Means', extra.transport || '—'],
-              ['Physical Address', extra.address || learner.addr || '—'],
-              ['Tribe/Community', extra.tribe || '—'],
-            ].map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between',
-                padding: '6px 0', borderBottom: '1px dashed var(--border)', fontSize: 12.5 }}>
-                <span style={{ color: 'var(--muted)' }}>{k}</span>
-                <strong style={{ textAlign: 'right' }}>{v}</strong>
-              </div>
-            ))}
-
-            <h4 style={{ marginTop: 24, marginBottom: 12, fontSize: 13, color: '#8B1A1A', borderBottom: '2px solid #8B1A1A', paddingBottom: 4 }}>🏥 Medical Profile</h4>
-            {[
-              ['Blood Group', extra.blood || learner.bloodGroup || '—'],
-              ['Medical Conditions', extra.medical || learner.medicalCondition || '—'],
-              ['Allergies', learner.allergies || '—'],
-              ['Emergency Contact', learner.emergencyContact || '—'],
-            ].map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between',
-                padding: '6px 0', borderBottom: '1px dashed var(--border)', fontSize: 12.5 }}>
-                <span style={{ color: 'var(--muted)' }}>{k}</span>
-                <strong style={{ color: k === 'Medical Conditions' && v !== '—' ? '#8B1A1A' : 'inherit', textAlign: 'right' }}>{v}</strong>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Fee statement ── */}
-        {user?.role === 'admin' && (
+      {/* ══════ OVERVIEW ══════ */}
+      {activeTab === 'overview' && (
+        <div className="sg sg2">
           <div className="panel">
-            <div className="panel-hdr">
-              <h3>💰 Fee Statement</h3>
-              {user?.role === 'admin' && (
-                <button className="btn btn-success btn-sm"
-                  onClick={() => router.push(`/fees/${encodeURIComponent(admNo)}/receipt`)}>
-                  🧾 Receipt
-                </button>
-              )}
-            </div>
+            <div className="panel-hdr"><h3>📋 Bio</h3></div>
             <div className="panel-body">
               {[
-                ['Accumulated Fee', fmtK(learner.arrears || 0)],
-                ['Annual Total', fmtK(annualFee)],
-                ...(t1Fee || t2Fee || t3Fee ? [
-                  [`${TERMS[0]?.name || 'T1'} (Expected: ${fmtK(t1Fee)})`, `Paid: ${fmtK(learner.t1||0)}`],
-                  [`${TERMS[1]?.name || 'T2'} (Expected: ${fmtK(t2Fee)})`, `Paid: ${fmtK(learner.t2||0)}`],
-                  [`${TERMS[2]?.name || 'T3'} (Expected: ${fmtK(t3Fee)})`, `Paid: ${fmtK(learner.t3||0)}`],
-                ] : [
-                  [TERMS[0]?.name || 'T1 Paid',     fmtK(learner.t1||0)],
-                  [TERMS[1]?.name || 'T2 Paid',     fmtK(learner.t2||0)],
-                  [TERMS[2]?.name || 'T3 Paid',     fmtK(learner.t3||0)],
-                ]),
-                ['Total Paid',  fmtK(totalPaid)],
+                ['Admission No.', learner.adm], ['Full Name', learner.name],
+                ['Grade', learner.grade], ['Gender', learner.sex === 'F' ? 'Female' : learner.sex === 'M' ? 'Male' : learner.sex],
+                ['Age', learner.age], ['Date of Birth', learner.dob || '—'],
+                ['Stream', learner.stream || '—'], ['Class Teacher', learner.teacher || '—'],
+                ['Parent/Guardian', learner.parent || '—'], ['Phone', learner.phone || '—'],
+                ['Address', learner.addr || '—'],
               ].map(([k, v]) => (
-                <div key={k} style={{ display: 'flex', justifyContent: 'space-between',
-                  padding: '7px 0', borderBottom: '1px dashed var(--border)', fontSize: 12.5 }}>
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px dashed var(--border)', fontSize: 12.5 }}>
                   <span style={{ color: 'var(--muted)' }}>{k}</span>
-                  <strong>{v}</strong>
+                  <strong style={{ textAlign: 'right' }}>{v}</strong>
                 </div>
               ))}
-              <div style={{ display: 'flex', justifyContent: 'space-between',
-                padding: '10px 0', fontWeight: 800, fontSize: 14 }}>
-                <span>Balance</span>
-                <span style={{ color: balance <= 0 ? 'var(--green)' : 'var(--red)' }}>
-                  {fmtK(balance)} {balance <= 0 ? '✅' : ''}
-                </span>
+              {learner.bloodGroup && <div style={{ marginTop: 12, padding: '8px 12px', background: '#FEF2F2', borderRadius: 8, fontSize: 12, color: '#8B1A1A', fontWeight: 700 }}>🩸 Blood Group: {learner.bloodGroup} · Allergies: {learner.allergies || 'None'}</div>}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-hdr"><h3>📈 Quick Stats</h3></div>
+            <div className="panel-body">
+              <div className="sg sg2" style={{ marginBottom: 0 }}>
+                <div className="stat-card" style={{ borderLeft: '4px solid #2563eb' }}>
+                  <div className="sc-inner">
+                    <div className="sc-icon" style={{ background: '#eff6ff' }}>📚</div>
+                    <div>
+                      <div className="sc-l">Subjects</div>
+                      <div className="sc-n">{subjects.length}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="stat-card" style={{ borderLeft: `4px solid ${balance <= 0 ? '#059669' : '#dc2626'}` }}>
+                  <div className="sc-inner">
+                    <div className="sc-icon" style={{ background: balance <= 0 ? '#ecfdf5' : '#fef2f2' }}>💰</div>
+                    <div>
+                      <div className="sc-l">Fee Balance</div>
+                      <div className="sc-n" style={{ color: balance <= 0 ? '#059669' : '#dc2626' }}>
+                        {balance <= 0 ? '✅ Cleared' : `KES ${fmtK(balance)}`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>COLLECTION PROGRESS</div>
+                <div style={{ height: 10, background: '#F1F5F9', borderRadius: 10, overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.min(100, annualFee > 0 ? (totalPaid / annualFee) * 100 : 0)}%`, height: '100%', background: balance <= 0 ? '#059669' : '#2563EB', borderRadius: 10, transition: 'width 0.5s' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                  <span>Paid: KES {fmtK(totalPaid)}</span>
+                  <span>Annual: KES {fmtK(annualFee)}</span>
+                </div>
+              </div>
+              {paylog.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>RECENT PAYMENTS</div>
+                  {paylog.slice(-3).reverse().map((p, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px dashed var(--border)', fontSize: 12 }}>
+                      <span>{p.date?.slice(0, 10)} · {p.method || 'Cash'}</span>
+                      <strong style={{ color: '#059669' }}>+KES {fmtK(p.amount)}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════ MARKS ══════ */}
+      {activeTab === 'marks' && (
+        <div className="panel">
+          <div className="panel-hdr">
+            <h3>📊 Academic Performance — {learner.grade}</h3>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <select value={term} onChange={e => setTerm(e.target.value)} style={{ padding: '6px 10px', border: '2px solid var(--border)', borderRadius: 8, fontSize: 12 }}>
+                {TERMS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              <select value={assess} onChange={e => setAssess(e.target.value)} style={{ padding: '6px 10px', border: '2px solid var(--border)', borderRadius: 8, fontSize: 12 }}>
+                {ASSESSMENTS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>Subject</th><th style={{ textAlign: 'center' }}>Score</th><th style={{ textAlign: 'center' }}>Level</th><th style={{ textAlign: 'center' }}>Points</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                {marksRows.map(({ subj, score, inf }) => (
+                  <tr key={subj}>
+                    <td style={{ fontWeight: 700 }}>{subj}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 800, fontSize: 16, color: score !== undefined ? (score >= 70 ? '#059669' : score >= 50 ? '#2563EB' : '#DC2626') : 'var(--muted)' }}>{score !== undefined ? score : '—'}</td>
+                    <td style={{ textAlign: 'center' }}>{inf ? <span className="badge" style={{ background: inf.bg, color: inf.c }}>{inf.lv}</span> : '—'}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 900, color: inf ? inf.c : 'var(--muted)' }}>{inf ? inf.pts : '—'}</td>
+                    <td style={{ fontSize: 11, color: 'var(--muted)' }}>{inf?.desc || '—'}</td>
+                  </tr>
+                ))}
+                {entered.length > 0 && (
+                  <tr style={{ background: 'linear-gradient(135deg,#050F1C,#0D1F3C)' }}>
+                    <td colSpan="3" style={{ color: '#fff', fontWeight: 800 }}>Total ({entered.length}/{subjects.length} subjects)</td>
+                    <td style={{ textAlign: 'center', color: '#FCD34D', fontWeight: 900, fontSize: 16 }}>{totalPts} / {maxTotal}</td>
+                    <td style={{ color: 'rgba(255,255,255,.5)', fontSize: 11 }}>{Math.round((totalPts / maxTotal) * 100)}%</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {entered.length === 0 && <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>No marks entered for this selection.</div>}
+        </div>
+      )}
+
+      {/* ══════ TIMELINE ══════ */}
+      {activeTab === 'timeline' && (
+        <div className="panel">
+          <div className="panel-hdr">
+            <h3>🕒 Learner Progress Timeline</h3>
+            <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>{timeline.length} events recorded</span>
+          </div>
+          <div style={{ padding: '0 20px 20px' }}>
+            {timeline.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>No timeline events yet. Marks and payments will appear here.</div>
+            ) : (
+              <div style={{ position: 'relative', paddingLeft: 32 }}>
+                {/* Vertical line */}
+                <div style={{ position: 'absolute', left: 12, top: 8, bottom: 8, width: 2, background: 'var(--border)' }} />
+                {timeline.map((ev, i) => (
+                  <div key={i} style={{ position: 'relative', marginBottom: 20 }}>
+                    {/* Dot */}
+                    <div style={{ position: 'absolute', left: -26, top: 10, width: 14, height: 14, borderRadius: '50%', background: ev.color, border: '2px solid #fff', boxShadow: `0 0 0 3px ${ev.color}33` }} />
+                    <div style={{ background: '#F8FAFC', borderRadius: 12, padding: '12px 16px', border: `1px solid ${ev.color}33` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b' }}>{ev.icon} {ev.title}</div>
+                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{ev.detail}</div>
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', fontWeight: 700 }}>{ev.date}</div>
+                      </div>
+                      {ev.badge && (
+                        <div style={{ marginTop: 8 }}>
+                          <span style={{ background: ev.color + '22', color: ev.color, padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>{ev.badge}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════ FINANCE ══════ */}
+      {activeTab === 'finance' && (
+        <div>
+          <div className="sg sg3" style={{ marginBottom: 16 }}>
+            <div className="stat-card" style={{ borderLeft: '4px solid #059669' }}>
+              <div className="sc-inner"><div className="sc-icon" style={{ background: '#ecfdf5' }}>💰</div>
+                <div><div className="sc-l">Total Paid</div><div className="sc-n">KES {fmtK(totalPaid)}</div></div>
+              </div>
+            </div>
+            <div className="stat-card" style={{ borderLeft: `4px solid ${balance <= 0 ? '#059669' : '#dc2626'}` }}>
+              <div className="sc-inner"><div className="sc-icon" style={{ background: balance <= 0 ? '#ecfdf5' : '#fef2f2' }}>📊</div>
+                <div><div className="sc-l">Balance</div><div className="sc-n" style={{ color: balance <= 0 ? '#059669' : '#dc2626' }}>{balance <= 0 ? '✅ Cleared' : `KES ${fmtK(balance)}`}</div></div>
+              </div>
+            </div>
+            <div className="stat-card" style={{ borderLeft: '4px solid #7c3aed' }}>
+              <div className="sc-inner"><div className="sc-icon" style={{ background: '#f5f3ff' }}>🧾</div>
+                <div><div className="sc-l">Transactions</div><div className="sc-n">{paylog.length}</div></div>
               </div>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* ── Academic performance ── */}
-      <div className="panel">
-        <div className="panel-hdr">
-          <h3>📊 Academic Performance</h3>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <select value={term} onChange={e => setTerm(e.target.value)}
-              style={{ padding: '6px 10px', border: '2px solid var(--border)',
-                borderRadius: 8, fontSize: 12, outline: 'none' }}>
-              {TERMS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            <select value={assess} onChange={e => setAssess(e.target.value)}
-              style={{ padding: '6px 10px', border: '2px solid var(--border)',
-                borderRadius: 8, fontSize: 12, outline: 'none' }}>
-              {ASSESSMENTS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
-            </select>
-          </div>
+          {paylog.length > 0 ? (
+            <div className="panel">
+              <div className="panel-hdr"><h3>💳 Payment History</h3></div>
+              <div className="tbl-wrap">
+                <table>
+                  <thead><tr><th>Date</th><th>Term</th><th>Amount</th><th>Method</th><th>Ref</th><th>By</th></tr></thead>
+                  <tbody>
+                    {[...paylog].reverse().map((p, i) => (
+                      <tr key={i}>
+                        <td>{p.date?.slice(0, 10)}</td>
+                        <td><span className="badge bg-blue">{p.term || '—'}</span></td>
+                        <td style={{ fontWeight: 900, color: '#059669' }}>KES {fmtK(p.amount)}</td>
+                        <td>{p.method || 'Cash'}</td>
+                        <td style={{ fontSize: 11, fontFamily: 'monospace' }}>{p.ref || '—'}</td>
+                        <td style={{ fontSize: 11 }}>{p.by || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="panel"><div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>No payment records found for this learner.</div></div>
+          )}
         </div>
-        <div className="tbl-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Subject</th>
-                <th style={{ textAlign: 'center' }}>Score</th>
-                <th style={{ textAlign: 'center' }}>Level</th>
-                <th style={{ textAlign: 'center' }}>Points</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {marksRows.map(({ subj, score, inf }) => (
-                <tr key={subj}>
-                  <td>{subj}</td>
-                  <td style={{ textAlign: 'center', fontWeight: 700 }}>
-                    {score !== undefined ? score : '—'}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    {inf ? (
-                      <span className="badge"
-                        style={{ background: inf.bg, color: inf.c }}>
-                        {inf.lv}
-                      </span>
-                    ) : '—'}
-                  </td>
-                  <td style={{ textAlign: 'center', fontWeight: 800,
-                    color: inf ? inf.c : 'var(--muted)' }}>
-                    {inf ? inf.pts : '—'}
-                  </td>
-                  <td style={{ fontSize: 11, color: 'var(--muted)' }}>
-                    {inf?.desc || '—'}
-                  </td>
-                </tr>
-              ))}
-              {entered.length > 0 && (
-                <tr style={{ background: 'linear-gradient(135deg,#050F1C,#0D1F3C)' }}>
-                  <td colSpan="3" style={{ color: '#fff', fontWeight: 800 }}>
-                    Total ({entered.length}/{subjects.length} subjects)
-                  </td>
-                  <td style={{ textAlign: 'center', color: '#FCD34D', fontWeight: 800, fontSize: 15 }}>
-                    {totalPts} / {maxTotal}
-                  </td>
-                  <td style={{ color: 'rgba(255,255,255,.5)', fontSize: 11 }}>
-                    {Math.round((totalPts/maxTotal)*100)}%
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        {entered.length === 0 && (
-          <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>
-            No marks entered for this term / assessment yet.
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
+}
+
+/** Build chronological timeline events from marks, payments, attendance */
+function buildTimeline(learner, marks, paylog, attendance, subjects, gInfo, gradCfg, TERMS, admNo) {
+  const events = [];
+
+  // Enrollment event
+  events.push({
+    date: learner.dob ? new Date(learner.dob).getFullYear() + '' : '—',
+    title: 'Enrolled at School',
+    detail: `Admitted to ${learner.grade} as ${learner.adm}`,
+    icon: '🎒', color: '#2563eb', badge: learner.grade
+  });
+
+  // Payment events
+  paylog.forEach(p => {
+    events.push({
+      date: p.date?.slice(0, 10) || '—',
+      title: 'Fee Payment Received',
+      detail: `KES ${fmtK(p.amount)} via ${p.method || 'Cash'} — Ref: ${p.ref || 'N/A'}`,
+      icon: '💰', color: '#059669', badge: `${p.term} · KES ${fmtK(p.amount)}`
+    });
+  });
+
+  // Marks events — one event per assessment per term
+  const ASSESS_LABELS = { op1: 'Opener', mt1: 'Mid-Term', et1: 'End-Term' };
+  TERMS.forEach(t => {
+    ['op1', 'mt1', 'et1'].forEach(assess => {
+      const scores = subjects
+        .map(subj => {
+          const k = `${t.id}:${learner.grade}|${subj}|${assess}`;
+          return marks[k]?.[admNo];
+        })
+        .filter(s => s !== undefined);
+
+      if (scores.length > 0) {
+        const avg = scores.reduce((a, b) => a + Number(b), 0) / scores.length;
+        events.push({
+          date: `${t.name} · ${ASSESS_LABELS[assess]}`,
+          title: `${ASSESS_LABELS[assess]} Results — ${t.name}`,
+          detail: `${scores.length} subjects captured · Class avg: ${avg.toFixed(1)}%`,
+          icon: avg >= 70 ? '🏆' : avg >= 50 ? '📈' : '⚠️',
+          color: avg >= 70 ? '#059669' : avg >= 50 ? '#2563eb' : '#dc2626',
+          badge: `${avg.toFixed(1)}% average · ${scores.length}/${subjects.length} subjects`
+        });
+      }
+    });
+  });
+
+  // Sort: payments by date (real dates first), marks last
+  return events.sort((a, b) => {
+    const da = Date.parse(a.date) || 0;
+    const db_ = Date.parse(b.date) || 0;
+    return db_ - da;
+  });
 }
