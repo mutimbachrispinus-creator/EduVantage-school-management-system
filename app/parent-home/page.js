@@ -54,51 +54,91 @@ export default function ParentHome() {
       if (!auth.ok || !auth.user || auth.user.role !== 'parent') { router.push('/'); return; }
       setUser(auth.user);
 
-      const dbRes = await fetch('/api/db', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [
-          { type: 'get', key: 'paav6_learners' },
-          { type: 'get', key: 'paav6_msgs' },
-          { type: 'get', key: 'paav6_feecfg' },
-          { type: 'get', key: 'paav6_marks' },
-          { type: 'get', key: 'paav_paybill_accounts' },
-          { type: 'get', key: 'paav_calendar_events' },
-          { type: 'get', key: 'paav_documents' },
-          { type: 'get', key: 'paav6_paylog' },
-          { type: 'get', key: 'paav_school_profile' },
-          { type: 'get', key: 'paav_timetable' },
-        ]})
+      const links = auth.user.links || [];
+      const uniqueTenants = Array.from(new Set(links.map(l => l.tenantId).filter(Boolean)));
+      if (uniqueTenants.length === 0) {
+        // Fallback to current tenant if no links found (should not happen with new whoami)
+        uniqueTenants.push(auth.user.tenantId);
+      }
+
+      let allLearners = [];
+      let allMarks = {};
+      let allPaylogs = [];
+      let allMsgs = [];
+      let allProfiles = {};
+      let primaryProfile = {};
+      let primaryFeeCfg = {};
+
+      await Promise.all(uniqueTenants.map(async (tid) => {
+        const dbRes = await fetch('/api/db', {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json', 'x-tenant-id': tid },
+          body: JSON.stringify({ requests: [
+            { type: 'get', key: 'paav6_learners' },
+            { type: 'get', key: 'paav6_msgs' },
+            { type: 'get', key: 'paav6_feecfg' },
+            { type: 'get', key: 'paav6_marks' },
+            { type: 'get', key: 'paav_paybill_accounts' },
+            { type: 'get', key: 'paav_calendar_events' },
+            { type: 'get', key: 'paav_documents' },
+            { type: 'get', key: 'paav6_paylog' },
+            { type: 'get', key: 'paav_school_profile' },
+            { type: 'get', key: 'paav_timetable' },
+            { type: 'get', key: 'paav_profiles' },
+          ]})
+        });
+        const db = await dbRes.json();
+        if (!db.results) return;
+
+        const learners = db.results[0]?.value || [];
+        const msgs = db.results[1]?.value || [];
+        const fees = db.results[2]?.value || {};
+        const mks = db.results[3]?.value || {};
+        const payHistory = db.results[7]?.value || [];
+        const profile = db.results[8]?.value || {};
+        const fullTTData = db.results[9]?.value || {};
+        const profiles = db.results[10]?.value || {};
+
+        allLearners = [...allLearners, ...learners];
+        allMarks = { ...allMarks, ...mks };
+        allPaylogs = [...allPaylogs, ...payHistory];
+        allMsgs = [...allMsgs, ...msgs];
+        allProfiles = { ...allProfiles, ...profiles };
+
+        if (tid === auth.user.tenantId || !primaryProfile.name) {
+          primaryProfile = profile;
+          primaryFeeCfg = fees;
+          setPayInfo({
+            accounts: db.results[4]?.value || [],
+            documents: db.results[6]?.value || [],
+            profile: profile
+          });
+          setEvents(db.results[5]?.value || []);
+          setFullTT(fullTTData);
+        }
+      }));
+
+      const admList = links.flatMap(l => (l.adm || '').split(',').map(s => s.trim()).filter(Boolean));
+      
+      const myKids = allLearners.filter(l => admList.includes(l.adm)).map(l => {
+        const extra = allProfiles[l.adm] || {};
+        return { 
+          ...l, 
+          bloodGroup: extra.blood || l.bloodGroup,
+          medicalCondition: extra.medical || l.medicalCondition,
+          address: extra.address || l.addr,
+          father: extra.father,
+          mother: extra.mother,
+          transport: extra.transport
+        };
       });
-      const db = await dbRes.json();
-      const learners = db.results[0]?.value || [];
-      const msgs = db.results[1]?.value || [];
-      const fees = db.results[2]?.value || {};
-      const mks = db.results[3]?.value || {};
-      const payHistory = db.results[7]?.value || [];
-      const profile = db.results[8]?.value || {};
-      const fullTTData = db.results[9]?.value || {};
-
-      const admList = auth.user.links 
-        ? auth.user.links.map(l => l.adm)
-        : (Array.isArray(auth.user.childAdm)
-          ? auth.user.childAdm
-          : auth.user.childAdm ? String(auth.user.childAdm).split(',').map(s => s.trim()).filter(Boolean) : []);
-
-      const myKids = learners.filter(l => admList.includes(l.adm));
       setChildren(myKids);
       if (!selAdm && myKids.length > 0) setSelAdm(myKids[0].adm);
 
-      setMessages(msgs);
-      setFeeCfg(fees);
-      setMarks(mks);
-      setPayInfo({
-        accounts: db.results[4]?.value || [],
-        documents: db.results[6]?.value || [],
-        profile: profile
-      });
-      setPaylog(payHistory);
-      setEvents(db.results[5]?.value || []);
-      setFullTT(fullTTData);
+      setMessages(allMsgs);
+      setFeeCfg(primaryFeeCfg);
+      setMarks(allMarks);
+      setPaylog(allPaylogs);
       setLoading(false);
     } catch(e) { console.error(e); } finally { setLoading(false); }
   }, [router, selAdm]);
@@ -670,67 +710,6 @@ export default function ParentHome() {
           </div>
         </div>
       )}
-
-                      {acc.type === 'M-Pesa' && (
-                        <button 
-                          className="btn btn-success btn-sm pay-btn-glint" 
-                          style={{ marginTop: 'auto', width: '100%', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}
-                          onClick={() => initiateMpesa(acc, 'Term ' + term.replace('T', ''))}
-                        >
-                          💚 Pay with STK Push
-                        </button>
-                      )}
-
-                      {acc.type === 'PesaPal' && (
-                        <button 
-                          className="btn btn-primary btn-sm" 
-                          style={{ marginTop: 'auto', width: '100%', justifyContent: 'center', background: '#4F46E5' }}
-                          onClick={() => alert('PesaPal Card Payment Bridge: Redirecting to secure checkout...')}
-                        >
-                          💳 Pay with Card / Mobile
-                        </button>
-                      )}
-
-                      {acc.type === 'Bank' && (
-                        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 'auto' }}>
-                          Branch: <strong>{acc.branch || 'N/A'}</strong><br/>
-                          Use <strong>{child?.adm}</strong> as payment reference.
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* Legacy Bank Accounts (Backward Compatibility) */}
-                  {payInfo.profile?.bankAccounts?.map((acc, i) => (
-                    <div key={'legacy-'+i} style={{ background: '#fff', border: '2px solid #BFDBFE', borderRadius: 12, padding: 15, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase' }}>Bank Transfer</div>
-                          <div style={{ fontSize: 20, fontWeight: 900, color: '#1E40AF' }}>{acc.accNo}</div>
-                          <div style={{ fontSize: 12, fontWeight: 700 }}>{acc.bank}</div>
-                        </div>
-                        <div style={{ background: '#EFF6FF', padding: '4px 8px', borderRadius: 8, fontSize: 10, color: '#1D4ED8', fontWeight: 800 }}>BANK</div>
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                         Branch: <strong>{acc.branch}</strong><br/>
-                         Name: <strong>{acc.accName}</strong>
-                      </div>
-                      <div style={{ background: '#F8FAFF', padding: 8, borderRadius: 8, fontSize: 11, marginTop: 'auto' }}>
-                        Ref: <strong>{child?.adm}</strong>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{background:'#FEF9C3',border:'1px solid #FDE68A',borderRadius:8,padding:12,fontSize:12,color:'#92400E'}}>
-                  ⚠️ Payment details not configured. Contact school admin.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
 
       {/* TIMETABLE TAB */}
       {tab==='timetable' && (

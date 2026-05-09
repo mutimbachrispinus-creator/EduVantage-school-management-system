@@ -302,5 +302,3 @@ export default function ExpenseVoucher({ isOpen: forcedOpen, onClose, schoolName
     </>
   );
 }
-  );
-}

@@ -46,7 +46,14 @@ export async function POST(request) {
     }
     const { requests } = body;
     const headerTenant = request.headers.get('x-tenant-id');
-    const impTenant = (auth.role === 'super-admin' && headerTenant) ? headerTenant : null;
+    let impTenant = (auth.role === 'super-admin' && headerTenant) ? headerTenant : null;
+
+    // Allow parents to fetch from other schools they are linked to
+    if (!impTenant && auth.role === 'parent' && headerTenant && headerTenant !== auth.tenantId) {
+      const { query } = await import('@/lib/db');
+      const linked = await query('SELECT id FROM staff WHERE id = ? AND tenant_id = ?', [auth.id, headerTenant]);
+      if (linked.length > 0) impTenant = headerTenant;
+    }
 
     if (!Array.isArray(requests)) {
       return NextResponse.json({ error: 'requests must be an array' }, { status: 400 });

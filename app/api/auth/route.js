@@ -309,16 +309,20 @@ async function handleAddChild({ schoolId, adm }, request) {
 
     // Check if this parent↔school link already exists
     const existing = await query(
-      'SELECT id FROM staff WHERE id = ? AND tenant_id = ?',
+      'SELECT id, childAdm FROM staff WHERE id = ? AND tenant_id = ?',
       [session.id, schoolId]
     );
 
     if (existing.length > 0) {
-      // Update the childAdm on the existing row
-      await execute(
-        'UPDATE staff SET childAdm = ? WHERE id = ? AND tenant_id = ?',
-        [adm.trim(), session.id, schoolId]
-      );
+      // Append the new ADM to the existing list if not already there
+      const currentAdms = (existing[0].childAdm || '').split(',').map(s => s.trim()).filter(Boolean);
+      if (!currentAdms.includes(adm.trim())) {
+        currentAdms.push(adm.trim());
+        await execute(
+          'UPDATE staff SET childAdm = ? WHERE id = ? AND tenant_id = ?',
+          [currentAdms.join(','), session.id, schoolId]
+        );
+      }
     } else {
       // Fetch this parent's own record to copy credentials
       const myRows = await query('SELECT * FROM staff WHERE id = ? LIMIT 1', [session.id]);
@@ -397,10 +401,15 @@ async function handleWhoami() {
 
   // Fetch fresh user data from DB to include avatar, color, etc.
   const { query } = await import('@/lib/db');
-  const rows = await query('SELECT * FROM staff WHERE id = ? AND tenant_id = ?', [session.id, session.tenantId]);
-  const user = rows[0];
+  
+  // For parents, we need to find ALL rows in the staff table across all tenants
+  const rows = await query('SELECT * FROM staff WHERE id = ?', [session.id]);
+  const user = rows.find(r => r.tenant_id === session.tenantId) || rows[0];
   
   if (user) {
+    // If parent, include all school links
+    const links = user.role === 'parent' ? rows.map(r => ({ tenantId: r.tenant_id, adm: r.childAdm })) : [];
+    
     let ann = null, hero = null, profile = null, theme = null;
     try {
       [ann, hero, profile, theme] = await Promise.all([
@@ -415,7 +424,7 @@ async function handleWhoami() {
 
     return NextResponse.json({
       ok: true,
-      user: publicUser(user),
+      user: { ...publicUser(user), links },
       initialData: {
         db_paav_announcement: ann,
         db_paav_hero_img: hero,
