@@ -11,7 +11,7 @@ export const runtime = 'edge';
  *   • Print / PDF class marks
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMark } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
@@ -635,61 +635,24 @@ export default function GradesPage() {
                 </tr>
               </thead>
               <tbody>
-                {classLearners.map((l, i) => {
-                  const sc = getScore(l.adm, selectedSubj);
-                  const inf = sc !== undefined ? gInfo(Number(sc), grade, gradCfg) : null;
-                  
-                  // Compute overall for this learner across ALL subjects (for the summary columns)
-                  let totalPts = 0;
-                  let entered = 0;
-                  subjects.forEach(s => {
-                    const sScore = getScore(l.adm, s);
-                    const sInf = sScore !== undefined ? gInfo(Number(sScore), grade, gradCfg) : null;
-                    if (sInf) { totalPts += sInf.pts; entered++; }
-                  });
-
-                  return (
-                    <tr key={l.adm} className="row-hover">
-                      <td style={{ color: 'var(--muted)', fontSize: 11 }}>{i + 1}</td>
-                      <td style={{ fontWeight: 700, fontSize: 12 }}>{l.adm}</td>
-                      <td style={{ fontWeight: 600 }}>{l.name}</td>
-                      <td style={{ textAlign: 'center', background: 'rgba(79, 70, 229, 0.02)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                          <input
-                            type="number"
-                            min="0" max="100"
-                            value={sc ?? ''}
-                            onChange={e => setScore(l.adm, selectedSubj, e.target.value)}
-                            onBlur={() => save(true)}
-                            disabled={isSubjLocked(selectedSubj) && user?.role !== 'admin'}
-                            className="score-input-large"
-                            style={{
-                              borderColor: inf ? inf.c : 'var(--border)',
-                              background: isSubjLocked(selectedSubj) && user?.role !== 'admin' ? '#f1f5f9' : '#fff'
-                            }}
-                          />
-                        </div>
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        {inf ? (
-                          <span className="level-badge" style={{ background: inf.bg, color: inf.c }}>
-                            {inf.lv}
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--navy)' }}>
-                        {entered > 0 ? totalPts : '—'}
-                      </td>
-                      <td className="no-print">
-                        <button className="btn btn-ghost btn-xs" 
-                          style={{ color: 'var(--red)' }}
-                          onClick={() => clearLearnerMarks(l)}>
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {classLearners.map((l, i) => (
+                  <LearnerRow 
+                    key={l.adm}
+                    idx={i}
+                    learner={l}
+                    subject={selectedSubj}
+                    getScore={getScore}
+                    setScore={setScore}
+                    save={save}
+                    isLocked={isSubjLocked(selectedSubj)}
+                    userRole={user?.role}
+                    gInfo={gInfo}
+                    grade={grade}
+                    gradCfg={gradCfg}
+                    subjects={subjects}
+                    clearLearnerMarks={clearLearnerMarks}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
@@ -715,3 +678,83 @@ export default function GradesPage() {
     </div>
   );
 }
+
+/* ── Optimized Learner Row Component ── */
+const LearnerRow = memo(({ 
+  idx, learner, subject, getScore, setScore, save, isLocked, userRole, gInfo, grade, gradCfg, subjects, clearLearnerMarks 
+}) => {
+  const [localVal, setLocalVal] = useState(() => getScore(learner.adm, subject) ?? '');
+  
+  // Update local value if external marks state changes (e.g. from load())
+  useEffect(() => {
+    setLocalVal(getScore(learner.adm, subject) ?? '');
+  }, [getScore, learner.adm, subject]);
+
+  const handleChange = (e) => {
+    const v = e.target.value;
+    setLocalVal(v);
+    // Debounce the sync to parent state to keep typing smooth
+    if (window.syncTimer) clearTimeout(window.syncTimer);
+    window.syncTimer = setTimeout(() => {
+      setScore(learner.adm, subject, v);
+    }, 200);
+  };
+
+  const inf = localVal !== '' ? gInfo(Number(localVal), grade, gradCfg) : null;
+  
+  // Total pts across ALL subjects (summary)
+  let totalPts = 0;
+  let enteredCount = 0;
+  subjects.forEach(s => {
+    const sScore = s === subject ? (localVal === '' ? undefined : Number(localVal)) : getScore(learner.adm, s);
+    const sInf = sScore !== undefined ? gInfo(Number(sScore), grade, gradCfg) : null;
+    if (sInf) { totalPts += sInf.pts; enteredCount++; }
+  });
+
+  return (
+    <tr className="row-hover">
+      <td style={{ color: 'var(--muted)', fontSize: 11 }}>{idx + 1}</td>
+      <td style={{ fontWeight: 700, fontSize: 12 }}>{learner.adm}</td>
+      <td style={{ fontWeight: 600 }}>{learner.name}</td>
+      <td style={{ textAlign: 'center', background: 'rgba(79, 70, 229, 0.02)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <input
+            type="number"
+            min="0" max="100"
+            value={localVal}
+            onChange={handleChange}
+            onBlur={() => {
+              setScore(learner.adm, subject, localVal);
+              save(true);
+            }}
+            disabled={isLocked && userRole !== 'admin'}
+            className="score-input-large"
+            style={{
+              borderColor: inf ? inf.c : 'var(--border)',
+              background: isLocked && userRole !== 'admin' ? '#f1f5f9' : '#fff'
+            }}
+          />
+        </div>
+      </td>
+      <td style={{ textAlign: 'center' }}>
+        {inf ? (
+          <span className="level-badge" style={{ background: inf.bg, color: inf.c }}>
+            {inf.lv}
+          </span>
+        ) : '—'}
+      </td>
+      <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--navy)' }}>
+        {enteredCount > 0 ? totalPts : '—'}
+      </td>
+      <td className="no-print">
+        <button className="btn btn-ghost btn-xs" 
+          style={{ color: 'var(--red)' }}
+          onClick={() => clearLearnerMarks(learner)}>
+          🗑️
+        </button>
+      </td>
+    </tr>
+  );
+});
+
+LearnerRow.displayName = 'LearnerRow';
