@@ -99,6 +99,10 @@ export default function GradesPage() {
         if (!mergedMarks[m.gsa]) mergedMarks[m.gsa] = {};
         mergedMarks[m.gsa][m.adm] = m.score;
       });
+
+      // DOUBLE CHECK: Never overwrite if user started typing something NEW while we were loading
+      if (isWritingRef.current) return;
+      
       setMarks(mergedMarks);
 
       setLocked(  db.paav_marks_locked || {});
@@ -120,8 +124,8 @@ export default function GradesPage() {
       const changed = e.detail?.changed || [];
       if (changed.includes('paav6_marks') || changed.includes('paav_marks_locked')) {
         // Only reload for mark changes from OTHER tabs (dirtyMarks is empty here)
-        // Never reload if WE are the ones who just wrote the marks (dirtyMarksRef.current has items)
-        if (dirtyMarksRef.current.length === 0) {
+        // Never reload if we are actively typing or have unsaved changes
+        if (dirtyMarksRef.current.length === 0 && !isWritingRef.current) {
           load();
         }
       }
@@ -136,8 +140,8 @@ export default function GradesPage() {
       // Reload on external data changes — but NOT paav6_marks (those come from our own setScore calls)
       const networkKeys = ['paav_announcement', 'paav7_streams', 'paav8_grad', 'paav8_subj', 'paav_marks_locked', 'paav_marks_pending'];
       if (changed.some(k => networkKeys.includes(k))) {
-        // Only reload if we don't have unsaved changes to prevent overwriting active typing
-        if (dirtyMarksRef.current.length === 0) {
+        // Only reload if we don't have unsaved changes and aren't typing
+        if (dirtyMarksRef.current.length === 0 && !isWritingRef.current) {
           load();
         }
       }
@@ -161,8 +165,12 @@ export default function GradesPage() {
 
   /* ── Score change ── */
   const cacheTimerRef = useRef(null);
+  const isWritingRef = useRef(false);
+
   function setScore(admNo, subj, value) {
     if (isSubjLocked(subj) && user?.role !== 'admin') return;
+    
+    isWritingRef.current = true;
     const gsa = `${term}:${grade}|${subj}|${assess}`;
     const score = value === '' ? undefined : Number(value);
     
@@ -173,21 +181,23 @@ export default function GradesPage() {
     dirtyMarksRef.current = nextDirty;
     setDirtyMarks(nextDirty);
     
-    // 2. Update local UI state
-    let nextMarks;
+    // 2. Update local UI state and cache
     setMarks(prev => {
-      nextMarks = {
+      const nextMarks = {
         ...prev,
         [gsa]: { ...(prev[gsa] || {}), [admNo]: score },
       };
+      
+      // Persist to cache (debounced)
+      if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current);
+      cacheTimerRef.current = setTimeout(() => {
+        updateLocalDBCache('paav6_marks', nextMarks);
+        // After a while of no typing, allow background reloads again
+        setTimeout(() => { isWritingRef.current = false; }, 2000);
+      }, 1000);
+
       return nextMarks;
     });
-
-    // 3. Persist to cache (debounced to avoid heavy JSON ops on every keystroke)
-    if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current);
-    cacheTimerRef.current = setTimeout(() => {
-      updateLocalDBCache('paav6_marks', nextMarks);
-    }, 1000);
   }
 
   function getScore(admNo, subj) {
