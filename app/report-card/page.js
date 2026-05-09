@@ -104,13 +104,7 @@ function ReportCardContent() {
             ? Math.round(entered.reduce((s, r) => s + Number(r.score), 0) / entered.length)
             : 0;
 
-          const getGrade = (pct) => {
-            if (pct >= 80) return { g: 'EE', label: 'Exceeds Expectation', color: '#059669' };
-            if (pct >= 60) return { g: 'ME', label: 'Meets Expectation', color: '#2563eb' };
-            if (pct >= 40) return { g: 'AE', label: 'Approaches Expectation', color: '#d97706' };
-            return { g: 'BE', label: 'Below Expectation', color: '#dc2626' };
-          };
-          const overallGrade = getGrade(avgPct);
+          const overallGrade = gInfo(avgPct, learner.grade, gradCfg, school?.curriculum || 'CBC');
 
           return (
             <div key={learner.adm} style={{ pageBreakAfter: idx < targetLearners.length - 1 ? 'always' : 'auto', padding: '32px 40px', maxWidth: 750, margin: '0 auto', fontFamily: 'Arial, sans-serif', fontSize: 13 }}>
@@ -161,8 +155,8 @@ function ReportCardContent() {
                     <tr style={{ background: '#0F172A' }}>
                       <td style={{ padding: '9px 12px', color: '#fff', fontWeight: 800 }}>TOTAL ({entered.length}/{subjects.length} subjects)</td>
                       <td style={{ padding: '9px 12px', textAlign: 'center', color: '#FCD34D', fontWeight: 900, fontSize: 16 }}>{avgPct}%</td>
-                      <td colSpan="2" style={{ padding: '9px 12px', textAlign: 'center', color: overallGrade.color, fontWeight: 900, fontSize: 15 }}>{overallGrade.g} — {totalPts}/{maxTotal} pts</td>
-                      <td style={{ padding: '9px 12px', color: overallGrade.color, fontWeight: 800, fontSize: 12 }}>{overallGrade.label}</td>
+                      <td colSpan="2" style={{ padding: '9px 12px', textAlign: 'center', color: overallGrade.c, fontWeight: 900, fontSize: 15 }}>{overallGrade.lv} — {totalPts}/{maxTotal} pts</td>
+                      <td style={{ padding: '9px 12px', color: overallGrade.c, fontWeight: 800, fontSize: 12 }}>{overallGrade.desc}</td>
                     </tr>
                   )}
                 </tbody>
@@ -182,8 +176,8 @@ function ReportCardContent() {
                 <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
                   <div style={{ fontWeight: 800, fontSize: 11, color: '#64748b', textTransform: 'uppercase', marginBottom: 8 }}>Overall Assessment</div>
                   <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                    <div style={{ fontSize: 36, fontWeight: 900, color: overallGrade.color }}>{overallGrade.g}</div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{overallGrade.label}</div>
+                    <div style={{ fontSize: 36, fontWeight: 900, color: overallGrade.c }}>{overallGrade.lv}</div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{overallGrade.desc}</div>
                     <div style={{ fontSize: 24, fontWeight: 900, color: '#0F172A', marginTop: 8 }}>{avgPct}%</div>
                     <div style={{ fontSize: 11, color: '#94a3b8' }}>{entered.length}/{subjects.length} subjects assessed</div>
                   </div>

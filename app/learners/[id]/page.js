@@ -245,6 +245,7 @@ export default function LearnerProfilePage() {
                   const prev = termAverages[termAverages.length - 2];
                   const diff = latest - prev;
                   const trajectory = diff > 2 ? 'Improving' : diff < -2 ? 'Declining' : 'Stable';
+                  const info = gInfo(latest, learner.grade, null, school?.curriculum || 'CBC');
                   const color = trajectory === 'Improving' ? '#059669' : trajectory === 'Declining' ? '#dc2626' : '#2563eb';
                   const icon = trajectory === 'Improving' ? '📈' : trajectory === 'Declining' ? '📉' : '➡️';
                   const prediction = Math.min(100, Math.max(0, latest + diff));
@@ -253,10 +254,11 @@ export default function LearnerProfilePage() {
                     <>
                       <div style={{ fontSize: 32, marginBottom: 5 }}>{icon}</div>
                       <div style={{ fontWeight: 900, fontSize: 18, color }}>{trajectory}</div>
-                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{Math.abs(diff).toFixed(1)}% {diff >= 0 ? 'gain' : 'drop'} since last assessment</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{Math.abs(diff).toFixed(1)}% {diff >= 0 ? 'gain' : 'drop'}</div>
                       <div style={{ marginTop: 20, paddingTop: 15, borderTop: '1px solid var(--border)' }}>
                         <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase' }}>Next Term Prediction</div>
                         <div style={{ fontSize: 24, fontWeight: 900, color: '#1e293b' }}>{Math.round(prediction)}%</div>
+                        <div style={{ background: info.bg, color: info.c, display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 900, marginTop: 4 }}>Level: {info.lv}</div>
                       </div>
                     </>
                   );
