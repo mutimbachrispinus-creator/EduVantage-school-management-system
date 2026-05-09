@@ -129,7 +129,9 @@ export default function ParentHome() {
           address: extra.address || l.addr,
           father: extra.father,
           mother: extra.mother,
-          transport: extra.transport
+          transport: extra.transport,
+          allergies: extra.allergies || l.allergies,
+          emergencyContact: extra.emergency || l.emergencyContact
         };
       });
       setChildren(myKids);
@@ -387,12 +389,40 @@ export default function ParentHome() {
               <h3 style={{color:'#fff'}}>👦 {child?.name} — Profile</h3>
             </div>
             <div className="panel-body">
-              {[['Admission No.',child?.adm],['Grade',child?.grade],['Stream',child?.stream||'—'],['Parent/Guardian',child?.parent||user.name],['Phone',child?.phone||'—'],['DOB',child?.dob||'—']].map(([l,v])=>(
-                <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
-                  <span style={{color:'var(--muted)',fontWeight:600}}>{l}</span>
-                  <span style={{fontWeight:700}}>{v}</span>
+              <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:20}}>
+                <div>
+                  <div style={{fontSize:11, fontWeight:800, color:M, textTransform:'uppercase', marginBottom:12}}>Basic Information</div>
+                  {[
+                    ['Admission No.', child?.adm],
+                    ['Full Name', child?.name],
+                    ['Grade / Class', child?.grade],
+                    ['Stream', child?.stream || '—'],
+                    ['DOB', child?.dob || '—'],
+                    ['Gender', child?.sex === 'F' ? 'Female' : 'Male'],
+                  ].map(([l, v]) => (
+                    <div key={l} style={{display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F1F5F9', fontSize: 13}}>
+                      <span style={{color: 'var(--muted)', fontWeight: 600}}>{l}</span>
+                      <span style={{fontWeight: 700}}>{v}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+                <div>
+                  <div style={{fontSize:11, fontWeight:800, color:M, textTransform:'uppercase', marginBottom:12}}>Guardian & Transport</div>
+                  {[
+                    ['Father', child?.father || '—'],
+                    ['Mother', child?.mother || '—'],
+                    ['Primary Parent', child?.parent || user.name],
+                    ['Phone Number', child?.phone || '—'],
+                    ['Home Address', child?.address || '—'],
+                    ['Transport Route', child?.transport || '—'],
+                  ].map(([l, v]) => (
+                    <div key={l} style={{display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F1F5F9', fontSize: 13}}>
+                      <span style={{color: 'var(--muted)', fontWeight: 600}}>{l}</span>
+                      <span style={{fontWeight: 700}}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -456,8 +486,14 @@ export default function ParentHome() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
             {/* Subject Mastery List */}
             <div className="panel" style={{border:`1.5px solid ${MB}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)'}}>
-              <div className="panel-hdr" style={{background:`linear-gradient(135deg,${M},${M2})`,color:'#fff'}}>
-                <h3 style={{color:'#fff'}}>🎯 {child?.name.split(' ')[0]}'s Mastery</h3>
+              <div className="panel-hdr" style={{background:`linear-gradient(135deg,${M},${M2})`,color:'#fff', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                <h3 style={{color:'#fff', margin:0}}>🎯 {child?.name.split(' ')[0]}'s Mastery</h3>
+                <button 
+                  onClick={() => window.open(`/report-card?adm=${child.adm}&grade=${child.grade}&term=${term}&assess=${assess}`, '_blank')}
+                  style={{ background: 'rgba(255,255,255,.2)', border: '1.5px solid rgba(255,255,255,.4)', borderRadius: 8, color: '#fff', padding: '5px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  📜 View Report Card
+                </button>
               </div>
               <div className="panel-body" style={{padding:'5px 15px'}}>
                 {subjs.map(s => {
@@ -980,7 +1016,7 @@ export default function ParentHome() {
           </div>
         </div>
       )}
-      {showNav && user && (
+      {user && (
         <style jsx>{`
           .page { animation: homeRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
           @keyframes homeRise {

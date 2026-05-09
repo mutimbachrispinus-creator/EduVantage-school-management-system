@@ -118,7 +118,8 @@ export default function NexedPage() {
         </div>
       </div>
 
-      {/* ── KPI Cards ── */}
+      <ExpenseVoucher inline isOpen={showExpense} onClose={() => setShowExpense(false)} />
+
       <div className="sg sg4" style={{ marginBottom: 24 }}>
         <div className="stat-card" style={{ borderLeft: '4px solid #059669' }}>
           <div className="sc-inner">
@@ -276,7 +277,6 @@ export default function NexedPage() {
       )}
 
       <QuickReceipt isOpen={showReceipt} onClose={() => { setShowReceipt(false); load(); }} />
-      <ExpenseVoucher isOpen={showExpense} onClose={() => setShowExpense(false)} />
     </div>
   );
 }
