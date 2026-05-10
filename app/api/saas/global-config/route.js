@@ -9,7 +9,7 @@ const MASTER_TENANT = 'platform-master';
 
 export async function GET() {
   const session = await getSession();
-  if (!session || (session.tenantId !== MASTER_TENANT && session.role !== 'super-admin')) {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
   }
 
@@ -31,7 +31,20 @@ export async function GET() {
     maintenanceMode: false
   }, MASTER_TENANT);
 
-  const announcement = await kvGet('paav_global_announcement', null, MASTER_TENANT);
+  let announcement = await kvGet('paav_global_announcement', null, MASTER_TENANT);
+  
+  // Security: Filter sensitive platform configuration for regular users
+  if (session.tenantId !== MASTER_TENANT && session.role !== 'super-admin') {
+    return NextResponse.json({ 
+      announcement, 
+      config: { 
+        platformName: config.platformName, 
+        platformMotto: config.platformMotto,
+        plans: config.plans,
+        platformPayments: config.platformPayments
+      } 
+    });
+  }
 
   return NextResponse.json({ config, announcement });
 }

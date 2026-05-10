@@ -470,16 +470,22 @@ export default function PortalShell({ children }) {
     } catch {}
   }
 
-  async function saveAnnouncement() {
+  async function saveAnnouncement(customVal = null) {
     setEditAnn(false);
-    const ann = { text: annDraft, active: !!annDraft };
-    setAnnouncement(annDraft);
-    const response = await fetchWithRetry('/api/db', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requests: [{ type: 'set', key: 'paav_announcement', value: ann }] }),
-      timeout: 8000
-    });
-    if (response.ok) playSuccessSound();
+    const finalVal = customVal !== null ? customVal : annDraft;
+    const ann = { text: finalVal, active: !!finalVal };
+    
+    // 1. Optimistic Update
+    setAnnouncement(finalVal);
+    
+    // 2. Reliable Persistence with background sync support
+    const { mutateDB } = await import('@/lib/client-cache');
+    try {
+      await mutateDB('paav_announcement', ann);
+      playSuccessSound();
+    } catch (e) {
+      console.error('[PortalShell] Failed to save announcement:', e);
+    }
   }
 
   return (
@@ -535,7 +541,7 @@ export default function PortalShell({ children }) {
               </>
             )}
             {announcement && (
-              <button onClick={() => { setAnnouncement(''); setAnnDraft(''); saveAnnouncement(); }}
+              <button onClick={() => { setAnnDraft(''); saveAnnouncement(''); }}
                 style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.6)', cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>✕</button>
             )}
           </div>

@@ -48,9 +48,7 @@ function DashboardContent() {
       // 2. Fetch CORE data in parallel
       const [db, glob, statRes] = await Promise.all([
         getCachedDBMulti(['paav_theme', 'paav_school_profile']),
-        isSuper
-          ? fetch('/api/saas/global-config').then(r => r.json()).catch(() => ({}))
-          : Promise.resolve({}),
+        fetch('/api/saas/global-config').then(r => r.json()).catch(() => ({})),
         fetch('/api/stats/dashboard').then(r => r.json()).catch(() => ({ stats: {} }))
       ]);
 

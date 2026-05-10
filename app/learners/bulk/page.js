@@ -127,38 +127,54 @@ export default function BulkLearnersPage() {
   // Individual learner picker removed to avoid confusion
 
   function deduplicateRows() {
-    const valid = rows.filter(r => r.name && r.adm);
+    const valid = rows.filter(r => r.name || r.adm);
     const merged = [];
     let count = 0;
     
     function isFuzzyMatch(n1, n2) {
-      const s1 = String(n1 || '').toUpperCase().trim();
-      const s2 = String(n2 || '').toUpperCase().trim();
+      if (!n1 || !n2) return false;
+      const s1 = String(n1).toUpperCase().trim().replace(/[^A-Z\s]/g, '');
+      const s2 = String(n2).toUpperCase().trim().replace(/[^A-Z\s]/g, '');
       if (s1 === s2) return true;
-      const w1 = s1.split(/\s+/);
-      const w2 = s2.split(/\s+/);
-      // Match if first two words are identical
-      if (w1.length >= 2 && w2.length >= 2 && w1[0] === w2[0] && w1[1] === w2[1]) return true;
-      return false;
+      const w1 = s1.split(/\s+/).filter(w => w.length > 0).sort();
+      const w2 = s2.split(/\s+/).filter(w => w.length > 0).sort();
+      if (w1.length < 2 || w2.length < 2) return s1 === s2;
+      return (w1[0] === w2[0] && w1[1] === w2[1]);
     }
 
     for (const r of valid) {
-      const existingIdx = merged.findIndex(m => m.grade === r.grade && isFuzzyMatch(m.name, r.name));
+      const rAdm = String(r.adm || '').trim();
+      const existingIdx = merged.findIndex(m => {
+        const mAdm = String(m.adm || '').trim();
+        const admMatch = (rAdm && mAdm && rAdm === mAdm);
+        const nameMatch = (r.name && m.name && m.grade === r.grade && isFuzzyMatch(m.name, r.name));
+        return admMatch || nameMatch;
+      });
+
       if (existingIdx !== -1) {
-        // Overwrite existing with latest (latest wins)
-        merged[existingIdx] = { ...merged[existingIdx], ...r };
+        const m = merged[existingIdx];
+        merged[existingIdx] = {
+          ...m, ...r,
+          name: (r.name?.length > (m.name?.length || 0)) ? r.name : m.name,
+          adm: r.adm || m.adm,
+          phone: r.phone || m.phone,
+          parent: r.parent || m.parent,
+          dob: r.dob || m.dob,
+          stream: r.stream || m.stream,
+          arrears: Math.max(r.arrears || 0, m.arrears || 0)
+        };
         count++;
       } else {
-        merged.push(r);
+        merged.push({ ...r });
       }
     }
     
     if (count > 0) {
-      if (confirm(`🔍 Found ${count} potential duplicates (including partial name matches like "George Gitau"). Merge them into unique records?`)) {
+      if (confirm(`🔍 Found ${count} duplicate or similar records. Merge them into unique profiles?`)) {
         setRows([...merged, ...Array(Math.max(5, 20 - merged.length)).fill(null).map(() => ({...EMPTY_ROW, grade: bulkGrade}))]);
       }
     } else {
-      alert('✅ No potential duplicates found in the current grid.');
+      alert('✅ No duplicates found in the current list.');
     }
   }
 

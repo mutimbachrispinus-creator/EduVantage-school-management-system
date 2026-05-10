@@ -13,14 +13,14 @@ export async function GET() {
   try {
     const redFlags = await query(`
       SELECT 
-        SUBSTR(grade_date_adm, INSTR(grade_date_adm, '|') + 11) as adm,
+        SUBSTR(grade_date_adm, INSTR(grade_date_adm, '|') + 12) as adm,
         COUNT(*) as absent_count
       FROM attendance 
       WHERE tenant_id = ? 
         AND status = 'A'
         AND grade_date_adm LIKE '%|' || STRFTIME('%Y-%m', 'now') || '%'
       GROUP BY adm
-      HAVING absent_count >= 2
+      HAVING absent_count >= 3
       ORDER BY absent_count DESC
       LIMIT 12
     `, [tenantId]);
