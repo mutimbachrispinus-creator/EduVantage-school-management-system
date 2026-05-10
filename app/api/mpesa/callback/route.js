@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+
 import { NextResponse } from 'next/server';
 import { parseStkCallback } from '@/lib/mpesa';
 import { kvRecordPayment, kvGet, kvSet, query } from '@/lib/db';
@@ -58,6 +58,15 @@ export async function POST(req) {
               adm      = rec.adm;
               term     = rec.term;
               tenantId = rec.tenantId || row.tenant_id;
+              
+              // If there was a platform fee, we use the original base amount for the school ledger
+              // result.amount will have the total (base + fee). We trust Safaricom's result but subtract the fee
+              // just in case they paid a different amount. But typically they pay exactly what was requested.
+              if (rec.platformFee) {
+                 result.schoolAmount = Math.max(0, result.amount - rec.platformFee);
+              }
+              result.settlementAccount = rec.settlementAccount || 'Primary';
+
               pendingKey = { tenantId: row.tenant_id, pending };
               console.log(`[M-Pesa Callback] Resolved via CheckoutRequestID: adm=${adm}, term=${term}, tenant=${tenantId}`);
               break;
@@ -78,18 +87,63 @@ export async function POST(req) {
         console.log(`[M-Pesa Callback] Resolved via shortcode fallback: adm=${adm}, term=${term}, tenant=${tenantId}`);
       }
 
-      // Record the payment in the correct school's database
-      await kvRecordPayment({
-        adm,
-        term:   term,
-        amount: result.amount,
-        method: 'M-Pesa',
-        ref:    result.mpesaCode,
-        by:     'M-Pesa STK',
-        status: 'approved'   // Safaricom confirmed payment, auto-approve
-      }, tenantId);
+      // Check if it's a platform subscription payment
+      if (term && term.startsWith('SUB_')) {
+        const durationMap = { 'SUB_DAILY': 1, 'SUB_WEEKLY': 7, 'SUB_MONTHLY': 30 };
+        const days = durationMap[term] || 1;
+        const subs = (await kvGet('paav_learning_subs', {}, tenantId)) || {};
+        const now = Date.now();
+        const currentExp = (subs[adm] && subs[adm].expires > now) ? subs[adm].expires : now;
+        subs[adm] = {
+           expires: currentExp + (days * 24 * 60 * 60 * 1000),
+           updatedAt: now
+        };
+        await kvSet('paav_learning_subs', subs, tenantId);
+        console.log(`[M-Pesa Callback] Subscription activated for ${adm}: ${term}`);
+        
+        // Record as subscription income
+        await kvRecordPayment({
+          adm,
+          term: 'Platform Subscription',
+          amount: result.amount,
+          method: 'M-Pesa',
+          ref: result.mpesaCode,
+          by: 'M-Pesa STK',
+          status: 'approved'
+        }, tenantId);
+      } else {
+        // Record the standard fee payment in the correct school's database
+        await kvRecordPayment({
+          adm,
+          term:   term,
+          amount: result.schoolAmount || result.amount,
+          method: 'M-Pesa',
+          ref:    result.mpesaCode,
+          by:     'M-Pesa STK',
+          status: 'approved'   // Safaricom confirmed payment, auto-approve
+        }, tenantId);
+      }
 
-      console.log(`[M-Pesa Callback] ✅ Payment recorded: adm=${adm}, amount=${result.amount}, ref=${result.mpesaCode}, tenant=${tenantId}`);
+      // Add to Central Settlement Queue for Aggregator Disbursement
+      if (term && !term.startsWith('SUB_') && (result.schoolAmount || result.amount) > 0) {
+        try {
+          const queue = (await kvGet('paav_settlement_queue', [], 'platform-master')) || [];
+          queue.push({
+            tenantId,
+            adm,
+            amount: result.schoolAmount || result.amount,
+            settlementAccount: result.settlementAccount || 'Primary',
+            timestamp: new Date().toISOString(),
+            status: 'pending',
+            ref: result.mpesaCode
+          });
+          await kvSet('paav_settlement_queue', queue, 'platform-master');
+        } catch (e) {
+          console.error('[M-Pesa Callback] Failed to queue settlement:', e);
+        }
+      }
+
+      console.log(`[M-Pesa Callback] ✅ Payment recorded: adm=${adm}, totalAmount=${result.amount}, schoolAmount=${result.schoolAmount || result.amount}, ref=${result.mpesaCode}, tenant=${tenantId}`);
 
       // Fire admin notification
       try {

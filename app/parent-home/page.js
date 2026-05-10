@@ -177,7 +177,10 @@ export default function ParentHome() {
     if (!phone) return;
     
     const amount = prompt(`Enter amount to pay for ${termLabel}:`, '1000');
-    if (!amount || isNaN(amount)) return;
+    if (!amount || isNaN(amount) || amount <= 0) return;
+
+    const confirmFee = confirm(`An EduVantage Platform Convenience Fee of KES 50 will be added to this transaction.\n\nTotal to Pay: KES ${Number(amount) + 50}\n\nProceed?`);
+    if (!confirmFee) return;
 
     try {
       const res = await fetch('/api/mpesa/stk', {
@@ -189,7 +192,8 @@ export default function ParentHome() {
           accountRef: child.adm,
           term: termLabel.replace('Term ', 'T'),
           description: `${child.name} Fees`,
-          paybillId: account.id
+          paybillId: account.id,
+          includeFee: true
         })
       });
       const data = await res.json();

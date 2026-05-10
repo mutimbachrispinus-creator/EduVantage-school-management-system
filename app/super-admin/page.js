@@ -35,6 +35,7 @@ export default function SuperAdminPage() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [healthReport, setHealthReport] = useState([]);
   const [runningDiag, setRunningDiag] = useState(false);
+  const [settlementQueue, setSettlementQueue] = useState([]);
 
   const load = useCallback(async () => {
     const u = await getCachedUser();
@@ -45,22 +46,25 @@ export default function SuperAdminPage() {
     setUser(u);
 
     try {
-      const [statsRes, configRes, termsRes, auditRes] = await Promise.all([
+      const [statsRes, configRes, termsRes, auditRes, settlementRes] = await Promise.all([
         fetch('/api/saas/stats'),
         fetch('/api/saas/global-config'),
         fetch('/api/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ requests:[{ type:'getTerms' }] }) }),
-        fetch('/api/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ requests:[{ type:'getGlobalAudit' }] }) })
+        fetch('/api/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ requests:[{ type:'getGlobalAudit' }] }) }),
+        fetch('/api/saas/settlements')
       ]);
       const stats = await statsRes.json();
       const conf = await configRes.json();
       const tData = await termsRes.json();
       const aData = await auditRes.json();
+      const sData = await settlementRes.json();
 
       setData(stats);
       if (conf.config) setGlobalConfig(conf.config);
       if (conf.announcement) setAnnouncement(conf.announcement);
       setTerms(tData.results?.[0]?.value || []);
       setAuditLogs(aData.results?.[0]?.value || []);
+      if (sData.queue) setSettlementQueue(sData.queue);
     } catch (e) {
       console.error('Failed to load super admin data:', e);
     } finally {
@@ -194,9 +198,10 @@ export default function SuperAdminPage() {
         </div>
       </div>
 
-      <div className="tabs" style={{ margin: '0 40px 30px', display: 'flex', gap: 10 }}>
+      <div className="tabs" style={{ margin: '0 40px 30px', display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10 }}>
         <TabBtn icon="📊" label="Overview" on={tab === 'overview'} onClick={() => setTab('overview')} />
         <TabBtn icon="🏫" label="Institutions" on={tab === 'schools'} onClick={() => setTab('schools')} />
+        <TabBtn icon="💸" label="Settlements" on={tab === 'settlements'} onClick={() => setTab('settlements')} />
         <TabBtn icon="📅" label="Default Calendar" on={tab === 'terms'} onClick={() => setTab('terms')} />
         <TabBtn icon="💳" label="Plans & Billing" on={tab === 'billing'} onClick={() => setTab('billing')} />
         <TabBtn icon="⚙️" label="Global Settings" on={tab === 'settings'} onClick={() => setTab('settings')} />
@@ -251,6 +256,74 @@ export default function SuperAdminPage() {
               </div>
             </div>
           </>
+        )}
+
+        {tab === 'settlements' && (
+          <div className="panel">
+            <div className="panel-hdr" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>💸 Automated Settlement & Payout Engine</h3>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                  Aggregated funds pending disbursement to school bank accounts and Till numbers.
+                </p>
+              </div>
+              <button 
+                className="btn btn-primary" 
+                onClick={async () => {
+                  if(!confirm('Are you sure you want to trigger Safaricom B2C/B2B disbursements for all pending funds?')) return;
+                  setSaving(true);
+                  try {
+                    const res = await fetch('/api/saas/settlements', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'process_payouts' })
+                    });
+                    const d = await res.json();
+                    alert(d.message || d.error);
+                    load();
+                  } catch(e) { alert(e.message); }
+                  setSaving(false);
+                }}
+                disabled={saving || settlementQueue.filter(q => q.status === 'pending').length === 0}
+              >
+                {saving ? 'Processing...' : '🚀 Disburse Pending Funds'}
+              </button>
+            </div>
+            <div className="tbl-wrap">
+              <table>
+                <thead>
+                  <tr style={{ background: '#F8FAFC' }}>
+                    <th>School (Tenant ID)</th>
+                    <th>Ref Adm</th>
+                    <th>Amount Owed (KES)</th>
+                    <th>Destination Account</th>
+                    <th>M-Pesa Ref</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...settlementQueue].reverse().map((q, i) => (
+                    <tr key={i} style={{ background: q.status === 'pending' ? '#FEF2F2' : 'inherit' }}>
+                      <td style={{ fontWeight: 800 }}>{q.tenantId}</td>
+                      <td>{q.adm}</td>
+                      <td style={{ fontWeight: 900, color: 'var(--navy)' }}>{q.amount.toLocaleString()}</td>
+                      <td style={{ fontWeight: 700, color: 'var(--maroon)' }}>{q.settlementAccount}</td>
+                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{q.ref || '-'}</td>
+                      <td>
+                        <span className={`badge ${q.status === 'pending' ? 'bg-red' : q.status === 'completed' ? 'bg-green' : 'bg-gray'}`}>
+                          {q.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: 12 }}>{new Date(q.timestamp).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                  {settlementQueue.length === 0 && (
+                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: 30, color: 'var(--muted)' }}>No settlements logged yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
 
         {tab === 'schools' && (

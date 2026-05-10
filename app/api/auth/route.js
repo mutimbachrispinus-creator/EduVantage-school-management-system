@@ -324,9 +324,22 @@ async function handleAddChild({ schoolId, adm }, request) {
         );
       }
     } else {
-      // Fetch this parent's own record to copy credentials
+      // Fetch this parent's own record to copy credentials and verify phone
       const myRows = await query('SELECT * FROM staff WHERE id = ? LIMIT 1', [session.id]);
       const me = myRows[0];
+      if (!me) return err('Your parent record was not found. Please contact support.', 404);
+
+      // --- EduVantage Revenue & Integrity Engine Lock ---
+      // Strict Parental Verification: Linkage is only allowed if the parent's phone
+      // precisely matches the learner's registered guardian phone on the school side.
+      const parentPhone = me.phone || '';
+      if (learner.phone && parentPhone) {
+         const lPhone = String(learner.phone).replace(/\D/g, '').slice(-9);
+         const pPhone = String(parentPhone).replace(/\D/g, '').slice(-9);
+         if (lPhone !== pPhone && lPhone.length > 0 && pPhone.length > 0) {
+             return err('Verification failed: Your registered phone number does not match the official guardian contact on file for this student. The school must update their records first.', 403);
+         }
+      }
       if (!me) return err('Your parent record was not found. Please contact support.', 404);
 
       await execute(

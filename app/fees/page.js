@@ -539,10 +539,10 @@ function FeeConfigModal({ feeCfg, onClose, TERMS }) {
     </ModalOverlay>
 }
 
-/* ─── Paybill Config Modal ──────────────────────────────────────────────── */
+/* ─── Settlement Config Modal ──────────────────────────────────────────────── */
 function PaybillConfigModal({ accounts, onClose }) {
   const [list, setList] = useState(
-    accounts.length ? accounts : [{ id: Date.now(), name: '', shortcode: '', passkey: '', type: 'M-Pesa' }]
+    accounts.length ? accounts : [{ id: Date.now(), name: '', type: 'Bank', accNo: '', bank: '', branch: '' }]
   );
   const [busy, setBusy] = useState(false);
 
@@ -556,82 +556,61 @@ function PaybillConfigModal({ accounts, onClose }) {
     onClose();
   }
 
-  const add = () => setList([...list, { id: Date.now(), name: '', shortcode: '', passkey: '', type: 'M-Pesa' }]);
+  const add = () => setList([...list, { id: Date.now(), name: '', type: 'Bank', accNo: '', bank: '', branch: '' }]);
   const del = (id) => setList(list.filter(x => x.id !== id));
   const upd = (id, k, v) => setList(list.map(x => x.id === id ? { ...x, [k]: v } : x));
 
   return (
-    <ModalOverlay title="📱 M-Pesa Payment Accounts" onClose={onClose}>
+    <ModalOverlay title="🏦 Settlement Accounts" onClose={onClose}>
       <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 15 }}>
-        Configure the M-Pesa (Daraja), PesaPal (Card), or Bank accounts parents will use to pay fees.
-        School details are managed separately from platform subscription billing.
+        EduVantage processes all parent payments centrally. Configure the Bank or M-Pesa Till accounts where we should disburse your collected fees.
       </p>
       <div style={{ maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
         {list.map((a, i) => (
           <div key={a.id} style={{ padding: 14, border: '1.5px solid var(--border)', borderRadius: 12, marginBottom: 12, background: '#FAFBFF' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <span style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 11 }}>ACCOUNT #{i + 1}</span>
+              <span style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 11 }}>SETTLEMENT ROUTE #{i + 1}</span>
               {list.length > 1 && (
                 <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)', padding: '2px 8px' }} onClick={() => del(a.id)}>✕ Remove</button>
               )}
             </div>
             <div className="field">
-              <label>Account Label (e.g. Tuition Fees, Activities)</label>
+              <label>Account Label (e.g. Tuition Fees, Transport)</label>
               <input value={a.name} onChange={e => upd(a.id, 'name', e.target.value)} placeholder="Tuition Fees" />
             </div>
             <div className="field-row">
               <div className="field">
-                <label>Shortcode / Paybill / Till</label>
-                <input value={a.shortcode} onChange={e => upd(a.id, 'shortcode', e.target.value)} placeholder="e.g. 400200" />
-              </div>
-              <div className="field">
-                <label>Type</label>
+                <label>Destination Type</label>
                 <select value={a.type} onChange={e => upd(a.id, 'type', e.target.value)}>
-                  <option value="M-Pesa">M-Pesa (Daraja STK)</option>
-                  <option value="PesaPal">PesaPal (Card/Mobile)</option>
                   <option value="Bank">Direct Bank Transfer</option>
+                  <option value="M-Pesa">M-Pesa Till / Paybill</option>
                 </select>
               </div>
-            </div>
-            <div className="field">
-              <label>{a.type === 'Bank' ? 'Account Number' : a.type === 'PesaPal' ? 'Consumer Key' : 'Shortcode / Paybill'}</label>
-              <input value={a.shortcode || a.accNo || a.consumerKey} onChange={e => {
-                if (a.type === 'Bank') upd(a.id, 'accNo', e.target.value);
-                else if (a.type === 'PesaPal') upd(a.id, 'consumerKey', e.target.value);
-                else upd(a.id, 'shortcode', e.target.value);
-              }} placeholder={a.type === 'Bank' ? '1234567890' : a.type === 'PesaPal' ? 'Consumer Key' : '400200'} />
-            </div>
-
-            {a.type === 'M-Pesa' && (
               <div className="field">
-                <label>Online Passkey (Lipa na M-Pesa Online)</label>
-                <input type="password" value={a.passkey} onChange={e => upd(a.id, 'passkey', e.target.value)} placeholder="bfb279f..." />
+                <label>{a.type === 'Bank' ? 'Bank Account Number' : 'Till / Paybill Number'}</label>
+                <input value={a.accNo || a.shortcode || ''} onChange={e => {
+                  if (a.type === 'Bank') upd(a.id, 'accNo', e.target.value);
+                  else upd(a.id, 'shortcode', e.target.value);
+                }} placeholder={a.type === 'Bank' ? '1234567890' : '400200'} />
               </div>
-            )}
-
-            {a.type === 'PesaPal' && (
-              <div className="field">
-                <label>Consumer Secret</label>
-                <input type="password" value={a.consumerSecret} onChange={e => upd(a.id, 'consumerSecret', e.target.value)} placeholder="Consumer Secret..." />
-              </div>
-            )}
+            </div>
 
             {a.type === 'Bank' && (
               <div className="field-row">
-                <div className="field"><label>Bank Name</label><input value={a.bank} onChange={e => upd(a.id, 'bank', e.target.value)} placeholder="e.g. KCB" /></div>
-                <div className="field"><label>Branch</label><input value={a.branch} onChange={e => upd(a.id, 'branch', e.target.value)} placeholder="Westlands" /></div>
+                <div className="field"><label>Bank Name</label><input value={a.bank} onChange={e => upd(a.id, 'bank', e.target.value)} placeholder="e.g. KCB, Equity" /></div>
+                <div className="field"><label>Branch Code (Optional)</label><input value={a.branch} onChange={e => upd(a.id, 'branch', e.target.value)} placeholder="Westlands" /></div>
               </div>
             )}
           </div>
         ))}
       </div>
       <button className="btn btn-ghost btn-sm" onClick={add} style={{ width: '100%', border: '1px dashed var(--border)', marginTop: 5 }}>
-        + Add Another Account
+        + Add Another Settlement Route
       </button>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
         <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
         <button className="btn btn-primary btn-sm" onClick={save} disabled={busy} style={{ width: 'auto' }}>
-          {busy ? '⏳ Saving…' : '💾 Save Accounts'}
+          {busy ? '⏳ Saving…' : '💾 Save Configurations'}
         </button>
       </div>
     </ModalOverlay>

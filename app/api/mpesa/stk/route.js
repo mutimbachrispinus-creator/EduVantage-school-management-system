@@ -6,11 +6,14 @@ import { kvGet, kvSet } from '@/lib/db';
 
 export async function POST(req) {
   try {
-    const { phone, amount, accountRef, description, term, paybillId } = await req.json();
+    const { phone, amount, accountRef, description, term, paybillId, includeFee } = await req.json();
 
     if (!phone || !amount || !accountRef) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
+    
+    const platformFee = includeFee ? 50 : 0;
+    const finalAmount = Number(amount) + platformFee;
 
     const session = await getSession();
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
@@ -18,11 +21,7 @@ export async function POST(req) {
     const tenantId = session.tenantId;
 
     const paybills = (await kvGet('paav_paybill_accounts', [], tenantId)) || [];
-    const paybill = paybills.find(p => String(p.id) === String(paybillId)) || paybills[0];
-
-    if (!paybill || !paybill.shortcode || !paybill.passkey) {
-      return NextResponse.json({ success: false, error: 'School Paybill not properly configured. Contact your administrator.' }, { status: 400 });
-    }
+    const paybill = paybills.find(p => String(p.id) === String(paybillId)) || paybills[0] || {};
 
     // Parse adm from accountRef which may be "2025/001:T1" or just "2025/001"
     // We send just the raw adm number as AccountReference (Safaricom limit: 12 chars)
@@ -33,11 +32,9 @@ export async function POST(req) {
 
     const result = await stkPush({
       phone,
-      amount,
+      amount: finalAmount,
       accountRef: safaricomRef,
-      description: description || 'School Fees',
-      shortcode:  paybill.shortcode,
-      passkey:    paybill.passkey
+      description: description || 'School Fees'
     });
 
     if (result.success && result.checkoutRequestId) {
@@ -49,10 +46,11 @@ export async function POST(req) {
       pending[result.checkoutRequestId] = {
         adm,
         term:     term || 'T1',
-        amount:   Number(amount),
+        amount:   Number(amount), // Original base amount for school ledger
+        platformFee,
         tenantId,
         phone,
-        shortcode: paybill.shortcode,
+        settlementAccount: paybill.shortcode || paybill.accNo || 'Primary', // Where EduVantage should send funds
         initiatedAt: new Date().toISOString()
       };
       // Keep at most 200 pending records (auto-cleanup of old ones)

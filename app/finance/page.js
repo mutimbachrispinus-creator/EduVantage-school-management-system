@@ -14,15 +14,20 @@ export default function FinanceDashboardPage() {
   const [ledger, setLedger] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [learners, setLearners] = useState([]);
+  const [feeCfg, setFeeCfg] = useState({});
+
   const load = useCallback(async () => {
     const u = await getCachedUser();
     if (!u || !['admin', 'super-admin'].includes(u.role)) { router.push('/'); return; }
     setUser(u);
 
-    const db = await getCachedDBMulti(['paav_finance_ledger', 'paav_finance_budgets', 'paav_petty_cash']);
+    const db = await getCachedDBMulti(['paav_finance_ledger', 'paav_finance_budgets', 'paav_petty_cash', 'paav6_learners', 'paav6_feecfg']);
     setLedger(db.paav_finance_ledger || []);
     setBudgets(db.paav_finance_budgets || []);
     setPettyCash(db.paav_petty_cash || []);
+    setLearners(db.paav6_learners || []);
+    setFeeCfg(db.paav6_feecfg || {});
     setLoading(false);
   }, [router]);
 
@@ -52,15 +57,30 @@ export default function FinanceDashboardPage() {
     const budgetTotal = budgets.reduce((s, b) => s + b.amount, 0);
     const pettyBalance = pettyCash.reduce((sum, tx) => tx.type === 'income' ? sum + tx.amount : sum - tx.amount, 0);
 
+    // Revenue Integrity Engine Calculations
+    let expectedRevenue = 0;
+    let collectedRevenue = 0;
+    let ghostDiscrepancy = 0;
+    
+    learners.forEach(l => {
+      const cfg = feeCfg[l.grade] || {};
+      const annual = (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 0;
+      expectedRevenue += annual + (l.arrears || 0);
+      collectedRevenue += (l.t1||0) + (l.t2||0) + (l.t3||0);
+    });
+
     return { 
       chartData: Object.values(months).sort((a,b) => a.month.localeCompare(b.month)),
       totalIncome,
       totalExpense,
       balance: totalIncome - totalExpense,
       budgetTotal,
-      pettyBalance
+      pettyBalance,
+      expectedRevenue,
+      collectedRevenue,
+      leakage: expectedRevenue - collectedRevenue
     };
-  }, [ledger, budgets, pettyCash]);
+  }, [ledger, budgets, pettyCash, learners, feeCfg]);
 
   if (loading) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading Finance Hub…</div>;
 
@@ -104,8 +124,39 @@ export default function FinanceDashboardPage() {
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 }}>Financial Runway</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: '#FCD34D' }}>
-              {stats.balance > 0 ? `${Math.floor(stats.balance / (stats.totalExpense / (stats.chartData.length || 1)))} Months` : 'Immediate Attention Required'}
+              {stats.balance > 0 ? `${Math.floor(stats.balance / (stats.totalExpense / (stats.chartData.length || 1) || 1))} Months` : 'Immediate Attention Required'}
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel" style={{ marginBottom: 20, border: '2px dashed #DC2626', background: '#FEF2F2' }}>
+        <div className="panel-hdr" style={{ borderBottom: '1px solid #FECACA', background: 'transparent' }}>
+          <h3 style={{ color: '#991B1B', display: 'flex', alignItems: 'center', gap: 10 }}>
+            🛡️ EduVantage Revenue Integrity Engine
+          </h3>
+          <span style={{ fontSize: 11, color: '#991B1B', fontWeight: 800 }}>LIVE AUDIT</span>
+        </div>
+        <div className="panel-body" style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 250 }}>
+            <p style={{ fontSize: 13, color: '#7F1D1D', marginBottom: 15 }}>
+              This engine cross-references the physical student registry ({learners.length} active learners) against expected institutional fees to prevent "ghost student" leakage and unbilled attendance.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ background: '#fff', padding: 15, borderRadius: 10, border: '1px solid #FECACA' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: '#991B1B' }}>EXPECTED YIELD</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#7F1D1D' }}>KSH {stats.expectedRevenue.toLocaleString()}</div>
+              </div>
+              <div style={{ background: '#fff', padding: 15, borderRadius: 10, border: '1px solid #FECACA' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: '#047857' }}>COLLECTED YIELD</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#065F46' }}>KSH {stats.collectedRevenue.toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ width: 250, background: '#7F1D1D', color: '#fff', padding: 20, borderRadius: 12, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ fontSize: 10, letterSpacing: 1, opacity: 0.8, marginBottom: 5 }}>DETECTED REVENUE LEAKAGE</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#FECACA' }}>KSH {stats.leakage.toLocaleString()}</div>
+            <div style={{ fontSize: 11, opacity: 0.8, marginTop: 5, textAlign: 'center' }}>Uncollected balances from active learners.</div>
           </div>
         </div>
       </div>

@@ -59,6 +59,10 @@ export default function EducationHubPage() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [uploadingSlide, setUploadingSlide] = useState(false);
 
+  /* Subscription state */
+  const [subs, setSubs] = useState({});
+  const [paybills, setPaybills] = useState([]);
+
   /* Jitsi */
   const jitsiRef = useRef(null);
   const apiRef   = useRef(null);
@@ -68,10 +72,12 @@ export default function EducationHubPage() {
     if (!u) { router.push('/'); return; }
     setUser(u);
     
-    const db = await getCachedDBMulti(['paav_edu_docs', 'paav_live_sessions', 'paav_live_slides']);
+    const db = await getCachedDBMulti(['paav_edu_docs', 'paav_live_sessions', 'paav_live_slides', 'paav_learning_subs', 'paav_paybill_accounts']);
     setDocs(db.paav_edu_docs || []);
     setSessions((db.paav_live_sessions || []).filter(s => Date.now() - s.createdAt < 24 * 60 * 60 * 1000));
     setSlides(db.paav_live_slides || []);
+    setSubs(db.paav_learning_subs || {});
+    setPaybills(db.paav_paybill_accounts || []);
 
     if (ALL_GRADES.length > 0) {
       setNewDoc(d => ({ ...d, grade: d.grade || ALL_GRADES[0] }));
@@ -207,6 +213,35 @@ export default function EducationHubPage() {
   const officialRes = resources.filter(r => r.cat === 'Official');
   const otherRes = resources.filter(r => r.cat !== 'Official');
 
+  // Subscription check
+  const isPremiumCat = cat === 'videos';
+  const mySub = subs[user.username] || { expires: 0 };
+  const hasSub = canUpload || mySub.expires > Date.now();
+
+  async function initiateSubMpesa(plan, amount) {
+    const phone = user.phone || prompt('Enter M-Pesa Phone Number (07xxxxxxxx):');
+    if (!phone) return;
+    const account = paybills[0];
+    if (!account) return alert('No payment gateway configured.');
+    try {
+      const res = await fetch('/api/mpesa/stk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: phone,
+          amount: amount,
+          accountRef: user.username,
+          term: plan, // SUB_DAILY, SUB_WEEKLY, SUB_MONTHLY
+          description: 'Learning Subscription',
+          paybillId: account.id
+        })
+      });
+      const data = await res.json();
+      if (data.success) alert('✅ M-Pesa prompt sent! Enter PIN to activate subscription.');
+      else alert('❌ Error: ' + (data.error || 'Failed to initiate M-Pesa.'));
+    } catch (err) { alert('❌ Connection error: ' + err.message); }
+  }
+
   return (
     <div className="page on">
       {/* Top Navigation Switcher */}
@@ -240,28 +275,56 @@ export default function EducationHubPage() {
 
               <div className="panel">
                 <div className="panel-hdr">
-                  <h3>Recent Shared Materials</h3>
-                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>{filteredDocs.length} items found</span>
+                  <h3>{isPremiumCat ? '⭐ Premium Video Lessons' : 'Recent Shared Materials'}</h3>
+                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>{isPremiumCat && !hasSub ? 'Locked' : `${filteredDocs.length} items found`}</span>
                 </div>
                 <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {filteredDocs.map((d, i) => (
-                    <div key={i} className="doc-row">
-                      <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
-                        <div style={{ fontSize: 24 }}>📄</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 800, color: 'var(--navy)' }}>{d.title}</div>
-                          <div style={{ fontSize: 11, color: 'var(--muted)' }}>{d.grade} • {d.subject} • Shared by {d.author}</div>
+                  {isPremiumCat && !hasSub ? (
+                    <div style={{ textAlign: 'center', padding: '50px 20px', background: '#F8FAFC', borderRadius: 12, border: '2px dashed #CBD5E1' }}>
+                      <div style={{ fontSize: 50, marginBottom: 15 }}>🔒</div>
+                      <h2 style={{ margin: '0 0 10px', color: '#0F172A' }}>EduVantage Learning Premium</h2>
+                      <p style={{ color: '#475569', marginBottom: 25, fontSize: 14 }}>Subscribe to unlock high-quality video lessons and premium revision materials.</p>
+                      <div style={{ display: 'flex', gap: 15, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ background: '#fff', border: '2px solid #E2E8F0', borderRadius: 12, padding: 20, width: 200 }}>
+                          <h4 style={{ margin: '0 0 5px' }}>Daily Pass</h4>
+                          <div style={{ fontSize: 24, fontWeight: 900, color: '#16A34A', marginBottom: 15 }}>KES 150</div>
+                          <button className="btn btn-success w-full" onClick={() => initiateSubMpesa('SUB_DAILY', 150)}>Pay via M-Pesa</button>
+                        </div>
+                        <div style={{ background: '#fff', border: '2px solid #3B82F6', borderRadius: 12, padding: 20, width: 200, transform: 'scale(1.05)', boxShadow: '0 10px 25px rgba(59,130,246,0.15)' }}>
+                          <div style={{ background: '#3B82F6', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 10, display: 'inline-block', marginBottom: 10 }}>MOST POPULAR</div>
+                          <h4 style={{ margin: '0 0 5px' }}>Weekly Pass</h4>
+                          <div style={{ fontSize: 24, fontWeight: 900, color: '#16A34A', marginBottom: 15 }}>KES 800</div>
+                          <button className="btn btn-primary w-full" onClick={() => initiateSubMpesa('SUB_WEEKLY', 800)}>Pay via M-Pesa</button>
+                        </div>
+                        <div style={{ background: '#fff', border: '2px solid #E2E8F0', borderRadius: 12, padding: 20, width: 200 }}>
+                          <h4 style={{ margin: '0 0 5px' }}>Monthly Pass</h4>
+                          <div style={{ fontSize: 24, fontWeight: 900, color: '#16A34A', marginBottom: 15 }}>KES 1,900</div>
+                          <button className="btn btn-success w-full" onClick={() => initiateSubMpesa('SUB_MONTHLY', 1900)}>Pay via M-Pesa</button>
                         </div>
                       </div>
-                      <a href={d.url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ fontSize: 20, textDecoration: 'none' }}>📥</a>
                     </div>
-                  ))}
-                  {filteredDocs.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)', background: '#F8FAFC', borderRadius: 15 }}>
-                      <div style={{ fontSize: 48, marginBottom: 15 }}>📚</div>
-                      <h3 style={{ margin: 0 }}>No materials found</h3>
-                      <p style={{ fontSize: 12 }}>{user.role === 'parent' ? "Teachers haven't shared any notes yet." : 'Upload class notes or past papers for your students.'}</p>
-                    </div>
+                  ) : (
+                    <>
+                      {filteredDocs.map((d, i) => (
+                        <div key={i} className="doc-row">
+                          <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
+                            <div style={{ fontSize: 24 }}>{d.category === 'videos' ? '🎬' : '📄'}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 800, color: 'var(--navy)' }}>{d.title}</div>
+                              <div style={{ fontSize: 11, color: 'var(--muted)' }}>{d.grade} • {d.subject} • Shared by {d.author}</div>
+                            </div>
+                          </div>
+                          <a href={d.url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ fontSize: 20, textDecoration: 'none' }}>{d.category === 'videos' ? '▶️' : '📥'}</a>
+                        </div>
+                      ))}
+                      {filteredDocs.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)', background: '#F8FAFC', borderRadius: 15 }}>
+                          <div style={{ fontSize: 48, marginBottom: 15 }}>📚</div>
+                          <h3 style={{ margin: 0 }}>No materials found</h3>
+                          <p style={{ fontSize: 12 }}>{user.role === 'parent' ? "Teachers haven't shared any notes yet." : 'Upload class notes or past papers for your students.'}</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
