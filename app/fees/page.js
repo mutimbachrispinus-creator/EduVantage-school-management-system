@@ -420,50 +420,6 @@ function ModalOverlay({ title, onClose, children }) {
   );
 }
 
-function PaybillConfigModal({ accounts, onClose }) {
-  const [list, setList] = useState(accounts.length ? accounts : [{ id: Date.now(), name: '', shortcode: '', passkey: '', type: 'M-Pesa' }]);
-  const [busy, setBusy] = useState(false);
-  async function save() {
-    setBusy(true);
-    await fetch('/api/db', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requests: [{ type: 'set', key: 'paav_paybill_accounts', value: list }] }),
-    });
-    setBusy(false);
-    onClose();
-  }
-  const add = () => setList([...list, { id: Date.now(), name: '', shortcode: '', passkey: '', type: 'M-Pesa' }]);
-  const del = (id) => setList(list.filter(x => x.id !== id));
-  const upd = (id, k, v) => setList(list.map(x => x.id === id ? { ...x, [k]: v } : x));
-
-  return (
-    <ModalOverlay title="📱 M-Pesa Accounts" onClose={onClose}>
-      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 15 }}>Configure payment endpoints for parents.</p>
-      <div style={{ maxHeight: 400, overflowY: 'auto' }}>
-        {list.map((a, i) => (
-          <div key={a.id} style={{ padding: 15, border: '1.5px solid var(--border)', borderRadius: 12, marginBottom: 10, background: '#FAFBFF' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontWeight: 800, fontSize: 10 }}>ACCOUNT #{i + 1}</span>
-              {list.length > 1 && <button className="btn-link" style={{ color: 'var(--red)' }} onClick={() => del(a.id)}>Remove</button>}
-            </div>
-            <div className="field"><label>Label</label><input value={a.name} onChange={e => upd(a.id, 'name', e.target.value)} /></div>
-            <div className="field-row">
-              <div className="field"><label>Shortcode</label><input value={a.shortcode} onChange={e => upd(a.id, 'shortcode', e.target.value)} /></div>
-              <div className="field">
-                <label>Type</label>
-                <select value={a.type} onChange={e => upd(a.id, 'type', e.target.value)}>
-                  <option value="M-Pesa">M-Pesa</option><option value="Bank">Bank</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <button className="btn btn-ghost btn-sm w-full mt-2" onClick={add}>+ Add Account</button>
-      <button className="btn btn-primary btn-sm w-full mt-4 premium-shadow" onClick={save} disabled={busy}>{busy ? 'Saving...' : 'Save Settings'}</button>
-    </ModalOverlay>
-  );
-}
 
 function PayModal({ learner, feeCfg, onClose, recordedBy, TERMS }) {
   const getAnnualFee = g => feeCfg[g]?.annual || 5000;
