@@ -162,7 +162,7 @@ export default function AnalyticsPage() {
           </div>
           {/* Performance UI ... */}
         </>
-      )}
+      ) : null}
 
       {activeTab === 'insights' ? (
         <>
