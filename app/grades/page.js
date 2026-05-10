@@ -168,7 +168,7 @@ export default function GradesPage() {
   const isWritingRef = useRef(false);
 
   function setScore(admNo, subj, value) {
-    if (isSubjLocked(subj) && user?.role !== 'admin') return;
+    if (isSubjLocked(subj) && !['admin', 'super-admin'].includes(user?.role)) return;
     
     isWritingRef.current = true;
     const gsa = `${term}:${grade}|${subj}|${assess}`;
@@ -385,7 +385,7 @@ export default function GradesPage() {
 
   /* ── Clear marks ── */
   async function clearAllInView() {
-    if (isLocked && user?.role !== 'admin') {
+    if (isLocked && !['admin', 'super-admin'].includes(user?.role)) {
       alert('Marks are locked. Only admin can clear.');
       return;
     }
@@ -422,7 +422,7 @@ export default function GradesPage() {
   }
 
   async function clearLearnerMarks(l) {
-    if (isLocked && user?.role !== 'admin') {
+    if (isLocked && !['admin', 'super-admin'].includes(user?.role)) {
       alert('Marks are locked.');
       return;
     }
@@ -484,7 +484,7 @@ export default function GradesPage() {
               {isLocked ? '🔓 Unlock All' : '🔒 Lock All'}
             </button>
           )}
-          {user?.role !== 'admin' && (
+          {!['admin', 'super-admin'].includes(user?.role) && (
             <button className="btn btn-warning btn-sm" onClick={submitForApproval}>
               📨 Submit for Approval
             </button>

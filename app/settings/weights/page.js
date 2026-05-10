@@ -34,7 +34,7 @@ export default function WeightsSettingsPage() {
   const load = useCallback(async () => {
     try {
       const u = await getCachedUser();
-      if (!u || u.role !== 'admin') {
+      if (!u || !['admin', 'super-admin'].includes(u.role)) {
         router.push('/dashboard');
         return;
       }

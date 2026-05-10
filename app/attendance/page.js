@@ -112,7 +112,7 @@ export default function AttendancePage() {
       setDbTerms(fetchedTerms);
 
       // Determine which grade this teacher owns
-      if (u.role !== 'admin') {
+      if (!['admin', 'super-admin'].includes(u.role)) {
         const myGrade = Object.entries(ctData).find(([g, id]) => id === u.id)?.[0] || '';
         setGrade(myGrade || u.grade || '');
       } else {

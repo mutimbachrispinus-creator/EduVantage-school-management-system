@@ -19,7 +19,7 @@ export default function InvoicesPage() {
 
   const load = useCallback(async () => {
     const u = await getCachedUser();
-    if (!u || u.role !== 'admin') { router.push('/'); return; }
+    if (!u || !['admin', 'super-admin'].includes(u.role)) { router.push('/'); return; }
     setUser(u);
 
     const db = await getCachedDBMulti(['paav6_learners', 'paav6_feecfg', 'paav_school_profile']);

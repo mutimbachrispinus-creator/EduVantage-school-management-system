@@ -59,7 +59,7 @@ function SchoolProfileContent() {
   useEffect(() => {
     async function load() {
       const u = await getCachedUser();
-      if (!u || u.role !== 'admin') { router.push('/'); return; }
+      if (!u || !['admin', 'super-admin'].includes(u.role)) { router.push('/'); return; }
       setUser(u);
       
       const pRaw = await getCachedDB('paav_school_profile');

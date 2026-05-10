@@ -98,7 +98,7 @@ export async function GET(request) {
     })();
 
     // Security: Filter staff requests if not admin
-    if (key === 'paav_staff_reqs' && auth.role !== 'admin' && auth.id) {
+    if (key === 'paav_staff_reqs' && !['admin', 'super-admin'].includes(auth.role) && auth.id) {
       if (Array.isArray(value)) value = value.filter(r => r.userId === auth.id);
     }
 
@@ -126,7 +126,7 @@ async function handleRequest(req, auth, impTenant = null) {
       let { value, updatedAt } = await kvGetWithMeta(req.key, tenantId);
       
       // Security: Filter staff requests if not admin
-      if (req.key === 'paav_staff_reqs' && auth.role !== 'admin' && auth.id) {
+      if (req.key === 'paav_staff_reqs' && !['admin', 'super-admin'].includes(auth.role) && auth.id) {
         if (Array.isArray(value)) value = value.filter(r => r.userId === auth.id);
       }
       return { type: 'get', key: req.key, value, updatedAt };
@@ -169,14 +169,14 @@ async function handleRequest(req, auth, impTenant = null) {
     }
 
     case 'updateStaffRequestStatus': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Admin only' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Admin only' };
       const { kvUpdateStaffRequestStatus } = await import('@/lib/db');
       await kvUpdateStaffRequestStatus(req.id, req.status, tenantId);
       return { type: req.type, ok: true };
     }
 
     case 'delete': {
-      if (auth.role !== 'admin') return { type: 'delete', error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: 'delete', error: 'Unauthorized' };
       await kvDelete(req.key, tenantId);
       return { type: 'delete', key: req.key, ok: true };
     }
@@ -202,21 +202,21 @@ async function handleRequest(req, auth, impTenant = null) {
     }
 
     case 'updateLearner': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       const { kvUpdateLearner } = await import('@/lib/db');
       await kvUpdateLearner(req.oldAdm, req.details, tenantId);
       return { type: req.type, ok: true };
     }
 
     case 'deleteLearner': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       const { kvDeleteLearner } = await import('@/lib/db');
       await kvDeleteLearner(req.adm, tenantId);
       return { type: req.type, ok: true };
     }
     
     case 'deleteGradeLearners': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       const { kvDeleteGradeLearners } = await import('@/lib/db');
       await kvDeleteGradeLearners(req.grade, tenantId);
       return { type: req.type, ok: true };
@@ -224,7 +224,7 @@ async function handleRequest(req, auth, impTenant = null) {
 
     case 'getDeletedLearners':
     case 'get_deleted_learners': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       const { getDeletedLearners } = await import('@/lib/db');
       const value = await getDeletedLearners(tenantId);
       return { type: req.type, ok: true, value };
@@ -232,14 +232,14 @@ async function handleRequest(req, auth, impTenant = null) {
 
     case 'restoreLearner':
     case 'restore_learner': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       const { restoreLearner } = await import('@/lib/db');
       await restoreLearner(req.adm, tenantId);
       return { type: req.type, ok: true };
     }
 
     case 'hard_delete_learner': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       const { hardDeleteLearner } = await import('@/lib/db');
       await hardDeleteLearner(req.adm, tenantId);
       return { type: req.type, ok: true };
@@ -302,7 +302,7 @@ async function handleRequest(req, auth, impTenant = null) {
           value = null;
         }
 
-        if (k === 'paav_staff_reqs' && auth.role !== 'admin' && auth.id) {
+        if (k === 'paav_staff_reqs' && !['admin', 'super-admin'].includes(auth.role) && auth.id) {
           if (Array.isArray(value)) value = value.filter(row => row.userId === auth.id);
         }
         
@@ -330,14 +330,14 @@ async function handleRequest(req, auth, impTenant = null) {
     }
 
     case 'recordPayment': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       const { kvRecordPayment } = await import('@/lib/db');
       await kvRecordPayment(req.payment, tenantId);
       return { type: req.type, ok: true };
     }
 
     case 'getDatabaseDump': {
-      if (auth.role !== 'admin') return { error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { error: 'Unauthorized' };
       const { query } = await import('@/lib/db');
       const all = await query('SELECT key, value FROM kv WHERE tenant_id = ?', [tenantId]);
       const data = {};
@@ -346,7 +346,7 @@ async function handleRequest(req, auth, impTenant = null) {
     }
 
     case 'bulkAddLearners': {
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       const { kvBulkAddLearners } = await import('@/lib/db');
       try {
         await kvBulkAddLearners(req.learners, tenantId);
@@ -358,7 +358,7 @@ async function handleRequest(req, auth, impTenant = null) {
 
     case 'bulkPromote': {
       // Efficient promote: only receives ADMs + target grade, no full learner payload
-      if (auth.role !== 'admin') return { type: req.type, error: 'Unauthorized' };
+      if (!['admin', 'super-admin'].includes(auth.role)) return { type: req.type, error: 'Unauthorized' };
       if (!Array.isArray(req.adms) || !req.toGrade) return { type: req.type, error: 'adms[] and toGrade are required' };
       try {
         const { batch, syncLearnerKV } = await import('@/lib/db');

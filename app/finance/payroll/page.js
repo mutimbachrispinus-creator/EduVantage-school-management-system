@@ -22,7 +22,7 @@ export default function UnifiedPayrollPage() {
 
   const load = useCallback(async () => {
     const u = await getCachedUser();
-    if (!u || u.role !== 'admin') { router.push('/'); return; }
+    if (!u || !['admin', 'super-admin'].includes(u.role)) { router.push('/'); return; }
     setUser(u);
 
     const db = await getCachedDBMulti(['paav6_staff', 'paav7_salary']);

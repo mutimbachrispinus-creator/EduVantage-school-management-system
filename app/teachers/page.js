@@ -37,7 +37,7 @@ export default function TeachersPage() {
   const load = useCallback(async () => {
     const auth = await getCachedUser();
     if (!auth) { router.push('/login'); return; }
-    if (auth.role !== 'admin') { router.push('/dashboard'); return; }
+    if (!['admin', 'super-admin'].includes(auth.role)) { router.push('/dashboard'); return; }
     setUser(auth);
 
     const db = await getCachedDBMulti(['paav6_staff']);

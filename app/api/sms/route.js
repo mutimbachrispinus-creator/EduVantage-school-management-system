@@ -193,7 +193,7 @@ export async function POST(request) {
 export async function GET(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!['admin', 'super-admin'].includes(session.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const smsLog = (await kvGet('paav7_sms')) || [];
   return NextResponse.json({ ok: true, log: smsLog });

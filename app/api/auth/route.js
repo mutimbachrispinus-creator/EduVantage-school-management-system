@@ -239,7 +239,7 @@ async function handleRegister({ role, name, username, phone, password, links, gr
   if (!session && role !== 'parent') {
     return err('Unauthorised. Only parents can create accounts without logging in.');
   }
-  if (session && session.role !== 'admin' && role !== 'parent') {
+  if (session && !['admin', 'super-admin'].includes(session.role) && role !== 'parent') {
     return err('Forbidden. Only administrators can register staff accounts.');
   }
 
@@ -605,12 +605,12 @@ async function handleEditUser({ id, name, role, grade, phone, status, password, 
   if (!session) return err('Unauthorised', 401);
   
   // Only admins can edit others; users can edit themselves
-  if (session.role !== 'admin' && session.id !== id) {
+  if (!['admin', 'super-admin'].includes(session.role) && session.id !== id) {
     return err('Forbidden: You can only edit your own profile', 403);
   }
 
   // Certain fields are Admin-only
-  if (session.role !== 'admin') {
+  if (!['admin', 'super-admin'].includes(session.role)) {
     if (role || status || grade !== undefined) {
       return err('Forbidden: Only administrators can change roles, status, or grades', 403);
     }
@@ -658,7 +658,7 @@ async function handleEditUser({ id, name, role, grade, phone, status, password, 
 async function handleDeleteUser({ id }, request) {
   const session = await getSession();
   if (!session) return err('Unauthorised', 401);
-  if (session.role !== 'admin') return err('Forbidden: Only administrators can delete users', 403);
+  if (!['admin', 'super-admin'].includes(session.role)) return err('Forbidden: Only administrators can delete users', 403);
   if (session.id === id) return err('Conflict: You cannot delete your own account', 409);
 
   try {

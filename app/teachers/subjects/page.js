@@ -18,7 +18,7 @@ export default function SubjectsPage() {
   const load = useCallback(async () => {
     const authRes = await fetch('/api/auth');
     const auth    = await authRes.json();
-    if (!auth.ok || auth.user?.role !== 'admin') { router.push('/dashboard'); return; }
+    if (!auth.ok || auth.!['admin', 'super-admin'].includes(user?.role)) { router.push('/dashboard'); return; }
 
     const dbRes = await fetch('/api/db', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

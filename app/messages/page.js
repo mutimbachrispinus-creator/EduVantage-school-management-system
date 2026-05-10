@@ -209,6 +209,7 @@ export default function MessagesPage() {
   }, [staff, learners, cmpSearch]);
 
   const filteredMsgs = useMemo(() => {
+    if (!user) return [];
     return allMessages.filter(m => {
       if (activeTab === 'inbox') {
         return (

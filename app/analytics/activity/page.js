@@ -20,7 +20,7 @@ export default function ActivityLogPage() {
   const load = useCallback(async () => {
     try {
       const u = await getCachedUser();
-      if (!u || u.role !== 'admin') { router.push('/dashboard'); return; }
+      if (!u || !['admin', 'super-admin'].includes(u.role)) { router.push('/dashboard'); return; }
       setUser(u);
 
       const db = await getCachedDBMulti(['paav7_activity_log']);

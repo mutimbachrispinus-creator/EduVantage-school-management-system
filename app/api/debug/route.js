@@ -5,7 +5,7 @@ import { getSession } from '@/lib/auth';
 
 export async function GET() {
   const session = await getSession();
-  if (!session || session.role !== 'admin') {
+  if (!session || !['admin', 'super-admin'].includes(session.role)) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
   const url = process.env.TURSO_URL;

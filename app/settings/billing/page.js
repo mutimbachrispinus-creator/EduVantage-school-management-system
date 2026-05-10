@@ -25,7 +25,7 @@ export default function BillingPage() {
 
   const load = useCallback(async () => {
     const u = await getCachedUser();
-    if (!u || u.role !== 'admin') { router.push('/'); return; }
+    if (!u || !['admin', 'super-admin'].includes(u.role)) { router.push('/'); return; }
     setUser(u);
 
     try {

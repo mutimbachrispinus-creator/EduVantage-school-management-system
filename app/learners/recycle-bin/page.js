@@ -19,7 +19,7 @@ export default function RecycleBinPage() {
   const load = useCallback(async () => {
     try {
       const u = await getCachedUser();
-      if (!u || u.role !== 'admin') { router.push('/dashboard'); return; }
+      if (!u || !['admin', 'super-admin'].includes(u.role)) { router.push('/dashboard'); return; }
       setUser(u);
 
       const res = await fetch('/api/db', {

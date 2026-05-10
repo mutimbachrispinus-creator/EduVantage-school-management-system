@@ -30,7 +30,7 @@ export default function GradingSettingsPage() {
         throw new Error('Authentication server returned an invalid response (non-JSON).');
       }
       const auth = await authRes.json();
-      if (!auth.ok || auth.user?.role !== 'admin') { router.push('/dashboard'); return; }
+      if (!auth.ok || auth.!['admin', 'super-admin'].includes(user?.role)) { router.push('/dashboard'); return; }
 
       // 2. Load Grading Config
       const dbRes = await fetch('/api/db', {
