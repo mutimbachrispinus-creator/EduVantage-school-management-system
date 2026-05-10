@@ -755,17 +755,21 @@ function ReassignStreamModal({ onClose, streams, adms, learners }) {
     
     setBusy(true);
     try {
-      const updatedList = learners.map(l => {
-        if (adms.includes(l.adm)) {
-          return { ...l, stream: targetStream };
-        }
-        return l;
-      });
+      // Use individual updateLearner calls so SQL is the source of truth.
+      // A direct KV 'set' would bypass SQL and can create stale/duplicate entries.
+      const requests = selectedLearners.map(l => ({
+        type: 'updateLearner',
+        oldAdm: l.adm,
+        details: { ...l, stream: targetStream }
+      }));
 
-      await fetch('/api/db', {
+      const res = await fetch('/api/db', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [{ type: 'set', key: 'paav6_learners', value: updatedList }] }),
+        body: JSON.stringify({ requests }),
       });
+      const data = await res.json();
+      const anyError = data.results?.find(r => r?.error);
+      if (anyError) throw new Error(anyError.error);
 
       const { invalidateDB } = await import('@/lib/client-cache');
       invalidateDB('paav6_learners');
@@ -773,7 +777,7 @@ function ReassignStreamModal({ onClose, streams, adms, learners }) {
       
       onClose();
     } catch (e) {
-      alert('Failed to reassign stream');
+      alert('Failed to reassign stream: ' + e.message);
     } finally {
       setBusy(false);
     }
