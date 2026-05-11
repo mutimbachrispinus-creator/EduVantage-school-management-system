@@ -20,7 +20,7 @@ export default function GradingSettingsPage() {
   const [scales, setScales] = useState({});             // { key: [levels] }
   const [gradingMode, setGradingMode] = useState('per-level'); // 'uniform' | 'per-level'
   const [uniformScale, setUniformScale] = useState(null);      // shared scale for uniform mode
-  const [saved, setSaved] = useState(false);
+  const [loadingStage, setLoadingStage] = useState('Checking authentication...');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -28,24 +28,32 @@ export default function GradingSettingsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setLoadingStage('Authorizing session...');
+
+    // Safety timeout: if it takes > 25s, fail it
+    const timer = setTimeout(() => {
+      if (loading) setError('The request is taking too long. Please check your connection.');
+    }, 25000);
+
     try {
       // 1. Auth check
       const authRes = await fetch('/api/auth');
-      const ct = authRes.headers.get('content-type');
-      if (!ct || !ct.includes('application/json')) throw new Error('Auth server returned an invalid response.');
+      if (!authRes.ok) throw new Error('Authentication service unavailable.');
       const auth = await authRes.json();
       if (!auth.ok || !['admin', 'super-admin'].includes(auth.role)) { router.push('/dashboard'); return; }
 
-      // 2. Load school profile to get curriculum (don't rely on PortalShell timing)
+      // 2. Load school profile
+      setLoadingStage('Loading school profile...');
       const profileRaw = await getCachedDB('paav_school_profile');
       const currName = profileRaw?.curriculum || 'CBC';
       setCurriculum(currName);
 
-      // 3. Get the curriculum module statically
+      // 3. Get the curriculum module
       const curr = getCurriculum(currName);
       setCurrModule(curr);
 
       // 4. Load saved grading config
+      setLoadingStage('Fetching grading scales...');
       const gradRes = await fetch('/api/db', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,33 +62,34 @@ export default function GradingSettingsPage() {
           { type: 'get', key: 'paav_grading_mode' }
         ]})
       });
-      if (!gradRes.ok) throw new Error('Database server is not responding.');
+      if (!gradRes.ok) throw new Error('Grading database not responding.');
       const gradData = await gradRes.json();
       const cfg = gradData.results?.[0]?.value || {};
       const savedMode = gradData.results?.[1]?.value || 'per-level';
       setGradingMode(savedMode);
 
       // Build per-level scales
+      setLoadingStage('Finalizing layout...');
       const nextScales = {};
       curr.GRADING_CONFIG.forEach(gc => {
         nextScales[gc.key] = (cfg[gc.key] || gc.scale).map(s => ({ ...s }));
       });
       setScales(nextScales);
 
-      // Build uniform scale (uses first GRADING_CONFIG entry as base, or saved uniform key)
+      // Build uniform scale
       const savedUniform = cfg['uniform'];
       const baseScale = curr.GRADING_CONFIG[0]?.scale || [];
       setUniformScale((savedUniform || baseScale).map(s => ({ ...s })));
 
     } catch (e) {
       console.error('[Grading] Load failed:', e);
-      // Ignore navigation aborts
       if (e.name === 'AbortError' || e.message?.includes('aborted')) return;
-      setError(`V2 Error: ${e.message || 'Connection timed out. Please try again.'}`);
+      setError(`V2 Error: ${e.message || 'Connection timed out.'}`);
     } finally {
+      clearTimeout(timer);
       setLoading(false);
     }
-  }, [router]);
+  }, [router, loading]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -107,10 +116,11 @@ export default function GradingSettingsPage() {
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────────
-  if (loading) return (
+  if (loading && !error) return (
     <div style={{ padding: 60, textAlign: 'center' }}>
       <div style={{ fontSize: 40, marginBottom: 20 }}>⚙️</div>
-      <p style={{ color: 'var(--muted)', fontSize: 16 }}>Loading grading configuration…</p>
+      <p style={{ color: 'var(--muted)', fontSize: 16 }}>{loadingStage}</p>
+      <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 10, opacity: 0.6 }}>Please wait, this may take a moment on slower connections.</p>
     </div>
   );
 
