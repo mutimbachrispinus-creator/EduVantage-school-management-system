@@ -17,6 +17,7 @@ export default function GradingSettingsPage() {
   const [uniformScale, setUniformScale] = useState(null);
   const [subjectScales, setSubjectScales] = useState({});
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedSubjectLevel, setSelectedSubjectLevel] = useState('');
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -216,23 +217,55 @@ export default function GradingSettingsPage() {
 
       {gradingMode === 'per-subject' && (
         <div className="panel" style={{ marginBottom: 16 }}>
-          <div className="panel-hdr"><h3>📚 Select Subject to Configure</h3></div>
+          <div className="panel-hdr"><h3>📚 Subject-Specific Configuration</h3></div>
           <div className="panel-body">
-            <select
-              value={selectedSubject}
-              onChange={e => setSelectedSubject(e.target.value)}
-              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 20 }}
-            >
-              <option value="">-- Choose a Subject --</option>
-              {allSubjects.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
+              Select a subject and then choose the academic level to configure its specific scale.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+              <div className="field" style={{ marginBottom: 0 }}>
+                <label>1. Select Subject</label>
+                <select
+                  value={selectedSubject}
+                  onChange={e => setSelectedSubject(e.target.value)}
+                  style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}
+                >
+                  <option value="">-- Choose a Subject --</option>
+                  {allSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
 
-            {selectedSubject && (
+              {selectedSubject && (
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>2. Select Level</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {GRADING_CONFIG.map(gc => (
+                      <button
+                        key={gc.key}
+                        className={`btn btn-xs ${selectedSubjectLevel === gc.key ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => setSelectedSubjectLevel(gc.key)}
+                        style={{ flex: 1, border: '1px solid var(--border)' }}
+                      >
+                        {gc.key.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {selectedSubject && selectedSubjectLevel && (
               <ScaleEditor
-                key={selectedSubject}
-                scale={subjectScales[selectedSubject] || currModule?.GRADING_CONFIG?.[0]?.scale || []}
-                setScale={newScale => setSubjectScales(prev => ({ ...prev, [selectedSubject]: newScale }))}
-                title={`${selectedSubject} Scale`}
+                key={`${selectedSubject}-${selectedSubjectLevel}`}
+                scale={subjectScales[selectedSubject]?.[selectedSubjectLevel] || currModule?.GRADING_CONFIG?.find(g => g.key === selectedSubjectLevel)?.scale || []}
+                setScale={newScale => setSubjectScales(prev => ({
+                  ...prev,
+                  [selectedSubject]: {
+                    ...(prev[selectedSubject] || {}),
+                    [selectedSubjectLevel]: newScale
+                  }
+                }))}
+                title={`${selectedSubject} — ${selectedSubjectLevel.toUpperCase()} Scale`}
               />
             )}
           </div>
