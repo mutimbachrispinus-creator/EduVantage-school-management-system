@@ -37,8 +37,7 @@ export default function SettingsHubPage() {
           fetch('/api/db', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ requests: [{ type: 'storageUsage' }] }),
-            signal: AbortSignal.timeout(5000)
+            body: JSON.stringify({ requests: [{ type: 'storageUsage' }] })
           })
           .then(res => {
             const ct = res.headers.get('content-type');
