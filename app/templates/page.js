@@ -86,13 +86,13 @@ export default function TemplatesPage() {
   }, [router]);
 
   const filteredLearners = useMemo(() => {
-    let list = learners.filter(l => l.grade === grade);
+    let list = (learners || []).filter(l => l.grade === grade);
     if (selLearner) list = list.filter(l => l.adm === selLearner);
-    return list.sort((a, b) => a.name.localeCompare(b.name));
+    return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [learners, grade, selLearner]);
 
   const allGradeLearners = useMemo(() =>
-    learners.filter(l => l.grade === grade).sort((a,b) => a.name.localeCompare(b.name)),
+    (learners || []).filter(l => l.grade === grade).sort((a,b) => (a.name || '').localeCompare(b.name || '')),
   [learners, grade]);
 
   const subjects = useMemo(() =>
@@ -150,7 +150,8 @@ export default function TemplatesPage() {
     { id: 'exam_summary', label: '📈 Exam Summary (School)', adminOnly: true },
   ].filter(t => !t.adminOnly || ['admin', 'super-admin'].includes(user?.role));
 
-  if (loading || !user) return <div className="page on"><p style={{padding:40,color:'var(--muted)'}}>Loading templates…</p></div>;
+  if (!user) return <div className="page on"><p style={{padding:40,color:'var(--muted)'}}>Verifying session…</p></div>;
+  if (loading) return <div className="page on"><p style={{padding:40,color:'var(--muted)'}}>Gathering institutional records…</p></div>;
 
   return (
     <div className="page on" id="pg-templates">
@@ -564,8 +565,8 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
     const report = calcLearnerReportData(marks, l.adm, grade, term, subjects, gradCfg, curr, weights, mode);
     return { ...l, report };
   }).sort((a, b) => {
-    if (shouldRankByMarks(grade, curr)) return b.report.totalAvgScore - a.report.totalAvgScore;
-    return b.report.totalAvgPts - a.report.totalAvgPts;
+    if (shouldRankByMarks(grade, curr)) return (b.report?.totalAvgScore || 0) - (a.report?.totalAvgScore || 0);
+    return (b.report?.totalAvgPts || 0) - (a.report?.totalAvgPts || 0);
   });
 
   let r = 1;
@@ -1329,7 +1330,9 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
   const subjectStats = Object.entries(subjMap).map(([name, data]) => {
     const avg = data.total / data.count;
     return { name, avg: avg.toFixed(1), count: data.count };
-  }).sort((a, b) => b.avg - a.avg);
+  }).sort((a, b) => parseFloat(b.avg) - parseFloat(a.avg));
+
+  const sortedGrades = (gradeStats || []).sort((a, b) => (b.avgScore || 0) - (a.avgScore || 0));
 
   const titleLabel = localGrade === 'ALL' ? 'SCHOOL ACADEMIC SUMMARY' : `${localGrade} ACADEMIC SUMMARY`;
 
