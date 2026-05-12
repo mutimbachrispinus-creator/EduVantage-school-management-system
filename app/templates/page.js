@@ -1268,7 +1268,6 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
   const [localAssess, setLocalAssess] = useState(mainAssess || 'et1');
   const [localGrade, setLocalGrade]   = useState('ALL');
 
-  // Sync with main filters if they change and we are on this tab
   useEffect(() => {
     if (mainTerm) setLocalTerm(mainTerm);
     if (mainAssess) setLocalAssess(mainAssess);
@@ -1276,9 +1275,10 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
 
   const term   = localTerm;
   const assess = localAssess;
+  const curr = profile?.curriculum || 'CBC';
+  const LABELS = getLabels(curr);
   const ASSESS_LABELS = { op1: 'Opener Exam', mt1: 'Mid-Term Exam', et1: 'End-Term Exam' };
 
-  const curr = profile?.curriculum || 'CBC';
   const ALL_GRADES = getAllGrades(curr, profile);
   const filteredGrades  = localGrade === 'ALL' ? ALL_GRADES : [localGrade];
   const scopedLearners  = localGrade === 'ALL' ? learners : learners.filter(l => l.grade === localGrade);
