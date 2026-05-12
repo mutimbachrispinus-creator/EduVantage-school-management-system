@@ -43,16 +43,20 @@ export async function GET(request) {
 
 async function handleInitiate(request) {
   try {
-    const { registrationPayload, amount, currency = 'KES' } = await request.json();
+    const { registrationPayload, subscriptionPayload, amount, currency = 'KES' } = await request.json();
     const config = await getPesapalConfig(kvGet);
     const token = await getPesapalToken(config);
+    
+    // Determine payload and metadata
+    const payload = registrationPayload || subscriptionPayload;
+    const type = registrationPayload ? 'registration' : 'subscription';
+    const schoolName = payload.schoolName || payload.tenantId || 'EduVantage Client';
 
     // 1. Ensure IPN is registered
     const host = request.headers.get('host');
     const proto = host.includes('localhost') ? 'http' : 'https';
     const baseUrl = `${proto}://${host}`;
     
-    // We should ideally cache the IPN ID
     let ipnId = await kvGet('pesapal_ipn_id', null, 'platform-master');
     if (!ipnId) {
       ipnId = await registerIPN(config, token, `${baseUrl}/api/pesapal?action=ipn`);
@@ -60,19 +64,19 @@ async function handleInitiate(request) {
     }
 
     // 2. Submit Order
-    const merchantRef = `REG-${Date.now()}`;
+    const merchantRef = `${type.toUpperCase().slice(0,3)}-${Date.now()}`;
     const orderData = {
       id: merchantRef,
       amount: parseFloat(amount),
       currency: currency,
-      description: `Registration for ${registrationPayload.schoolName}`,
+      description: `${type === 'registration' ? 'Registration' : 'Subscription Renewal'} for ${schoolName}`,
       callback_url: `${baseUrl}/api/pesapal?action=callback`,
       notification_id: ipnId,
       billing_address: {
-        email_address: registrationPayload.email || 'info@eduvantage.com',
-        phone_number: registrationPayload.phone,
+        email_address: payload.email || 'info@eduvantage.com',
+        phone_number: payload.phone,
         country_code: 'KE',
-        first_name: registrationPayload.adminName,
+        first_name: payload.adminName || payload.tenantId,
         middle_name: '',
         last_name: '',
         line_1: '',
@@ -86,9 +90,10 @@ async function handleInitiate(request) {
 
     const orderRes = await submitOrder(config, token, orderData);
 
-    // 3. Store pending registration data
+    // 3. Store pending data
     await kvSet(`pesapal_pending_${orderRes.order_tracking_id}`, {
-      payload: registrationPayload,
+      type,
+      payload,
       merchantRef,
       createdAt: Date.now()
     }, 'platform-master');
@@ -103,13 +108,18 @@ async function handleInitiate(request) {
 async function handleCallback(request) {
   const { searchParams } = new URL(request.url);
   const orderTrackingId = searchParams.get('OrderTrackingId');
-  const merchantRef = searchParams.get('OrderMerchantReference');
+  
+  const pending = await kvGet(`pesapal_pending_${orderTrackingId}`, null, 'platform-master');
+  const type = pending?.type || 'registration';
 
   const host = request.headers.get('host');
   const proto = host.includes('localhost') ? 'http' : 'https';
   
-  // Redirect back to a "processing" page on the frontend
-  return NextResponse.redirect(`${proto}://${host}/saas/signup?processing=true&orderId=${orderTrackingId}`);
+  const redirectUrl = type === 'registration' 
+    ? `${proto}://${host}/saas/signup?processing=true&orderId=${orderTrackingId}`
+    : `${proto}://${host}/billing?processing=true&orderId=${orderTrackingId}`;
+
+  return NextResponse.redirect(redirectUrl);
 }
 
 async function handleIPN(request) {
@@ -163,15 +173,34 @@ async function finalizeRegistration(orderTrackingId) {
   const pending = await kvGet(`pesapal_pending_${orderTrackingId}`, null, 'platform-master');
   if (!pending) return { message: 'Already processed or not found' };
 
-  const { payload } = pending;
+  const { payload, type } = pending;
   
-  // Call the actual signup logic (we can refactor signup to be reusable)
-  // For now, we replicate it or trigger it via internal fetch
-  // Actually, better to just create the record here.
-  
+  if (type === 'subscription') {
+    const tenantId = payload.tenantId;
+    const planId = payload.planId;
+    
+    // AUTOMATED SUBSCRIPTION ACTIVATION for existing school
+    const gConf = await kvGet('paav_global_config', {}, 'platform-master');
+    const planData = (gConf.plans || []).find(p => p.id === planId);
+    const cycle = planData?.cycle || 'termly';
+    
+    const expiresAt = new Date();
+    if (cycle === 'annually' || cycle === 'annual') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    else expiresAt.setMonth(expiresAt.getMonth() + 4);
+
+    await execute(`
+      INSERT INTO subscriptions (tenant_id, plan, status, expires_at, updated_at)
+      VALUES (?, ?, 'active', ?, strftime('%s','now'))
+      ON CONFLICT(tenant_id) DO UPDATE SET status = 'active', expires_at = excluded.expires_at, plan = excluded.plan
+    `, [tenantId, planId, Math.floor(expiresAt.getTime() / 1000)]);
+
+    await kvSet(`pesapal_pending_${orderTrackingId}`, null, 'platform-master');
+    return { message: 'Subscription updated successfully', loginUrl: '/billing' };
+  }
+
+  // Registration Flow
   const tenantId = payload.schoolName.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
   
-  // 1. Create Subscription
   await execute(`
     INSERT INTO subscriptions (tenant_id, plan, status, expires_at, learner_limit, billing_model, cycle, amount, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))
@@ -180,14 +209,13 @@ async function finalizeRegistration(orderTrackingId) {
     tenantId, 
     payload.plan || 'premium-learner', 
     'active', 
-    Math.floor(Date.now()/1000) + (365 * 24 * 3600), // 1 year default for card?
+    Math.floor(Date.now()/1000) + (365 * 24 * 3600),
     500, 
     'per-learner', 
     'annually', 
     payload.amount || 0
   ]);
 
-  // 2. Create Admin User
   const { hashPassword } = await import('@/lib/auth');
   const hp = await hashPassword(payload.adminPassword);
   await execute(`
@@ -203,9 +231,7 @@ async function finalizeRegistration(orderTrackingId) {
     'active'
   ]);
 
-  // 3. Clear pending
   await kvSet(`pesapal_pending_${orderTrackingId}`, null, 'platform-master');
-  
   return { 
     message: 'Institution activated successfully', 
     loginUrl: `/login?tenant=${tenantId}&username=${payload.adminUsername}`

@@ -1,10 +1,8 @@
-'use client';
-export const runtime = 'edge';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const M = '#4F46E5', SLATE = '#64748B', NAVY = '#0F172A', EMERALD = '#10B981';
 
-function PaymentPromptModal({ plan, payments, studentCount, onClose }) {
+function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId }) {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -26,6 +24,31 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose }) {
         setMsg({ type: 'success', text: 'Prompt sent! Enter your M-Pesa PIN on your phone to complete. Your portal will activate automatically once paid.' });
       } else {
         setMsg({ type: 'error', text: data.error || 'Failed to initiate payment' });
+      }
+    } catch (e) {
+      setMsg({ type: 'error', text: e.message });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function initiatePesapal() {
+    setLoading(true);
+    setMsg({ type: 'info', text: 'Preparing secure card checkout...' });
+    try {
+      const res = await fetch('/api/pesapal?action=initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionPayload: { tenantId, planId: plan.id },
+          amount: total
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        window.location.href = data.redirect_url;
+      } else {
+        setMsg({ type: 'error', text: data.error || 'Failed to initiate Pesapal' });
       }
     } catch (e) {
       setMsg({ type: 'error', text: e.message });
@@ -72,9 +95,17 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose }) {
               className="btn" 
               disabled={loading}
               onClick={initiatePay}
-              style={{ width: '100%', padding: 14, borderRadius: 12, background: '#0EA5E9', color: '#fff', fontWeight: 900, border: 'none', cursor: 'pointer' }}
+              style={{ width: '100%', padding: 14, borderRadius: 12, background: '#0EA5E9', color: '#fff', fontWeight: 900, border: 'none', cursor: 'pointer', marginBottom: 10 }}
             >
-              {loading ? 'Initiating...' : 'Pay via M-Pesa Prompt'}
+              {loading ? 'Initiating...' : '📱 Pay via M-Pesa STK'}
+            </button>
+            <button 
+              className="btn" 
+              disabled={loading}
+              onClick={initiatePesapal}
+              style={{ width: '100%', padding: 14, borderRadius: 12, background: '#0F172A', color: '#fff', fontWeight: 900, border: 'none', cursor: 'pointer' }}
+            >
+              {loading ? 'Initiating...' : '💳 Pay via Card / Mobile'}
             </button>
             {msg && (
               <div style={{ marginTop: 12, fontSize: 11, color: msg.type === 'error' ? '#EF4444' : msg.type === 'success' ? '#059669' : '#0284C7', fontWeight: 700 }}>
@@ -114,9 +145,15 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose }) {
 }
 
 export default function BillingPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
+
+  const [processingPay, setProcessingPay] = useState(searchParams.get('processing') === 'true');
+  const [orderId, setOrderId] = useState(searchParams.get('orderId'));
+  const [payStatus, setPayStatus] = useState('Verifying payment...');
 
   useEffect(() => {
     async function load() {
@@ -133,10 +170,31 @@ export default function BillingPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (processingPay && orderId) {
+      const check = async () => {
+        try {
+          const res = await fetch(`/api/pesapal?action=status&OrderTrackingId=${orderId}`);
+          const data = await res.json();
+          if (data.ok && data.status === 'Completed') {
+            setPayStatus('✅ Payment Confirmed! Activating...');
+            setTimeout(() => { window.location.reload(); }, 2000);
+          } else {
+            setPayStatus(data.status || 'Processing...');
+            setTimeout(check, 3000);
+          }
+        } catch (e) {
+          setPayStatus('Error checking status');
+        }
+      };
+      check();
+    }
+  }, [processingPay, orderId]);
+
   if (loading) return <div style={{ padding: 40 }}>Loading Billing...</div>;
   if (!data) return <div style={{ padding: 40 }}>Failed to load billing details.</div>;
 
-  const { subscription, platformPayments } = data;
+  const { subscription, platformPayments, tenantId } = data;
   const daysLeft = Math.ceil((new Date(subscription.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
   const isExpired = daysLeft <= 0;
   const isFreeTerm = subscription.plan === 'free-term';
@@ -195,6 +253,17 @@ export default function BillingPage() {
             </div>
           )}
         </div>
+
+        {processingPay && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div>
+              <div className="spinner" style={{ width: 50, height: 50, border: '5px solid #E2E8F0', borderTopColor: '#4F46E5', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
+              <h2 style={{ color: NAVY }}>Automated Activation</h2>
+              <p style={{ color: SLATE, fontWeight: 700 }}>{payStatus}</p>
+              <p style={{ fontSize: 11, color: SLATE, marginTop: 20 }}>Please stay on this page. Do not refresh.</p>
+            </div>
+          </div>
+        )}
 
         <div className="panel billing-panel" style={{ background: '#fff', borderRadius: 32, boxShadow: '0 20px 50px rgba(15,23,42,0.05)', border: '1px solid rgba(0,0,0,0.03)' }}>
           <h3 style={{ marginBottom: 24, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: SLATE }}>Platform Payment Instructions</h3>
@@ -261,11 +330,14 @@ export default function BillingPage() {
           plan={selectedPlan} 
           payments={data.platformPayments} 
           studentCount={data.studentCount}
+          tenantId={tenantId}
           onClose={() => setSelectedPlan(null)} 
         />
       )}
 
       <style jsx>{`
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid ${M}; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .billing-page {
           padding: 40px;
         }

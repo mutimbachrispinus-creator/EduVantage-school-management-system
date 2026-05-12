@@ -143,6 +143,41 @@ export async function POST(req) {
         }
       }
 
+      // ── Strategy 3: Check nexed_mpesa_logs (for Institutional Billing/Subscriptions) ──
+      if (!adm && checkoutRequestId) {
+        try {
+          const logs = await query('SELECT id, payload FROM nexed_mpesa_logs WHERE id = ?', [`billing_${checkoutRequestId}`]);
+          if (logs.length > 0) {
+            const log = logs[0];
+            const meta = JSON.parse(log.payload);
+            tenantId = meta.tenantId;
+            const planId = meta.planId;
+            
+            // AUTOMATED SUBSCRIPTION ACTIVATION
+            const gConf = await kvGet('paav_global_config', {}, 'platform-master');
+            const planData = (gConf.plans || []).find(p => p.id === planId);
+            const cycle = planData?.cycle || 'termly';
+            
+            const expiresAt = new Date();
+            if (cycle === 'annually' || cycle === 'annual') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+            else expiresAt.setMonth(expiresAt.getMonth() + 4);
+
+            await execute(`
+              INSERT INTO subscriptions (tenant_id, plan, status, expires_at, updated_at)
+              VALUES (?, ?, 'active', ?, strftime('%s','now'))
+              ON CONFLICT(tenant_id) DO UPDATE SET status = 'active', expires_at = excluded.expires_at, plan = excluded.plan
+            `, [tenantId, planId, Math.floor(expiresAt.getTime() / 1000)]);
+
+            await query('UPDATE nexed_mpesa_logs SET status = "completed" WHERE id = ?', [log.id]);
+            console.log(`[M-Pesa Callback] 🚀 INSTITUTION ACTIVATED: ${tenantId} for plan ${planId}`);
+            
+            return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' });
+          }
+        } catch (e) {
+          console.error('[M-Pesa Callback] Nexed logs lookup error:', e);
+        }
+      }
+
       console.log(`[M-Pesa Callback] ✅ Payment recorded: adm=${adm}, totalAmount=${result.amount}, schoolAmount=${result.schoolAmount || result.amount}, ref=${result.mpesaCode}, tenant=${tenantId}`);
 
       // Fire admin notification
