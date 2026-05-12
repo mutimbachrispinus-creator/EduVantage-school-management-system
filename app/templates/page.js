@@ -229,30 +229,46 @@ export default function TemplatesPage() {
 
       {/* Instant tab switching — all tabs rendered, only active is shown */}
       <div className="print-container">
-        <div id="pct-merit" style={{ display: tab === 'merit'   ? 'block' : 'none' }}>
-          <MeritListTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} />
-        </div>
-        <div id="pct-report" style={{ display: tab === 'report'  ? 'block' : 'none' }}>
-          <ReportCardTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} gradCfg={gradCfg} profile={profile} att={att} weights={weights} terms={terms} mode={gradingMode} />
-        </div>
-        <div id="pct-class" style={{ display: tab === 'class'   ? 'block' : 'none' }}>
-          <ClassListTemplate learners={filteredLearners} grade={grade} profile={profile} />
-        </div>
-        <div id="pct-balance" style={{ display: tab === 'balance' ? 'block' : 'none' }}>
-          <FeeBalanceListTemplate learners={filteredLearners} fees={fees} grade={grade} feeCfg={feeCfg} profile={profile} />
-        </div>
-        <div id="pct-receipt" style={{ display: tab === 'receipt' ? 'block' : 'none' }}>
-          <ReceiptTemplate learners={filteredLearners} fees={fees} grade={grade} selLearner={selLearner} feeCfg={feeCfg} profile={profile} />
-        </div>
-        <div id="pct-id" style={{ display: tab === 'id'      ? 'block' : 'none' }}>
-          <IDCardTemplate learners={filteredLearners} grade={grade} profile={profile} />
-        </div>
-        <div id="pct-register" style={{ display: tab === 'register'? 'block' : 'none' }}>
-          <AttendanceRegisterTemplate learners={filteredLearners} grade={grade} type={regType} att={att} profile={profile} />
-        </div>
-        <div id="pct-exam_summary" style={{ display: tab === 'exam_summary' ? 'block' : 'none' }}>
-          <ExamSummaryTemplate learners={learners} subjects={subjCfg} marks={marks} gradCfg={gradCfg} profile={profile} mainTerm={term} mainAssess={assess} mode={gradingMode} />
-        </div>
+        {tab === 'merit' && (
+          <div id="pct-merit" className="print-me">
+            <MeritListTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} />
+          </div>
+        )}
+        {tab === 'report' && (
+          <div id="pct-report" className="print-me">
+            <ReportCardTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} gradCfg={gradCfg} profile={profile} att={att} weights={weights} terms={terms} mode={gradingMode} />
+          </div>
+        )}
+        {tab === 'class' && (
+          <div id="pct-class" className="print-me">
+            <ClassListTemplate learners={filteredLearners} grade={grade} profile={profile} />
+          </div>
+        )}
+        {tab === 'balance' && (
+          <div id="pct-balance" className="print-me">
+            <FeeBalanceListTemplate learners={filteredLearners} fees={fees} grade={grade} feeCfg={feeCfg} profile={profile} />
+          </div>
+        )}
+        {tab === 'receipt' && (
+          <div id="pct-receipt" className="print-me">
+            <ReceiptTemplate learners={filteredLearners} fees={fees} grade={grade} selLearner={selLearner} feeCfg={feeCfg} profile={profile} />
+          </div>
+        )}
+        {tab === 'id' && (
+          <div id="pct-id" className="print-me">
+            <IDCardTemplate learners={filteredLearners} grade={grade} profile={profile} />
+          </div>
+        )}
+        {tab === 'register' && (
+          <div id="pct-register" className="print-me">
+            <AttendanceRegisterTemplate learners={filteredLearners} grade={grade} type={regType} att={att} profile={profile} />
+          </div>
+        )}
+        {tab === 'exam_summary' && (
+          <div id="pct-exam_summary" className="print-me">
+            <ExamSummaryTemplate learners={learners} subjects={subjCfg} marks={marks} gradCfg={gradCfg} profile={profile} mainTerm={term} mainAssess={assess} mode={gradingMode} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1276,13 +1292,14 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
     const gSubjs = subjects[g] && subjects[g].length > 0 ? subjects[g] : null;
     const merit = buildMeritList(gLearners, marks, g, term, assess, gradCfg, curr, gSubjs, mode);
     
-    const totalScoreSum = merit.reduce((acc, l) => acc + l.totalMarks, 0);
-    const avgScore = merit.length > 0 ? (totalScoreSum / (merit.length * (maxPts(g, gSubjs, curr) || 1)) * 100).toFixed(1) : 0;
+    const totalScoreSum = merit.reduce((acc, l) => acc + l.totalPts, 0);
+    const maxPossible = merit.length > 0 ? merit.reduce((acc, l) => acc + l.maxTotal, 0) : 1;
+    const avgScore = maxPossible > 0 ? (totalScoreSum / maxPossible * 100).toFixed(1) : 0;
     const top = merit[0];
     const dist = getDistributionBuckets(g, curr);
     
     merit.forEach(l => {
-      const lPct = l.maxTotal > 0 ? (l.totalMarks / l.maxTotal * 100) : 0;
+      const lPct = l.maxTotal > 0 ? (l.totalPts / l.maxTotal * 100) : 0;
       const info = gInfo(lPct, g, gradCfg, curr, null, mode);
       if (dist[info.lv] !== undefined) dist[info.lv]++;
     });
@@ -1291,23 +1308,19 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
   }).filter(Boolean);
 
   const totalStudents = scopedLearners.length;
-  const schoolAvg = gradeStats.length > 0
-    ? (gradeStats.reduce((acc, g) => acc + parseFloat(g.avgScore), 0) / gradeStats.length).toFixed(1)
+  const sittingCount  = gradeStats.reduce((acc, g) => acc + g.sitting, 0);
+  const schoolAvg = sittingCount > 0
+    ? (gradeStats.reduce((acc, g) => acc + (parseFloat(g.avgScore) * g.sitting), 0) / sittingCount).toFixed(1)
     : 0;
 
   // Aggregate distribution safely across all possible levels (Primary + JSS)
-  const schoolDist = { 
-    ...(ALL_GRADES[0] ? getDistributionBuckets(ALL_GRADES[0], curr) : {}), 
-    ...(ALL_GRADES.find(g => isJSSGrade(g, curr)) ? getDistributionBuckets(ALL_GRADES.find(g => isJSSGrade(g, curr)), curr) : {}) 
-  };
-  // Reset counts to zero
-  Object.keys(schoolDist).forEach(k => schoolDist[k] = 0);
-
+  const schoolDist = {};
+  
   gradeStats.forEach(g => {
     if (!g.dist) return;
     Object.entries(g.dist).forEach(([lv, count]) => {
       if (schoolDist[lv] !== undefined) schoolDist[lv] += count;
-      else schoolDist[lv] = count; // Ensure new levels are added
+      else schoolDist[lv] = count; 
     });
   });
 
@@ -1368,7 +1381,7 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
         </div>
       </div>
 
-      <PrintHeader title={titleLabel} grade={scopeLabel} profile={profile} />
+      <PrintHeader title={titleLabel} grade={localGrade === 'ALL' ? 'Whole School' : localGrade} profile={profile} />
 
       <div style={{ textAlign: 'center', marginBottom: 25, fontSize: 13, fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: 1 }}>
         {localGrade === 'ALL' ? 'Institutional Performance Analysis' : `${localGrade} Performance Analysis`} — Term {term.replace('T','')} {ASSESS_LABELS[assess]}
@@ -1502,9 +1515,9 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
                   filteredGrades.forEach(g => {
                      const gLearners = scopedLearners.filter(l => l.grade === g);
                      const gSubjs = subjects[g] && subjects[g].length > 0 ? subjects[g] : null;
-                     const merit = buildMeritList(gLearners, marks, g, term, assess, gradCfg, curr, gSubjs);
+                     const merit = buildMeritList(gLearners, marks, g, term, assess, gradCfg, curr, gSubjs, mode);
                      merit.forEach(l => {
-                        const lPct = l.maxTotal > 0 ? (l.totalMarks / l.maxTotal * 100) : 0;
+                        const lPct = l.maxTotal > 0 ? (l.totalPts / l.maxTotal * 100) : 0;
                         allRanked.push({ ...l, grade: g, pct: lPct });
                      });
                   });
