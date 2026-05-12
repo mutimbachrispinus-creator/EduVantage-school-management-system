@@ -157,7 +157,7 @@ export default function ParentDemoPage() {
                 {cardOpen && (
                   <div className="demo-card-flip" style={{ width:230, background:'#fff', borderRadius:12, padding:14, color:'#1e293b', fontSize:10, boxShadow:'0 24px 60px rgba(0,0,0,.6)', border:'3px double #1e293b', flexShrink:0 }}>
                     <div style={{ textAlign:'center', marginBottom:10, borderBottom:'2px solid #1e293b', paddingBottom:8 }}>
-                      <div style={{ fontWeight:900, fontSize:11, textTransform:'uppercase' }}>ST. JUDE'S INTERNATIONAL SCHOOL</div>
+                      <div style={{ fontWeight:900, fontSize:11, textTransform:'uppercase' }}>EDUVANTAGE GLOBAL SCHOOL</div>
                       <div style={{ fontSize:8, color:'#64748b' }}>REPORT CARD · TERM 2</div>
                     </div>
                     <div style={{ fontWeight:800, marginBottom:10 }}>Alice Mwangi · Grade 4 · #1</div>
