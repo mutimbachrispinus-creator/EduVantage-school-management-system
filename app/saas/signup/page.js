@@ -1,14 +1,19 @@
 'use client';
 export const runtime = 'edge';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function EduVantageSignup() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [plans, setPlans] = useState([]);
+
+  const [processingPay, setProcessingPay] = useState(searchParams.get('processing') === 'true');
+  const [orderId, setOrderId] = useState(searchParams.get('orderId'));
+  const [payStatus, setPayStatus] = useState('Checking payment status...');
 
   useEffect(() => {
     async function loadPlans() {
@@ -150,8 +155,6 @@ export default function EduVantageSignup() {
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       
-      // For now, we assume if STK is sent, they will pay. 
-      // In production, we should poll for status.
       alert('Payment prompt sent to your phone. Please enter your PIN to complete registration.');
       onSubmit(); // Proceed with signup
     } catch (e) {
@@ -160,6 +163,48 @@ export default function EduVantageSignup() {
       setPayLoading(false);
     }
   };
+
+  const initiatePesapal = async () => {
+    setPayLoading(true);
+    try {
+      const res = await fetch('/api/pesapal?action=initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          registrationPayload: { ...form },
+          amount: totalDue
+        })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      window.location.href = data.redirect_url;
+    } catch (e) {
+      alert('Pesapal Initiation Failed: ' + e.message);
+    } finally {
+      setPayLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (processingPay && orderId) {
+      const check = async () => {
+        try {
+          const res = await fetch(`/api/pesapal?action=status&OrderTrackingId=${orderId}`);
+          const data = await res.json();
+          if (data.ok && data.status === 'Completed') {
+            setSuccess(data.message);
+            setTimeout(() => { router.push(data.loginUrl); }, 2000);
+          } else {
+            setPayStatus(data.status || 'Still processing...');
+            setTimeout(check, 3000); // Poll every 3s
+          }
+        } catch (e) {
+          setPayStatus('Error checking status');
+        }
+      };
+      check();
+    }
+  }, [processingPay, orderId]);
 
   return (
     <div className="signup-page" style={{ background: '#F8FAFC', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -189,40 +234,44 @@ export default function EduVantageSignup() {
                 <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 5 }}>({form.estimatedStudents} students × KES {selectedPlanData.price})</p>
               )}
               
-              <div style={{ marginTop: 25, textAlign: 'left' }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: '#64748B', display: 'block', marginBottom: 8, textTransform: 'uppercase' }}>M-Pesa Number</label>
-                <input 
-                  type="text" 
-                  value={payPhone} 
-                  onChange={e => setPayPhone(e.target.value)}
-                  style={{ width: '100%', padding: '12px 16px', border: '2.5px solid #E2E8F0', borderRadius: 12, outline: 'none', fontSize: 16, fontWeight: 600 }}
-                  placeholder="07XXXXXXXX"
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: 10, marginTop: 25 }}>
-                <button 
-                  className="btn" 
-                  onClick={() => setShowPayment(false)}
-                  style={{ flex: 1, padding: 14, background: '#F1F5F9', color: '#64748B', fontWeight: 600, border: 'none', borderRadius: 12, cursor: 'pointer' }}
-                >
-                  Cancel
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 25 }}>
                 <button 
                   className="btn" 
                   disabled={payLoading}
                   onClick={initiatePayment}
-                  style={{ flex: 2, padding: 14, background: '#2563EB', color: '#fff', fontWeight: 700, border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  style={{ width: '100%', padding: 14, background: '#2563EB', color: '#fff', fontWeight: 700, border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
-                  {payLoading ? 'Sending STK...' : 'Pay with M-Pesa'}
+                  {payLoading ? '...' : '📱 Pay with M-Pesa STK'}
+                </button>
+                <button 
+                  className="btn" 
+                  disabled={payLoading}
+                  onClick={initiatePesapal}
+                  style={{ width: '100%', padding: 14, background: '#0F172A', color: '#fff', fontWeight: 700, border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  {payLoading ? '...' : '💳 Pay with Card / Mobile Money'}
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={() => setShowPayment(false)}
+                  style={{ width: '100%', padding: 12, background: 'none', color: '#64748B', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+                >
+                  Cancel
                 </button>
               </div>
-              <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 15 }}>You will receive an STK prompt on your phone shortly.</p>
+              <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 15 }}>Secure automated payment processing via Safaricom & Pesapal.</p>
             </div>
           </div>
         )}
 
-        {success ? (
+        {processingPay ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <div className="spinner" style={{ width: 40, height: 40, border: '4px solid #E2E8F0', borderTopColor: '#2563EB', borderRadius: '50%', margin: '0 auto 20px', animation: 'spin 1s linear infinite' }}></div>
+            <h2 style={{ color: '#0F172A', margin: 0 }}>Processing Payment</h2>
+            <p style={{ color: '#64748B', marginTop: 10 }}>{payStatus}</p>
+            <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 20 }}>Please do not close this window. Your portal will be activated automatically.</p>
+          </div>
+        ) : success ? (
           <div style={{ textAlign: 'center', padding: '30px 0' }}>
             <div style={{ fontSize: 50, marginBottom: 20 }}>🚀</div>
             <h2 style={{ color: '#16A34A', margin: 0 }}>Portal Ready!</h2>

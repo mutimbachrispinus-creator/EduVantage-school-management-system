@@ -28,6 +28,7 @@ export async function GET() {
     platformPayments: [
       { type: 'Paybill', name: 'M-Pesa Subscription', shortcode: '400200', account: 'EDUVANTAGE' }
     ],
+    pesapal: { consumerKey: '', consumerSecret: '', env: 'sandbox' },
     maintenanceMode: false
   }, MASTER_TENANT);
 

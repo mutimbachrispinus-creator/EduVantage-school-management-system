@@ -519,9 +519,8 @@ export default function SuperAdminPage() {
                 </div>
                 <button className="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save Pricing</button>
               </div>
-            </div>
-            <div className="panel" style={{ border: '2px solid var(--blue)' }}>
-              <div className="panel-hdr"><h3 style={{ color: 'var(--blue)' }}>💸 M-Pesa Automation Gateway</h3></div>
+            <div className="panel" style={{ border: '2px solid #2563EB' }}>
+              <div className="panel-hdr"><h3 style={{ color: '#2563EB' }}>💸 M-Pesa Automation Gateway</h3></div>
               <div className="panel-body">
                 <p style={{ fontSize: 11, color: SLATE, marginBottom: 15 }}>Configure Safaricom Daraja API credentials to enable automated STK Push billing for schools.</p>
                 <div className="field">
@@ -549,7 +548,29 @@ export default function SuperAdminPage() {
                     <option value="production">Production (Live)</option>
                   </select>
                 </div>
-                <button className="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save Gateway Config</button>
+                <button className="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save M-Pesa Config</button>
+              </div>
+            </div>
+            <div className="panel" style={{ border: '2px solid #E11D48' }}>
+              <div className="panel-hdr"><h3 style={{ color: '#E11D48' }}>💳 Pesapal v3 Card Gateway</h3></div>
+              <div className="panel-body">
+                <p style={{ fontSize: 11, color: SLATE, marginBottom: 15 }}>Configure Pesapal v3 credentials to enable automated credit/debit card subscriptions.</p>
+                <div className="field">
+                  <label>Consumer Key</label>
+                  <input type="password" value={globalConfig.pesapal?.consumerKey || ''} onChange={e => setGlobalConfig({...globalConfig, pesapal: {...globalConfig.pesapal, consumerKey: e.target.value}})} />
+                </div>
+                <div className="field">
+                  <label>Consumer Secret</label>
+                  <input type="password" value={globalConfig.pesapal?.consumerSecret || ''} onChange={e => setGlobalConfig({...globalConfig, pesapal: {...globalConfig.pesapal, consumerSecret: e.target.value}})} />
+                </div>
+                <div className="field">
+                  <label>Environment</label>
+                  <select value={globalConfig.pesapal?.env || 'sandbox'} onChange={e => setGlobalConfig({...globalConfig, pesapal: {...globalConfig.pesapal, env: e.target.value}})}>
+                    <option value="sandbox">Sandbox (Testing)</option>
+                    <option value="live">Production (Live)</option>
+                  </select>
+                </div>
+                <button className="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save Pesapal Config</button>
               </div>
             </div>
             <div className="panel" style={{ border: '2px dashed #EF4444' }}>
