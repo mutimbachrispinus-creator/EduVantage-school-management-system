@@ -43,8 +43,11 @@ export default function SignupPage() {
 
   const F = (k,v) => setForm(f=>({...f,[k]:v}));
 
+  const [stats, setStats] = useState({ schools: 0, learners: 0 });
+
   useEffect(()=>{
     fetch('/api/saas/config?tenant=platform-master').then(r=>r.json()).then(d=>{
+      if (d.stats) setStats(d.stats);
       let p = d.plans||[];
       if(!p.find(x=>x.id==='free-term')) p=[{id:'free-term',name:'1 Term Free',price:0,cycle:'once',features:['Full Access','Curriculum Aware','1 Term Only']},...p];
       if(!p.find(x=>x.id==='trial')) p=[{id:'trial',name:'30-Day Trial',price:0,cycle:'once',features:['Full Access','30 Days','All Features']},...p];
@@ -169,8 +172,8 @@ export default function SignupPage() {
             <div><div className="su-brand-name">EduVantage</div><div className="su-brand-tag">School Management Platform</div></div>
           </div>
           <div className="su-hero">
-            <h1>Join <span>5,000+</span><br/>Schools Growing<br/>with EduVantage</h1>
-            <p>Kenya's most advanced school management platform. Multi-curriculum, automated fees, parent portals — all in one place.</p>
+            <h1>Join <span>{stats.schools > 10 ? `${stats.schools}+` : '500+'}</span><br/>Schools Growing<br/>with EduVantage</h1>
+            <p>Kenya's most advanced platform for <strong>CBC</strong>, <strong>TVET</strong>, <strong>IB</strong> & <strong>British</strong> curricula. Automated fees, parent portals — all in one place.</p>
             <div className="su-feat">
               {[['📊','Academic Analytics','Real-time grades, reports & predictions'],
                 ['💰','Automated Fees','M-Pesa STK push, Pesapal card payments'],

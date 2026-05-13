@@ -11,8 +11,8 @@ const SLATE   = 'var(--lp-slate,   #64748B)';
 const VIBRANT = 'var(--lp-vibrant, #8B5CF6)';
 
 const ALL_FEATURES = [
-  { icon: '⚖️', title: 'Curriculum-Aware Grading', desc: 'Auto-calculates weighted averages for CBC, Cambridge, British, IB & Montessori with flexible mastery-based modes.' },
-  { icon: '🗓️', title: 'Dynamic Calendars', desc: 'Define your own terms. Report cards automatically print the accurate next-term resumption dates.' },
+  { icon: '⚖️', title: 'Curriculum-Aware Grading', desc: 'Auto-calculates weighted averages for CBC, TVET/CBET, Cambridge, British, IB & Montessori.' },
+  { icon: '🗓️', title: 'Dynamic Calendars', desc: 'Define your own terms. Report cards automatically print accurate next-term resumption dates.' },
   { icon: '🚀', title: 'Unified Comms Hub', desc: 'Consolidated SMS, bulk alerts & internal messaging. Target specific cohorts like "at-risk" students.' },
   { icon: '📊', title: 'Revenue Integrity', desc: 'Real-time dashboard reconciling expected vs. collected fees. Flags revenue leakage instantly.' },
   { icon: '💳', title: 'EduVantage Pay', desc: 'Platform-wide payment aggregation. Parents pay via M-Pesa STK push; funds auto-route securely.' },
@@ -209,7 +209,7 @@ export default function LandingPage() {
               <div className="mod-icon" style={{ background: '#EEF2FF', color: PRIMARY }}>📊</div>
               <div className="mod-content">
                 <h3>Curriculum-Aware Insights</h3>
-                <p>Gain total institutional clarity. Our merged analytics engine provides both high-level trend visualizations and granular academic rankings—fully adaptive for <strong>Kenya CBC</strong>, <strong>Montessori</strong>, <strong>Cambridge International</strong>, <strong>British IGCSE</strong>, and <strong>IB</strong> structures.</p>
+                <p>Gain total institutional clarity. Our merged analytics engine provides both high-level trend visualizations and granular academic rankings—fully adaptive for <strong>Kenya CBC</strong>, <strong>TVET / CBET</strong>, <strong>Montessori</strong>, <strong>Cambridge International</strong>, <strong>British IGCSE</strong>, and <strong>IB</strong> structures.</p>
                 <ul className="mod-features">
                   <li>Visual Subject Mastery Heatmaps</li>
                   <li>Instant Class-Wide Merit Rankings</li>
