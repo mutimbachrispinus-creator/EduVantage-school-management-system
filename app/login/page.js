@@ -576,30 +576,57 @@ function LoginContent() {
                   </div>
 
                   {otpSent && !otpVerified && (
-                    <div style={{ background: '#EFF6FF', padding: 15, borderRadius: 12, marginBottom: 20, border: '1px solid #DBEAFE' }}>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: '#2563EB', display: 'block', marginBottom: 8 }}>ENTER 6-DIGIT CODE</label>
-                      <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ background: '#F0F9FF', padding: '20px', borderRadius: '16px', marginBottom: 24, border: '2px solid #BAE6FD', textAlign: 'center' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '800', color: '#0369A1', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Enter 6-Digit Verification Code
+                      </label>
+                      <div style={{ display: 'flex', gap: '12px' }}>
                         <input 
                           type="text" 
-                          placeholder="000000" 
+                          placeholder="0 0 0 0 0 0" 
                           value={otpCode} 
                           onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0,6))}
-                          style={{ flex: 1, textAlign: 'center', fontSize: 18, letterSpacing: 4, fontWeight: 800, padding: 8, borderRadius: 8, border: '1.5px solid #CBD5E1' }}
+                          style={{ 
+                            flex: 1, 
+                            textAlign: 'center', 
+                            fontSize: '22px', 
+                            letterSpacing: '0.5rem', 
+                            fontWeight: '800', 
+                            padding: '12px', 
+                            borderRadius: '12px', 
+                            border: '2px solid #0EA5E9',
+                            fontFamily: 'monospace',
+                            background: '#fff',
+                            color: '#0C4A6E'
+                          }} 
                         />
                         <button 
                           type="button" 
                           onClick={verifyRegOtp}
                           disabled={otpLoading || otpCode.length < 6}
-                          style={{ padding: '0 15px', background: '#2563EB', color: '#fff', borderRadius: 8, border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: 11 }}
+                          style={{ 
+                            padding: '0 20px', 
+                            background: '#0EA5E9', 
+                            color: '#fff', 
+                            borderRadius: '12px', 
+                            border: 'none', 
+                            fontWeight: '800', 
+                            cursor: 'pointer', 
+                            fontSize: '12px',
+                            boxShadow: '0 4px 6px -1px rgba(14, 165, 233, 0.2)'
+                          }}
                         >
-                          Confirm
+                          {otpLoading ? '...' : 'Verify'}
                         </button>
                       </div>
+                      <p style={{ fontSize: '11px', color: '#64748B', marginTop: '10px' }}>
+                        We've sent a code to <span style={{ fontWeight: 700, color: '#0369A1' }}>{form.phone}</span>
+                      </p>
                     </div>
                   )}
 
                   {otpVerified && (
-                    <div style={{ fontSize: 11, color: '#16A34A', fontWeight: 700, marginBottom: 15, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ background: '#F0FDF4', color: '#16A34A', padding: '12px', borderRadius: '12px', marginBottom: 20, fontSize: '12px', fontWeight: 700, textAlign: 'center', border: '1px solid #BBF7D0' }}>
                       ✅ Phone number verified successfully
                     </div>
                   )}
