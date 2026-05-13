@@ -11,7 +11,7 @@ const SLATE   = 'var(--lp-slate,   #64748B)';
 const VIBRANT = 'var(--lp-vibrant, #8B5CF6)';
 
 const ALL_FEATURES = [
-  { icon: '⚖️', title: 'Curriculum-Aware Grading', desc: 'Auto-calculates weighted averages for CBC, Cambridge, British & IB with flexible uniform or per-level modes.' },
+  { icon: '⚖️', title: 'Curriculum-Aware Grading', desc: 'Auto-calculates weighted averages for CBC, Cambridge, British, IB & Montessori with flexible mastery-based modes.' },
   { icon: '🗓️', title: 'Dynamic Calendars', desc: 'Define your own terms. Report cards automatically print the accurate next-term resumption dates.' },
   { icon: '🚀', title: 'Unified Comms Hub', desc: 'Consolidated SMS, bulk alerts & internal messaging. Target specific cohorts like "at-risk" students.' },
   { icon: '📊', title: 'Revenue Integrity', desc: 'Real-time dashboard reconciling expected vs. collected fees. Flags revenue leakage instantly.' },
@@ -209,7 +209,7 @@ export default function LandingPage() {
               <div className="mod-icon" style={{ background: '#EEF2FF', color: PRIMARY }}>📊</div>
               <div className="mod-content">
                 <h3>Curriculum-Aware Insights</h3>
-                <p>Gain total institutional clarity. Our merged analytics engine provides both high-level trend visualizations and granular academic rankings—fully adaptive for <strong>Kenya CBC</strong>, <strong>Cambridge International</strong>, <strong>British IGCSE</strong>, and <strong>IB</strong> structures.</p>
+                <p>Gain total institutional clarity. Our merged analytics engine provides both high-level trend visualizations and granular academic rankings—fully adaptive for <strong>Kenya CBC</strong>, <strong>Montessori</strong>, <strong>Cambridge International</strong>, <strong>British IGCSE</strong>, and <strong>IB</strong> structures.</p>
                 <ul className="mod-features">
                   <li>Visual Subject Mastery Heatmaps</li>
                   <li>Instant Class-Wide Merit Rankings</li>
@@ -391,7 +391,7 @@ export default function LandingPage() {
                     <tr><td><strong>Revenue Share</strong></td><td>No platform fee mechanism</td><td className="hl">Automated KES 50 convenience fee per transaction</td></tr>
                     <tr><td><strong>Fund Disbursement</strong></td><td>Manual bank transfer by admin</td><td className="hl">One-click B2C/B2B auto-settlement to school bank</td></tr>
                     <tr><td><strong>Fraud Prevention</strong></td><td>No ghost-student checks</td><td className="hl">Integrity Locks — registry-bound document generation</td></tr>
-                    <tr><td><strong>Grading Intelligence</strong></td><td>Static, hardcoded rules</td><td className="hl">Curriculum-Aware Weighting (CBC/IB/Cambridge)</td></tr>
+                    <tr><td><strong>Grading Intelligence</strong></td><td>Static, hardcoded rules</td><td className="hl">Curriculum-Aware (CBC/IB/Cambridge/Montessori)</td></tr>
                     <tr><td><strong>Parent Experience</strong></td><td>Delayed SMS only</td><td className="hl">Live Portal + M-Pesa STK Push + Auto-Receipts</td></tr>
                     <tr><td><strong>Revenue Visibility</strong></td><td>End-of-month manual reconciliation</td><td className="hl">Real-time Revenue Integrity Dashboard</td></tr>
                     <tr><td><strong>Infrastructure</strong></td><td>Multiple disconnected logins</td><td className="hl">One unified multi-tenant app</td></tr>
@@ -430,7 +430,7 @@ export default function LandingPage() {
                   name="1 Term Free" 
                   price={0} 
                   desc="Experience the full platform for one term. No strings attached."
-                  features={['Full Platform Access', 'Bulk CSV Learner Uploads', 'M-Pesa Test Integration', 'CBC/Cambridge/British/IB Support', 'Standard Support']}
+                  features={['Full Platform Access', 'Bulk CSV Learner Uploads', 'M-Pesa Test Integration', 'CBC / Montessori / IB / British Support', 'Standard Support']}
                 />
                 <PriceCard 
                   name="Basic" 

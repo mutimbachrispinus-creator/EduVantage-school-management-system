@@ -286,6 +286,7 @@ function SchoolProfileContent() {
                       <option value="CBC">🇰🇪 Kenya CBC (Competency-Based)</option>
                       <option value="BRITISH">🇬🇧 British National Curriculum (IGCSE/A-Level)</option>
                       <option value="IB">🌍 International Baccalaureate (PYP/MYP/DP)</option>
+                      <option value="MONTESSORI">🌀 Montessori Curriculum (Mastery-based)</option>
                     </select>
                   </div>
                   

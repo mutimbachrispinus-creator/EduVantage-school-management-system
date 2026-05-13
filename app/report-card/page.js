@@ -6,10 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { getCurriculum } from '@/lib/curriculum';
 import { useProfile } from '@/app/PortalShell';
-import { fmtK } from '@/lib/cbe';
+import { fmtK, getLabels } from '@/lib/cbe';
 import { Suspense } from 'react';
 
-const ASSESS_MAP = { op1: 'Opener', mt1: 'Mid-Term', et1: 'End-Term' };
+// Assessment mappings will be dynamic based on curriculum
 
 function ReportCardContent() {
   const router = useRouter();
@@ -51,10 +51,14 @@ function ReportCardContent() {
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Generating report card…</div>;
 
   const curr = getCurriculum(school?.curriculum || 'CBC');
+  const labels = getLabels(school?.curriculum || 'CBC');
   const { gInfo, maxPts, DEFAULT_SUBJECTS } = curr;
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
+  const assessments = curr.ASSESSMENT_TYPES || [];
+  const assessMap = assessments.reduce((acc, a) => ({ ...acc, [a.key]: a.label }), {});
+
   const termLabel = TERMS.find(t => t.id === termParam)?.name || termParam;
-  const assessLabel = ASSESS_MAP[assessParam] || assessParam;
+  const assessLabel = assessMap[assessParam] || assessParam;
 
   // Determine which learners to print
   const targetAdms = admParam ? [admParam] : (gradeParam ? learners.filter(l => l.grade === gradeParam).map(l => l.adm) : []);
@@ -113,14 +117,19 @@ function ReportCardContent() {
                 {school?.logo && <img src={school.logo} style={{ height: 70, marginBottom: 8, borderRadius: '50%' }} alt="logo" />}
                 <div style={{ fontSize: 20, fontWeight: 900, color: '#0F172A', textTransform: 'uppercase', letterSpacing: 0.5 }}>{school?.name || 'School Name'}</div>
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{school?.tagline || ''}</div>
-                <div style={{ marginTop: 12, display: 'inline-block', background: '#0F172A', color: '#fff', padding: '4px 20px', borderRadius: 20, fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>ACADEMIC REPORT CARD</div>
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 6 }}>{termLabel} · {assessLabel} · Academic Year {new Date().getFullYear()}</div>
+                <div style={{ marginTop: 12, display: 'inline-block', background: '#0F172A', color: '#fff', padding: '4px 20px', borderRadius: 20, fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>{labels.assessment.toUpperCase()} REPORT CARD</div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 6 }}>{termLabel} · {assessLabel} · {new Date().getFullYear()} ACADEMIC YEAR</div>
               </div>
 
               {/* Learner Info */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 32px', marginBottom: 20, padding: '12px 16px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                {[['Student Name', learner.name], ['Admission No.', learner.adm], ['Grade / Class', learner.grade], ['Stream', learner.stream || '—'], ['Gender', learner.sex === 'F' ? 'Female' : learner.sex === 'M' ? 'Male' : '—'], ['Class Teacher', learner.teacher || '—']].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CBD5E1', paddingBottom: 4 }}>
+                    <span style={{ color: '#64748b', fontSize: 11 }}>{k}</span>
+                    <strong style={{ fontSize: 12 }}>{v}</strong>
+                  </div>
+                ))}
+                {[['Term / Cycle', termLabel], [labels.assessment, assessLabel]].map(([k,v]) => (
+                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CBD5E1', paddingBottom: 4 }}>
                     <span style={{ color: '#64748b', fontSize: 11 }}>{k}</span>
                     <strong style={{ fontSize: 12 }}>{v}</strong>
                   </div>
@@ -131,18 +140,22 @@ function ReportCardContent() {
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
                 <thead>
                   <tr style={{ background: '#0F172A', color: '#fff' }}>
-                    <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11 }}>SUBJECT</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11 }}>SCORE (%)</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11 }}>LEVEL</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11 }}>{labels.subject.toUpperCase()}</th>
+                    {school?.curriculum !== 'MONTESSORI' && <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11 }}>SCORE (%)</th>}
+                    <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11 }}>{school?.curriculum === 'MONTESSORI' ? 'MASTERY' : 'LEVEL'}</th>
                     <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11 }}>POINTS</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11 }}>PERFORMANCE</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11 }}>PERFORMANCE / COMMENTS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {marksRows.map(({ subj, score, inf }, i) => (
                     <tr key={subj} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC' }}>
                       <td style={{ padding: '7px 12px', fontWeight: 700, borderBottom: '1px solid #E2E8F0' }}>{subj}</td>
-                      <td style={{ padding: '7px 12px', textAlign: 'center', fontWeight: 800, fontSize: 15, color: score !== undefined ? (score >= 70 ? '#059669' : score >= 50 ? '#2563eb' : '#dc2626') : '#94a3b8', borderBottom: '1px solid #E2E8F0' }}>{score !== undefined ? score : '—'}</td>
+                      {school?.curriculum !== 'MONTESSORI' && (
+                        <td style={{ padding: '7px 12px', textAlign: 'center', fontWeight: 800, fontSize: 15, color: score !== undefined ? (score >= 70 ? '#059669' : score >= 50 ? '#2563eb' : '#dc2626') : '#94a3b8', borderBottom: '1px solid #E2E8F0' }}>
+                          {score !== undefined ? score : '—'}
+                        </td>
+                      )}
                       <td style={{ padding: '7px 12px', textAlign: 'center', borderBottom: '1px solid #E2E8F0' }}>
                         {inf ? <span style={{ background: inf.bg, color: inf.c, padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 800 }}>{inf.lv}</span> : '—'}
                       </td>
@@ -153,9 +166,9 @@ function ReportCardContent() {
                   {/* Totals row */}
                   {entered.length > 0 && (
                     <tr style={{ background: '#0F172A' }}>
-                      <td style={{ padding: '9px 12px', color: '#fff', fontWeight: 800 }}>TOTAL ({entered.length}/{subjects.length} subjects)</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'center', color: '#FCD34D', fontWeight: 900, fontSize: 16 }}>{avgPct}%</td>
-                      <td colSpan="2" style={{ padding: '9px 12px', textAlign: 'center', color: overallGrade.c, fontWeight: 900, fontSize: 15 }}>{overallGrade.lv} — {totalPts}/{maxTotal} pts</td>
+                      <td style={{ padding: '9px 12px', color: '#fff', fontWeight: 800 }}>TOTAL ({entered.length}/{subjects.length} {labels.subjects.toLowerCase()})</td>
+                      {school?.curriculum !== 'MONTESSORI' && <td style={{ padding: '9px 12px', textAlign: 'center', color: '#FCD34D', fontWeight: 900, fontSize: 16 }}>{avgPct}%</td>}
+                      <td colSpan={school?.curriculum === 'MONTESSORI' ? 2 : 2} style={{ padding: '9px 12px', textAlign: 'center', color: overallGrade.c, fontWeight: 900, fontSize: 15 }}>{overallGrade.lv} — {totalPts}/{maxTotal} pts</td>
                       <td style={{ padding: '9px 12px', color: overallGrade.c, fontWeight: 800, fontSize: 12 }}>{overallGrade.desc}</td>
                     </tr>
                   )}
@@ -178,8 +191,8 @@ function ReportCardContent() {
                   <div style={{ textAlign: 'center', padding: '12px 0' }}>
                     <div style={{ fontSize: 36, fontWeight: 900, color: overallGrade.c }}>{overallGrade.lv}</div>
                     <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{overallGrade.desc}</div>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: '#0F172A', marginTop: 8 }}>{avgPct}%</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{entered.length}/{subjects.length} subjects assessed</div>
+                    {school?.curriculum !== 'MONTESSORI' && <div style={{ fontSize: 24, fontWeight: 900, color: '#0F172A', marginTop: 8 }}>{avgPct}%</div>}
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{entered.length}/{subjects.length} {labels.subjects.toLowerCase()} assessed</div>
                   </div>
                 </div>
               </div>
