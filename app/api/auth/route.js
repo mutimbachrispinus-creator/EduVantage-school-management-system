@@ -566,38 +566,29 @@ async function handleRequestOtp(body, request) {
   const otpData = { otp, expires: Date.now() + 10 * 60 * 1000, tenantId: user.tenant_id, userId: user.id };
   await kvSet(`otp_reset_${username.toLowerCase()}`, otpData, 'platform-master');
   
-  // Log the OTP request - fix: pass 'id' and use 'tenantId' (camelCase) to avoid 500 error in logAction
+  // Log the OTP request
   await logAction({ id: user.id, tenantId: user.tenant_id, username: username.toLowerCase(), name: user.name, role: 'none' }, 'OTP Request', `OTP requested for password reset by ${username}`);
 
-  // Send SMS
-  let smsRes = { success: false, error: 'Not attempted' };
-  try {
-    const { sendSMS } = await import('@/lib/sms-client');
-    // Use user's specific tenant credentials for SMS if available, fallback to platform-master
-    const atCreds = (await kvGet('paav_at_creds', null, user.tenant_id)) || (await kvGet('paav_at_creds', null, 'platform-master'));
-    
-    smsRes = await sendSMS({
-      to: user.phone,
-      message: `EduVantage Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
-      ...(atCreds || {})
-    });
-  } catch (smsErr) {
-    console.error('[OTP] SMS Fetch/Library Error:', smsErr.message);
-    smsRes = { success: false, error: smsErr.message };
-  }
-
-  if (!smsRes.success) {
-    console.warn(`[OTP] SMS Failed for ${username}: ${smsRes.error}. OTP is: ${otp} (Logged for recovery)`);
-    
-    // Give a clean, actionable error without exposing raw AT internals
-    const errMsg = smsRes.error || '';
-    if (errMsg.includes('API key not configured') || errMsg.includes('supplier') || errMsg.includes('credentials')) {
-      return err('SMS gateway not configured. Please ask your school administrator to set up Africa\'s Talking API credentials in Settings → SMS.');
+  // QUEUING: Send SMS in the background so the user gets an instant "Success" response
+  const { backgroundTask } = await import('@/lib/background-tasks');
+  backgroundTask(request, async () => {
+    try {
+      const { sendSMS } = await import('@/lib/sms-client');
+      const atCreds = (await kvGet('paav_at_creds', null, user.tenant_id)) || (await kvGet('paav_at_creds', null, 'platform-master'));
+      
+      await sendSMS({
+        to: user.phone,
+        message: `EduVantage Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
+        ...(atCreds || {})
+      });
+      console.log(`[Background] OTP SMS sent successfully to ${user.phone}`);
+    } catch (smsErr) {
+      console.error('[Background OTP Error]:', smsErr.message);
     }
-    return err(`Could not send OTP via SMS. Please check your phone number and try again, or contact support.`);
-  }
+  });
 
-  return ok({ message: `OTP sent to your phone ending in ${user.phone.slice(-3)}`, sent: true });
+  // Return INSTANT success
+  return ok({ message: `OTP is being sent to your phone ending in ${user.phone.slice(-3)}`, sent: true });
 }
 
 async function handleVerifyOtpReset({ username, otp, newPassword }, request) {
@@ -636,19 +627,22 @@ async function handleRequestRegOtp({ phone }, request) {
   // Store OTP in global platform-master KV with 10 min expiry
   await kvSet(`reg_otp_pending_${cleanPhone}`, { otp, expires: Date.now() + 10 * 60 * 1000 }, 'platform-master');
 
-  try {
-    const { sendSMS } = await import('@/lib/sms-client');
-    const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
-    const res = await sendSMS({
-      to: phone,
-      message: `EduVantage Verification\nYour registration code is: ${otp}.\nDo not share this code.`,
-      ...(atCreds || {})
-    });
-    if (!res.success) return err(`Failed to send SMS: ${res.error}`);
-    return ok({ message: 'Verification code sent' });
-  } catch (e) {
-    return err('SMS service error: ' + e.message);
-  }
+  const { backgroundTask } = await import('@/lib/background-tasks');
+  backgroundTask(request, async () => {
+    try {
+      const { sendSMS } = await import('@/lib/sms-client');
+      const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
+      await sendSMS({
+        to: phone,
+        message: `EduVantage Verification\nYour registration code is: ${otp}.\nDo not share this code.`,
+        ...(atCreds || {})
+      });
+    } catch (e) {
+      console.error('[Background Reg OTP Error]:', e.message);
+    }
+  });
+
+  return ok({ message: 'Verification code is being sent' });
 }
 
 async function handleVerifyRegOtp({ phone, otp }) {

@@ -110,20 +110,24 @@ export async function POST(request) {
       }
     ]);
     
-    // 5. Send Zeraki-style Welcome SMS
-    try {
-      const { sendSMS } = await import('@/lib/sms-client');
-      const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
-      const welcomeMsg = 
-        `🚀 Welcome to EduVantage!\n` +
-        `Hello ${adminName}, your school portal for ${schoolName} is ready.\n` +
-        `Username: ${adminUsername}\n` +
-        `Login: ${process.env.NEXT_PUBLIC_SITE_URL}/login?tenant=${tenantId}`;
-      
-      await sendSMS({ to: phone, message: welcomeMsg, ...(atCreds || {}) });
-    } catch (smsErr) {
-      console.warn('[Signup] Welcome SMS failed:', smsErr.message);
-    }
+    // 5. QUEUING: Send Zeraki-style Welcome SMS in the background
+    const { backgroundTask } = await import('@/lib/background-tasks');
+    backgroundTask(req, async () => {
+      try {
+        const { sendSMS } = await import('@/lib/sms-client');
+        const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
+        const welcomeMsg = 
+          `🚀 Welcome to EduVantage!\n` +
+          `Hello ${adminName}, your school portal for ${schoolName} is ready.\n` +
+          `Username: ${adminUsername}\n` +
+          `Login: ${process.env.NEXT_PUBLIC_SITE_URL}/login?tenant=${tenantId}`;
+        
+        await sendSMS({ to: phone, message: welcomeMsg, ...(atCreds || {}) });
+        console.log(`[Background] Welcome SMS sent for tenant ${tenantId}`);
+      } catch (smsErr) {
+        console.warn('[Signup Background] Welcome SMS failed:', smsErr.message);
+      }
+    });
 
     return NextResponse.json({ 
       ok: true, 
