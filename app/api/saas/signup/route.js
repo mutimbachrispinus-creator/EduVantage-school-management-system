@@ -112,9 +112,9 @@ export async function POST(request) {
     
     // 5. QUEUING: Send Zeraki-style Welcome SMS in the background
     const { backgroundTask } = await import('@/lib/background-tasks');
-    backgroundTask(req, async () => {
+    backgroundTask(request, async () => {
       try {
-        const { sendSMS } = await import('@/lib/sms-client');
+        const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
         const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
         const welcomeMsg = 
           `🚀 Welcome to EduVantage!\n` +
@@ -122,7 +122,7 @@ export async function POST(request) {
           `Username: ${adminUsername}\n` +
           `Login: ${process.env.NEXT_PUBLIC_SITE_URL}/login?tenant=${tenantId}`;
         
-        await sendSMS({ to: phone, message: welcomeMsg, ...(atCreds || {}) });
+        await sendSMS({ to: normalizePhone(phone), message: welcomeMsg, ...(atCreds || {}) });
         console.log(`[Background] Welcome SMS sent for tenant ${tenantId}`);
       } catch (smsErr) {
         console.warn('[Signup Background] Welcome SMS failed:', smsErr.message);

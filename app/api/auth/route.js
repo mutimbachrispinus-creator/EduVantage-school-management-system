@@ -573,11 +573,11 @@ async function handleRequestOtp(body, request) {
   const { backgroundTask } = await import('@/lib/background-tasks');
   backgroundTask(request, async () => {
     try {
-      const { sendSMS } = await import('@/lib/sms-client');
+      const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
       const atCreds = (await kvGet('paav_at_creds', null, user.tenant_id)) || (await kvGet('paav_at_creds', null, 'platform-master'));
       
       await sendSMS({
-        to: user.phone,
+        to: normalizePhone(user.phone),
         message: `EduVantage Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
         ...(atCreds || {})
       });
@@ -630,10 +630,10 @@ async function handleRequestRegOtp({ phone }, request) {
   const { backgroundTask } = await import('@/lib/background-tasks');
   backgroundTask(request, async () => {
     try {
-      const { sendSMS } = await import('@/lib/sms-client');
+      const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
       const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
       await sendSMS({
-        to: phone,
+        to: normalizePhone(phone),
         message: `EduVantage Verification\nYour registration code is: ${otp}.\nDo not share this code.`,
         ...(atCreds || {})
       });
