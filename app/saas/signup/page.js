@@ -287,14 +287,14 @@ export default function SignupPage() {
                   {otpMsg&&<div style={{fontSize:12,color:otpVerified?'#16A34A':'#DC2626',marginTop:5}}>{otpMsg}</div>}
                 </div>
                 {otpSent&&!otpVerified&&(
-                  <div className="su-field" style={{background:'#EFF6FF',padding:16,borderRadius:12,border:'1.5px solid #BFDBFE'}}>
-                    <label className="su-label" style={{color:'#1D4ED8'}}>Enter 6-Digit Code</label>
-                    <div className="su-otp-row">
-                      <input className="su-input" placeholder="000000" maxLength={6} value={otpCode}
+                  <div className="su-field" style={{background:'#EFF6FF',padding:20,borderRadius:16,border:'2px solid #BFDBFE',textAlign:'center'}}>
+                    <label className="su-label" style={{color:'#1D4ED8',marginBottom:12,display:'block'}}>Enter 6-Digit Verification Code</label>
+                    <div style={{position:'relative',display:'flex',gap:12}}>
+                      <input className="su-input" placeholder="0 0 0 0 0 0" maxLength={6} value={otpCode}
                         onChange={e=>setOtpCode(e.target.value.replace(/\D/g,'').slice(0,6))}
-                        style={{textAlign:'center',letterSpacing:6,fontSize:20,fontWeight:800}}/>
+                        style={{textAlign:'center',letterSpacing:'0.6rem',fontSize:24,fontWeight:800,fontFamily:'monospace',background:'#fff',border:'2px solid #1D4ED8',color:'#1E3A8A'}}/>
                       <button className="su-otp-btn" disabled={otpLoading||otpCode.length<6} onClick={verifyOtp}
-                        style={{background:'#1D4ED8',color:'#fff',borderColor:'#1D4ED8'}}>
+                        style={{background:'#1D4ED8',color:'#fff',borderColor:'#1D4ED8',padding:'0 24px'}}>
                         {otpLoading?'…':'Verify'}
                       </button>
                     </div>

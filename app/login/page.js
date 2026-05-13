@@ -423,27 +423,57 @@ function LoginContent() {
 
           {tab === 'reset' ? (
             <form onSubmit={handleResetAction}>
+              <div style={{ marginBottom: 24, textAlign: 'center' }}>
+                <div style={{ display: 'inline-block', padding: '12px', background: '#EFF6FF', borderRadius: '50%', marginBottom: 16 }}>
+                  <span style={{ fontSize: 24 }}>{resetStep === 1 ? '🔓' : '🔢'}</span>
+                </div>
+                <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.5 }}>
+                  {resetStep === 1 
+                    ? "Enter your account details below. We'll send a secure 6-digit code to your registered phone."
+                    : "A verification code has been sent to your phone. Enter it below to secure your account."}
+                </div>
+              </div>
+
               {resetStep === 1 ? (
                 <>
-                  <p style={{ fontSize: 13, color: '#64748B', marginBottom: 20 }}>Enter your username. We will send a 6-digit OTP to your registered phone number.</p>
                   <div className="field">
-                    <label>Username</label>
-                    <input required value={resetForm.username} onChange={e => RF('username', e.target.value.toLowerCase())} placeholder="your.username" />
+                    <label>Your Username</label>
+                    <input required value={resetForm.username} onChange={e => RF('username', e.target.value.toLowerCase())} placeholder="e.g. john.doe" />
                   </div>
                   <div className="field">
-                    <label>Phone Number (to receive OTP)</label>
+                    <label>Phone Number</label>
                     <input required value={resetForm.phone} onChange={e => RF('phone', e.target.value)} placeholder="07XXXXXXXX" />
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="field">
-                    <label>6-Digit OTP</label>
-                    <input required autoFocus value={resetForm.otp} onChange={e => RF('otp', e.target.value.replace(/\D/g, '').slice(0,6))} placeholder="000000" style={{ letterSpacing: 4, textAlign: 'center', fontSize: 20 }} />
+                  <div className="field" style={{ textAlign: 'center' }}>
+                    <label style={{ display: 'block', marginBottom: 12 }}>Enter 6-Digit OTP</label>
+                    <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+                      <input 
+                        required 
+                        autoFocus 
+                        value={resetForm.otp} 
+                        onChange={e => RF('otp', e.target.value.replace(/\D/g, '').slice(0,6))} 
+                        placeholder="0 0 0 0 0 0" 
+                        style={{ 
+                          letterSpacing: '0.8rem', 
+                          textAlign: 'center', 
+                          fontSize: '24px', 
+                          fontWeight: '800',
+                          background: '#F8FAFC',
+                          border: '2px solid #2563EB',
+                          color: '#1E3A8A',
+                          fontFamily: 'monospace',
+                          padding: '16px'
+                        }} 
+                      />
+                    </div>
+                    <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 8 }}>Didn't get the code? <button type="button" onClick={() => setResetStep(1)} style={{ background: 'none', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer' }}>Go Back</button></p>
                   </div>
                   <div className="field">
-                    <label>New Password</label>
-                    <input required type="password" value={resetForm.newPassword} onChange={e => RF('newPassword', e.target.value)} placeholder="Min 6 characters" />
+                    <label>Set New Password</label>
+                    <input required type="password" value={resetForm.newPassword} onChange={e => RF('newPassword', e.target.value)} placeholder="Minimum 6 characters" />
                   </div>
                 </>
               )}
