@@ -2,468 +2,409 @@
 export const runtime = 'edge';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import '@/styles/signup.css';
 
-export default function EduVantageSignup() {
+const CURRICULA = [
+  { id:'CBC',  icon:'🇰🇪', name:'CBC',        desc:'Kenya Competency Based' },
+  { id:'IGCSE',icon:'🇬🇧', name:'Cambridge',  desc:'IGCSE / A-Levels' },
+  { id:'IB',   icon:'🌍', name:'IB',          desc:'International Baccalaureate' },
+  { id:'British',icon:'📚',name:'British',    desc:'British National Curriculum' },
+  { id:'Montessori',icon:'🌱',name:'Montessori',desc:'Child-Led Learning' },
+  { id:'TVET', icon:'⚙️', name:'TVET',        desc:'Technical & Vocational' },
+];
+
+const COUNTIES = ['Nairobi','Mombasa','Kisumu','Nakuru','Eldoret','Thika','Machakos','Nyeri','Meru','Kakamega','Kisii','Garissa','Malindi','Kitale','Bungoma','Other'];
+const SCHOOL_TYPES = ['Primary','Secondary','Mixed Day','Boarding','Special Needs','College','Montessori','Kindergarten'];
+const STEPS = ['School Info','Admin Setup','Curriculum & Plan','Confirm'];
+
+export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [plans, setPlans] = useState([]);
-
-  const [processingPay, setProcessingPay] = useState(searchParams.get('processing') === 'true');
-  const [orderId, setOrderId] = useState(searchParams.get('orderId'));
-  const [payStatus, setPayStatus] = useState('Checking payment status...');
-
-  useEffect(() => {
-    async function loadPlans() {
-      try {
-        const res = await fetch('/api/saas/config?tenant=platform-master');
-        const data = await res.json();
-        let fetchedPlans = data.plans || [];
-        
-        // Ensure 1 Term Free is always an option even if not in global config
-        const freeTerm = { id: 'free-term', name: '1 Term Free', price: 0, cycle: 'once', features: ['Full Access', 'Curriculum Aware', '1 Term Only'] };
-        if (!fetchedPlans.find(p => p.id === 'free-term')) {
-          fetchedPlans = [freeTerm, ...fetchedPlans];
-        }
-        
-        setPlans(fetchedPlans);
-      } catch (e) {}
-    }
-    loadPlans();
-  }, []);
-
-  const [form, setForm] = useState({
-    schoolName: '',
-    adminName: '',
-    adminUsername: '',
-    adminPassword: '',
-    phone: '',
-    email: '',
-    plan: 'trial', // Default to trial
-    curriculum: 'CBC',
-    estimatedStudents: 100 // Default estimate
-  });
-
-  const [showPayment, setShowPayment] = useState(false);
-  const [payPhone, setPayPhone] = useState('');
-  const [payLoading, setPayLoading] = useState(false);
-
-  // OTP State
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [otpMsg, setOtpMsg] = useState('');
+  const [payLoading, setPayLoading] = useState(false);
 
-  useEffect(() => {
-    if (form.phone) setPayPhone(form.phone);
-  }, [form.phone]);
+  const [processingPay] = useState(searchParams.get('processing') === 'true');
+  const [orderId] = useState(searchParams.get('orderId'));
 
-  const selectedPlanData = plans.find(p => p.id === form.plan) || { price: 0, billingModel: 'flat' };
-  const totalDue = selectedPlanData.billingModel === 'per-learner' ? selectedPlanData.price * (form.estimatedStudents || 0) : selectedPlanData.price;
-  const isPaid = totalDue > 0;
+  const [form, setForm] = useState({
+    schoolName:'', schoolType:'Primary', county:'Nairobi', schoolEmail:'',
+    adminName:'', adminUsername:'', adminPassword:'', phone:'', email:'',
+    curriculum:'CBC', plan:'trial', estimatedStudents:100,
+  });
 
-  const onSubmit = async (e) => {
-    if (e) e.preventDefault();
-    
-    // If it's a paid plan and payment hasn't been confirmed yet, show prompt
-    if (isPaid && !showPayment) {
-      setShowPayment(true);
-      return;
-    }
+  const F = (k,v) => setForm(f=>({...f,[k]:v}));
 
-    setLoading(true);
-    setError('');
-    
-    try {
-      const res = await fetch('/api/saas/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
-      });
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
-      
-      setSuccess(json.message);
-      setTimeout(() => {
-        router.push(json.loginUrl);
-      }, 1000);
-    } catch (e) {
-      setError(e.message);
-      setShowPayment(false); // Go back if error
-    } finally {
-      setLoading(false);
-    }
+  useEffect(()=>{
+    fetch('/api/saas/config?tenant=platform-master').then(r=>r.json()).then(d=>{
+      let p = d.plans||[];
+      if(!p.find(x=>x.id==='free-term')) p=[{id:'free-term',name:'1 Term Free',price:0,cycle:'once',features:['Full Access','Curriculum Aware','1 Term Only']},...p];
+      if(!p.find(x=>x.id==='trial')) p=[{id:'trial',name:'30-Day Trial',price:0,cycle:'once',features:['Full Access','30 Days','All Features']},...p];
+      setPlans(p);
+    }).catch(()=>{});
+  },[]);
+
+  useEffect(()=>{
+    if(!processingPay||!orderId) return;
+    const poll=async()=>{
+      const r=await fetch(`/api/pesapal?action=status&OrderTrackingId=${orderId}`);
+      const d=await r.json();
+      if(d.ok&&d.status==='Completed'){setSuccess(d.message||'School activated!');setTimeout(()=>router.push(d.loginUrl),2000);}
+      else setTimeout(poll,3000);
+    };
+    poll();
+  },[processingPay,orderId]);
+
+  const selectedPlan = plans.find(p=>p.id===form.plan)||{price:0,billingModel:'flat'};
+  const totalDue = selectedPlan.billingModel==='per-learner' ? selectedPlan.price*(form.estimatedStudents||0) : (selectedPlan.price||0);
+
+  const sendOtp = async()=>{
+    if(!form.phone){setOtpMsg('Enter your phone number first');return;}
+    setOtpLoading(true); setOtpMsg('');
+    try{
+      const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_reg_otp',phone:form.phone})});
+      const d=await r.json();
+      if(!d.ok) throw new Error(d.error);
+      setOtpSent(true); setOtpMsg('Code sent to '+form.phone);
+    }catch(e){setOtpMsg(e.message);}
+    finally{setOtpLoading(false);}
   };
 
-
-  
-  const sendOtp = async () => {
-    if (!form.phone) return alert('Please enter a phone number first');
-    setOtpLoading(true);
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'request_reg_otp', phone: form.phone })
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
-      setOtpSent(true);
-      alert('Verification code sent to ' + form.phone);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setOtpLoading(false);
-    }
+  const verifyOtp = async()=>{
+    if(!otpCode){setOtpMsg('Enter the 6-digit code');return;}
+    setOtpLoading(true); setOtpMsg('');
+    try{
+      const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'verify_reg_otp',phone:form.phone,otp:otpCode})});
+      const d=await r.json();
+      if(!d.ok) throw new Error(d.error);
+      setOtpVerified(true); setOtpMsg('');
+    }catch(e){setOtpMsg(e.message);}
+    finally{setOtpLoading(false);}
   };
 
-  const verifyOtp = async () => {
-    if (!otpCode) return alert('Please enter the verification code');
-    setOtpLoading(true);
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verify_reg_otp', phone: form.phone, otp: otpCode })
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
-      setOtpVerified(true);
-      alert('Phone number verified!');
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setOtpLoading(false);
+  const validateStep = ()=>{
+    if(step===0){
+      if(!form.schoolName.trim()) return 'School name is required';
+      if(!form.schoolType) return 'Select school type';
     }
+    if(step===1){
+      if(!form.adminName.trim()) return 'Administrator name is required';
+      if(!form.adminUsername.trim()||form.adminUsername.length<4) return 'Username must be at least 4 characters';
+      if(!form.adminPassword||form.adminPassword.length<6) return 'Password must be at least 6 characters';
+      if(!form.phone) return 'Phone number is required';
+      if(!otpVerified) return 'Please verify your phone number to continue';
+    }
+    if(step===2){
+      if(!form.curriculum) return 'Please select a curriculum';
+      if(!form.plan) return 'Please select a plan';
+    }
+    return null;
   };
 
-  const initiatePayment = async () => {
-    setPayLoading(true);
-    try {
-      const res = await fetch('/api/mpesa/stk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: payPhone,
-          amount: totalDue,
-          reference: `REG-${form.adminUsername || 'SCHOOL'}`,
-          desc: `Activation for ${form.schoolName} (${selectedPlanData.name})`
-        })
-      });
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
-      
-      alert('Payment prompt sent to your phone. Please enter your PIN to complete registration.');
-      onSubmit(); // Proceed with signup
-    } catch (e) {
-      alert('Payment failed: ' + e.message);
-    } finally {
-      setPayLoading(false);
-    }
+  const next = ()=>{ const e=validateStep(); if(e){setError(e);return;} setError(''); setStep(s=>s+1); };
+  const back = ()=>{ setError(''); setStep(s=>s-1); };
+
+  const submit = async()=>{
+    setLoading(true); setError('');
+    try{
+      const r=await fetch('/api/saas/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)});
+      const d=await r.json();
+      if(d.error) throw new Error(d.error);
+      setSuccess(d.message||'School registered!');
+      setTimeout(()=>router.push(d.loginUrl),1500);
+    }catch(e){setError(e.message);}
+    finally{setLoading(false);}
   };
 
-  const initiatePesapal = async () => {
-    setPayLoading(true);
-    try {
-      const res = await fetch('/api/pesapal?action=initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          registrationPayload: { ...form },
-          amount: totalDue
-        })
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
-      window.location.href = data.redirect_url;
-    } catch (e) {
-      alert('Pesapal Initiation Failed: ' + e.message);
-    } finally {
-      setPayLoading(false);
-    }
+  const payMpesa = async()=>{
+    setPayLoading(true); setError('');
+    try{
+      const r=await fetch('/api/mpesa/stk',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({phone:form.phone,amount:totalDue,accountRef:`REG-${form.adminUsername||'SCHOOL'}`,description:`Activation: ${form.schoolName}`})});
+      const d=await r.json();
+      if(!d.success) throw new Error(d.error);
+      setError(''); setSuccess('M-Pesa prompt sent! Enter your PIN, then click Confirm Registration below.');
+    }catch(e){setError('M-Pesa: '+e.message);}
+    finally{setPayLoading(false);}
   };
 
-  useEffect(() => {
-    if (processingPay && orderId) {
-      const check = async () => {
-        try {
-          const res = await fetch(`/api/pesapal?action=status&OrderTrackingId=${orderId}`);
-          const data = await res.json();
-          if (data.ok && data.status === 'Completed') {
-            setSuccess(data.message);
-            setTimeout(() => { router.push(data.loginUrl); }, 2000);
-          } else {
-            setPayStatus(data.status || 'Still processing...');
-            setTimeout(check, 3000); // Poll every 3s
-          }
-        } catch (e) {
-          setPayStatus('Error checking status');
-        }
-      };
-      check();
-    }
-  }, [processingPay, orderId]);
+  const payPesapal = async()=>{
+    setPayLoading(true); setError('');
+    try{
+      const r=await fetch('/api/pesapal?action=initiate',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({registrationPayload:{...form},amount:totalDue})});
+      const d=await r.json();
+      if(!d.ok) throw new Error(d.error);
+      window.location.href=d.redirect_url;
+    }catch(e){setError('Card payment: '+e.message);}
+    finally{setPayLoading(false);}
+  };
+
+  const pct = Math.round(((step)/STEPS.length)*100);
+
+  if(processingPay) return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#F0F4FF',flexDirection:'column',gap:16}}>
+      <div style={{width:60,height:60,border:'4px solid #DBEAFE',borderTop:'4px solid #1D4ED8',borderRadius:'50%',animation:'spin 1s linear infinite'}}/>
+      <div style={{fontSize:18,fontWeight:700,color:'#1E3A8A'}}>Verifying your payment...</div>
+      <div style={{fontSize:13,color:'#64748B'}}>{success||'Please wait while we confirm your transaction.'}</div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 
   return (
-    <div className="signup-page" style={{ background: '#F8FAFC', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div className="panel" style={{ maxWidth: 550, width: '100%', padding: 40, borderRadius: 24, boxShadow: '0 20px 50px rgba(15,23,42,0.08)' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 20 }}>
-          <button onClick={() => router.push('/')} className="btn-link" style={{ fontSize: 13, color: '#64748B', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
-        </div>
-        <div style={{ textAlign: 'center', marginBottom: 35 }}>
-          <img src="/ev-brand-v3.png" alt="EduVantage" style={{ width: 64, marginBottom: 16 }} />
-          <h1 style={{ margin: 0, fontSize: 24, color: '#0F172A', fontWeight: 800 }}>Join the EduVantage Network</h1>
-          <p style={{ color: '#64748B', marginTop: 8 }}>Empower your school with the ultimate management portal.</p>
-        </div>
-
-        {error && (
-          <div style={{ padding: '12px 16px', background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: 12, color: '#DC2626', fontSize: 13, marginBottom: 20, fontWeight: 600 }}>
-            ⚠️ {error}
+    <div className="su-root">
+      {/* Left Panel */}
+      <div className="su-left">
+        <div>
+          <div className="su-brand">
+            <img src="/ev-brand-v3.png" alt="EduVantage"/>
+            <div><div className="su-brand-name">EduVantage</div><div className="su-brand-tag">School Management Platform</div></div>
           </div>
-        )}
-
-        {showPayment && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-            <div style={{ background: '#fff', padding: 35, borderRadius: 24, maxWidth: 400, width: '100%', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
-              <div style={{ fontSize: 40, marginBottom: 15 }}>💳</div>
-              <h2 style={{ margin: 0, fontSize: 20, color: '#0F172A' }}>Activate {selectedPlanData.name}</h2>
-              <p style={{ color: '#64748B', fontSize: 14, marginTop: 8 }}>To complete your registration, please pay <b>KES {totalDue.toLocaleString()}</b> via M-Pesa.</p>
-              {selectedPlanData.billingModel === 'per-learner' && (
-                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 5 }}>({form.estimatedStudents} students × KES {selectedPlanData.price})</p>
-              )}
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 25 }}>
-                <button 
-                  className="btn" 
-                  disabled={payLoading}
-                  onClick={initiatePayment}
-                  style={{ width: '100%', padding: 14, background: '#2563EB', color: '#fff', fontWeight: 700, border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                >
-                  {payLoading ? '...' : '📱 Pay with M-Pesa STK'}
-                </button>
-                <button 
-                  className="btn" 
-                  disabled={payLoading}
-                  onClick={initiatePesapal}
-                  style={{ width: '100%', padding: 14, background: '#0F172A', color: '#fff', fontWeight: 700, border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                >
-                  {payLoading ? '...' : '💳 Pay with Card / Mobile Money'}
-                </button>
-                <button 
-                  className="btn" 
-                  onClick={() => setShowPayment(false)}
-                  style={{ width: '100%', padding: 12, background: 'none', color: '#64748B', fontWeight: 600, border: 'none', cursor: 'pointer' }}
-                >
-                  Cancel
-                </button>
-              </div>
-              <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 15 }}>Secure automated payment processing via Safaricom & Pesapal.</p>
-            </div>
-          </div>
-        )}
-
-        {processingPay ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <div className="spinner" style={{ width: 40, height: 40, border: '4px solid #E2E8F0', borderTopColor: '#2563EB', borderRadius: '50%', margin: '0 auto 20px', animation: 'spin 1s linear infinite' }}></div>
-            <h2 style={{ color: '#0F172A', margin: 0 }}>Processing Payment</h2>
-            <p style={{ color: '#64748B', marginTop: 10 }}>{payStatus}</p>
-            <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 20 }}>Please do not close this window. Your portal will be activated automatically.</p>
-          </div>
-        ) : success ? (
-          <div style={{ textAlign: 'center', padding: '30px 0' }}>
-            <div style={{ fontSize: 50, marginBottom: 20 }}>🚀</div>
-            <h2 style={{ color: '#16A34A', margin: 0 }}>Portal Ready!</h2>
-            <p style={{ color: '#64748B' }}>{success}</p>
-            <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 16 }}>Redirecting you to your new school portal…</p>
-          </div>
-        ) : (
-          <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div className="form-group">
-              <label>Institutional Name</label>
-              <input required placeholder="e.g. Hilltop Academy" value={form.schoolName} onChange={e => setForm({...form, schoolName: e.target.value})} />
-            </div>
-
-            <div className="form-group">
-              <label>Select Plan</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
-                {plans.length > 0 ? (
-                  plans.map(p => (
-                    <div 
-                      key={p.id}
-                      onClick={() => setForm({...form, plan: p.id})}
-                      style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === p.id ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === p.id ? '#EFF6FF' : '#fff', transition: '0.2s', position: 'relative' }}
-                    >
-                      <div style={{ fontWeight: 800, fontSize: 13 }}>{p.name}</div>
-                      <div style={{ fontSize: 10, opacity: 0.7 }}>
-                        {p.price > 0 ? (
-                          `${p.billingModel === 'per-learner' ? `KES ${p.price} / student` : `KES ${p.price.toLocaleString()} / school`} / ${p.cycle || 'term'}`
-                        ) : 'Free Access'}
-                      </div>
-                      {p.id === 'free-term' && (
-                        <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', background: '#F97316', color: '#fff', fontSize: 7, padding: '2px 6px', borderRadius: 4, fontWeight: 800, whiteSpace: 'nowrap' }}>NON-RENEWABLE</div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <>
-                    <div 
-                      onClick={() => setForm({...form, plan: 'trial'})}
-                      style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === 'trial' ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === 'trial' ? '#EFF6FF' : '#fff' }}
-                    >
-                      <div style={{ fontWeight: 800, fontSize: 14 }}>30-Day Trial</div>
-                      <div style={{ fontSize: 11, opacity: 0.7 }}>Free full access</div>
-                    </div>
-                    <div 
-                      onClick={() => setForm({...form, plan: 'premium'})}
-                      style={{ padding: 16, borderRadius: 12, border: `2px solid ${form.plan === 'premium' ? '#2563EB' : '#E2E8F0'}`, cursor: 'pointer', background: form.plan === 'premium' ? '#EFF6FF' : '#fff' }}
-                    >
-                      <div style={{ fontWeight: 800, fontSize: 14 }}>Premium Plan</div>
-                      <div style={{ fontSize: 11, opacity: 0.7 }}>KES 10,000 / Year</div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="form-group fade-in" style={{ padding: 20, background: '#F1F5F9', borderRadius: 16 }}>
-              <label>Institutional Population (Current Students) *</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                <input 
-                  type="number" 
-                  required 
-                  min="1"
-                  placeholder="e.g. 250" 
-                  value={form.estimatedStudents} 
-                  onChange={e => setForm({...form, estimatedStudents: parseInt(e.target.value) || 0})} 
-                  style={{ flex: 1, border: '2.5px solid #E2E8F0', borderRadius: 12, padding: '10px 14px' }}
-                />
-                {selectedPlanData.billingModel === 'per-learner' && (
-                  <div style={{ whiteSpace: 'nowrap', fontSize: 13, color: '#64748B' }}>
-                    Total: <b style={{ color: '#0F172A' }}>KES {totalDue.toLocaleString()}</b>
-                  </div>
-                )}
-              </div>
-              <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 8 }}>
-                <b>Note:</b> This number helps us estimate your initial setup. You can add as many students as you need without restriction.
-              </p>
-            </div>
-
-            <div className="form-group">
-              <label>Education System / Curriculum</label>
-              <select 
-                value={form.curriculum} 
-                onChange={e => setForm({...form, curriculum: e.target.value})}
-                style={{ width: '100%', padding: '12px 16px', border: '1.5px solid #E2E8F0', borderRadius: 12, fontSize: 14, outline: 'none', background: '#fff' }}
-              >
-                <option value="CBC">Kenya CBC (Competency-Based)</option>
-                <option value="BRITISH">British National Curriculum (IGCSE/A-Level)</option>
-                <option value="CAMBRIDGE">Cambridge International (Primary/IGCSE/A-Level)</option>
-                <option value="IB">International Baccalaureate (PYP/MYP/DP)</option>
-              </select>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
-              <div className="form-group">
-                <label>Admin Full Name</label>
-                <input required placeholder="Principal Name" value={form.adminName} onChange={e => setForm({...form, adminName: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  Admin Username 
-                  <span 
-                    onClick={() => {
-                      if (!form.adminName && !form.schoolName) return;
-                      const base = (form.adminName || form.schoolName).toLowerCase().split(' ')[0].replace(/[^a-z]/g, '');
-                      setForm({...form, adminUsername: `${base}.admin${Math.floor(Math.random()*99)}`});
-                    }}
-                    style={{ color: '#2563EB', cursor: 'pointer', fontSize: 9, fontWeight: 700 }}
-                  >
-                    Suggest?
-                  </span>
-                </label>
-                <input required placeholder="admin-user" value={form.adminUsername} onChange={e => setForm({...form, adminUsername: e.target.value.toLowerCase().replace(/\s/g, '')})} />
-                <p style={{ fontSize: 9, color: '#94A3B8', marginTop: 4 }}>This will be your login ID</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
-              <div className="form-group">
-                <label>Admin Password</label>
-                <input required type="password" placeholder="••••••••" value={form.adminPassword} onChange={e => setForm({...form, adminPassword: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Phone Number</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input 
-                    required 
-                    placeholder="07XXXXXXXX" 
-                    value={form.phone} 
-                    onChange={e => { setForm({...form, phone: e.target.value}); setOtpVerified(false); setOtpSent(false); }} 
-                    style={{ flex: 1 }}
-                    disabled={otpVerified}
-                  />
-                  {!otpVerified && (
-                    <button 
-                      type="button" 
-                      onClick={sendOtp} 
-                      disabled={otpLoading || !form.phone}
-                      style={{ padding: '0 15px', background: '#F1F5F9', border: '1.5px solid #E2E8F0', borderRadius: 12, fontSize: 11, fontWeight: 700, color: '#2563EB', cursor: 'pointer' }}
-                    >
-                      {otpSent ? 'Resend' : 'Verify'}
-                    </button>
-                  )}
+          <div className="su-hero">
+            <h1>Join <span>5,000+</span><br/>Schools Growing<br/>with EduVantage</h1>
+            <p>Kenya's most advanced school management platform. Multi-curriculum, automated fees, parent portals — all in one place.</p>
+            <div className="su-feat">
+              {[['📊','Academic Analytics','Real-time grades, reports & predictions'],
+                ['💰','Automated Fees','M-Pesa STK push, Pesapal card payments'],
+                ['📱','Parent Portal','Instant SMS alerts & results access'],
+                ['🔒','Secure & Isolated','Each school gets its own database'],
+              ].map(([icon,name,desc])=>(
+                <div key={name} className="su-feat-item">
+                  <div className="su-feat-icon">{icon}</div>
+                  <div><div style={{fontWeight:700,fontSize:13}}>{name}</div><div style={{fontSize:11,opacity:.65}}>{desc}</div></div>
                 </div>
-              </div>
+              ))}
             </div>
-
-            {otpSent && !otpVerified && (
-              <div className="form-group fade-in" style={{ padding: 20, background: '#EFF6FF', borderRadius: 16, border: '2px solid #DBEAFE' }}>
-                <label style={{ color: '#2563EB' }}>Enter 6-Digit Code</label>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <input 
-                    type="text" 
-                    placeholder="000000" 
-                    value={otpCode} 
-                    onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0,6))}
-                    style={{ flex: 1, textAlign: 'center', fontSize: 20, letterSpacing: 4, fontWeight: 800 }}
-                  />
-                  <button 
-                    type="button" 
-                    onClick={verifyOtp}
-                    disabled={otpLoading || otpCode.length < 6}
-                    style={{ padding: '0 25px', background: '#2563EB', color: '#fff', borderRadius: 12, border: 'none', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    {otpLoading ? '...' : 'Confirm'}
-                  </button>
-                </div>
-                <p style={{ fontSize: 10, color: '#64748B', marginTop: 8 }}>Check your SMS for the verification code.</p>
-              </div>
-            )}
-
-            {otpVerified && (
-              <div style={{ fontSize: 12, color: '#16A34A', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, marginBottom: -10 }}>
-                ✅ Phone number verified successfully
-              </div>
-            )}
-
-            <button 
-              className="btn btn-primary" 
-              disabled={loading || !otpVerified} 
-              style={{ padding: '14px', fontSize: 16, marginTop: 10, background: !otpVerified ? '#94A3B8' : '#2563EB' }}
-            >
-              {loading ? 'Setting up...' : (form.plan === 'trial' || form.plan === 'free-term') ? 'Start My Free Access' : 'Subscribe & Create Portal'}
-            </button>
-          </form>
-        )}
+          </div>
+        </div>
+        <div className="su-curr">
+          <div className="su-curr-title">Supported Curricula</div>
+          <div className="su-curr-chips">
+            {CURRICULA.map(c=><div key={c.id} className="su-curr-chip">{c.icon} {c.name}</div>)}
+          </div>
+        </div>
       </div>
 
-      <style jsx>{`
-        .form-group label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748B; margin-bottom: 6px; }
-        .form-group input { width: 100%; padding: 12px 16px; border: 1.5px solid #E2E8F0; borderRadius: 12px; font-size: 14px; outline: none; transition: all 0.2s; box-sizing: border-box; }
-        .form-group input:focus { border-color: #2563EB; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
-      `}</style>
+      {/* Right Panel */}
+      <div className="su-right">
+        <div className="su-card">
+          {/* Progress */}
+          <div className="su-progress">
+            <div className="su-progress-steps">
+              {STEPS.map((s,i)=>(
+                <div key={s} style={{display:'flex',alignItems:'center',flex:i<STEPS.length-1?1:'0 0 auto'}}>
+                  <div className={`su-step ${i===step?'active':i<step?'done':''}`}>
+                    <div className="su-step-num">{i<step?'✓':i+1}</div>
+                    <span style={{display:window?.innerWidth>700?'block':'none'}}>{s}</span>
+                  </div>
+                  {i<STEPS.length-1&&<div className={`su-step-line ${i<step?'done':''}`}/>}
+                </div>
+              ))}
+            </div>
+            <div className="su-progress-bar"><div className="su-progress-fill" style={{width:`${pct}%`}}/></div>
+          </div>
+
+          {/* Step 0 — School Info */}
+          {step===0&&(
+            <>
+              <div className="su-title">School Information</div>
+              <div className="su-subtitle">Tell us about your school. This sets up your unique portal.</div>
+              {error&&<div className="su-alert su-alert-err">{error}</div>}
+              <div className="su-form">
+                <div className="su-field">
+                  <label className="su-label">School Name *</label>
+                  <input className="su-input" placeholder="e.g. Sunrise Academy" value={form.schoolName} onChange={e=>F('schoolName',e.target.value)}/>
+                </div>
+                <div className="su-row">
+                  <div className="su-field">
+                    <label className="su-label">School Type *</label>
+                    <select className="su-input su-select" value={form.schoolType} onChange={e=>F('schoolType',e.target.value)}>
+                      {SCHOOL_TYPES.map(t=><option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div className="su-field">
+                    <label className="su-label">County *</label>
+                    <select className="su-input su-select" value={form.county} onChange={e=>F('county',e.target.value)}>
+                      {COUNTIES.map(c=><option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="su-field">
+                  <label className="su-label">School Email</label>
+                  <input className="su-input" type="email" placeholder="info@yourschool.ac.ke" value={form.schoolEmail} onChange={e=>F('schoolEmail',e.target.value)}/>
+                </div>
+                <div className="su-field">
+                  <label className="su-label">Estimated Number of Students</label>
+                  <input className="su-input" type="number" min="1" value={form.estimatedStudents} onChange={e=>F('estimatedStudents',Number(e.target.value))}/>
+                </div>
+              </div>
+              <div className="su-actions">
+                <button className="su-btn su-btn-ghost" onClick={()=>router.push('/')}>← Back</button>
+                <button className="su-btn su-btn-primary" onClick={next}>Continue →</button>
+              </div>
+            </>
+          )}
+
+          {/* Step 1 — Admin Setup */}
+          {step===1&&(
+            <>
+              <div className="su-title">Administrator Account</div>
+              <div className="su-subtitle">Create the primary admin login. You can add staff later.</div>
+              {error&&<div className="su-alert su-alert-err">{error}</div>}
+              <div className="su-form">
+                <div className="su-field">
+                  <label className="su-label">Full Name *</label>
+                  <input className="su-input" placeholder="Your full name" value={form.adminName} onChange={e=>F('adminName',e.target.value)}/>
+                </div>
+                <div className="su-row">
+                  <div className="su-field">
+                    <label className="su-label">Username *</label>
+                    <input className="su-input" placeholder="admin.username" value={form.adminUsername} onChange={e=>F('adminUsername',e.target.value.toLowerCase().replace(/\s/g,''))}/>
+                  </div>
+                  <div className="su-field">
+                    <label className="su-label">Password *</label>
+                    <input className="su-input" type="password" placeholder="Min 6 chars" value={form.adminPassword} onChange={e=>F('adminPassword',e.target.value)}/>
+                  </div>
+                </div>
+                <div className="su-field">
+                  <label className="su-label">Phone Number (for OTP) *</label>
+                  <div className="su-otp-row">
+                    <input className="su-input" placeholder="07XXXXXXXX" value={form.phone} disabled={otpVerified}
+                      onChange={e=>{F('phone',e.target.value);setOtpSent(false);setOtpVerified(false);setOtpMsg('');}}/>
+                    {!otpVerified&&<button className="su-otp-btn" disabled={otpLoading||!form.phone} onClick={sendOtp}>
+                      {otpLoading?'Sending…':otpSent?'Resend':'Send OTP'}
+                    </button>}
+                  </div>
+                  {otpVerified&&<div className="su-verified">✅ Phone verified</div>}
+                  {otpMsg&&<div style={{fontSize:12,color:otpVerified?'#16A34A':'#DC2626',marginTop:5}}>{otpMsg}</div>}
+                </div>
+                {otpSent&&!otpVerified&&(
+                  <div className="su-field" style={{background:'#EFF6FF',padding:16,borderRadius:12,border:'1.5px solid #BFDBFE'}}>
+                    <label className="su-label" style={{color:'#1D4ED8'}}>Enter 6-Digit Code</label>
+                    <div className="su-otp-row">
+                      <input className="su-input" placeholder="000000" maxLength={6} value={otpCode}
+                        onChange={e=>setOtpCode(e.target.value.replace(/\D/g,'').slice(0,6))}
+                        style={{textAlign:'center',letterSpacing:6,fontSize:20,fontWeight:800}}/>
+                      <button className="su-otp-btn" disabled={otpLoading||otpCode.length<6} onClick={verifyOtp}
+                        style={{background:'#1D4ED8',color:'#fff',borderColor:'#1D4ED8'}}>
+                        {otpLoading?'…':'Verify'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="su-field">
+                  <label className="su-label">Email (optional)</label>
+                  <input className="su-input" type="email" placeholder="admin@yourschool.ac.ke" value={form.email} onChange={e=>F('email',e.target.value)}/>
+                </div>
+              </div>
+              <div className="su-actions">
+                <button className="su-btn su-btn-ghost" onClick={back}>← Back</button>
+                <button className="su-btn su-btn-primary" onClick={next}>Continue →</button>
+              </div>
+            </>
+          )}
+
+          {/* Step 2 — Curriculum & Plan */}
+          {step===2&&(
+            <>
+              <div className="su-title">Curriculum & Plan</div>
+              <div className="su-subtitle">Select your teaching framework and subscription plan.</div>
+              {error&&<div className="su-alert su-alert-err">{error}</div>}
+              <div className="su-form">
+                <label className="su-label">Select Curriculum *</label>
+                <div className="su-curr-grid">
+                  {CURRICULA.map(c=>(
+                    <div key={c.id} className={`su-curr-card ${form.curriculum===c.id?'sel':''}`} onClick={()=>F('curriculum',c.id)}>
+                      <div className="icon">{c.icon}</div>
+                      <div className="name">{c.name}</div>
+                      <div className="desc">{c.desc}</div>
+                    </div>
+                  ))}
+                </div>
+                <label className="su-label" style={{marginTop:8}}>Select Plan *</label>
+                <div className="su-plan-grid">
+                  {plans.slice(0,4).map((p,i)=>(
+                    <div key={p.id} className={`su-plan-card ${form.plan===p.id?'sel':''}`} onClick={()=>F('plan',p.id)}>
+                      {i===1&&<div className="su-plan-badge">Popular</div>}
+                      <div className="su-plan-name">{p.name}</div>
+                      <div className="su-plan-price">
+                        {p.price===0?'Free':`KES ${(p.billingModel==='per-learner'?p.price*(form.estimatedStudents||1):p.price).toLocaleString()}`}
+                        {p.price>0&&<span>/{p.cycle||'term'}</span>}
+                      </div>
+                      <div className="su-plan-feats">
+                        {(p.features||[]).slice(0,3).map(f=><div key={f} className="su-plan-feat">✓ {f}</div>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="su-actions">
+                <button className="su-btn su-btn-ghost" onClick={back}>← Back</button>
+                <button className="su-btn su-btn-primary" onClick={next}>Continue →</button>
+              </div>
+            </>
+          )}
+
+          {/* Step 3 — Confirm & Pay */}
+          {step===3&&(
+            <>
+              <div className="su-title">Confirm & Launch 🚀</div>
+              <div className="su-subtitle">Review your details and activate your school portal.</div>
+              {error&&<div className="su-alert su-alert-err">{error}</div>}
+              {success&&<div className="su-alert su-alert-ok">{success}</div>}
+
+              {/* Summary card */}
+              <div style={{background:'#F8FAFC',border:'1.5px solid #E2E8F0',borderRadius:16,padding:20,marginBottom:20}}>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px 24px',fontSize:13}}>
+                  {[['School',form.schoolName],['Type',form.schoolType],['County',form.county],
+                    ['Curriculum',form.curriculum],['Plan',plans.find(p=>p.id===form.plan)?.name||form.plan],
+                    ['Admin',form.adminName],['Username',form.adminUsername],['Phone',form.phone],
+                  ].map(([k,v])=>(
+                    <div key={k}><span style={{color:'#94A3B8',fontWeight:700,fontSize:11}}>{k.toUpperCase()}</span><div style={{fontWeight:700,color:'#0F172A',marginTop:2}}>{v}</div></div>
+                  ))}
+                </div>
+              </div>
+
+              {totalDue>0?(
+                <div className="su-pay-box">
+                  <div className="su-pay-title">Amount Due</div>
+                  <div className="su-pay-amount">KES {totalDue.toLocaleString()}</div>
+                  <div style={{fontSize:12,color:'#64748B',marginBottom:16}}>Select a payment method to activate your school:</div>
+                  <div className="su-pay-methods">
+                    <button className="su-pay-method" disabled={payLoading} onClick={payMpesa}>
+                      <div className="pm-icon">📱</div>
+                      <div><div style={{fontWeight:800}}>M-Pesa STK Push</div><div style={{fontSize:11,color:'#64748B'}}>Instant prompt on your phone</div></div>
+                    </button>
+                    <button className="su-pay-method" disabled={payLoading} onClick={payPesapal}>
+                      <div className="pm-icon">💳</div>
+                      <div><div style={{fontWeight:800}}>Card / Pesapal</div><div style={{fontSize:11,color:'#64748B'}}>Visa, Mastercard, Airtel Money</div></div>
+                    </button>
+                  </div>
+                </div>
+              ):null}
+
+              <div className="su-actions">
+                <button className="su-btn su-btn-ghost" onClick={back}>← Back</button>
+                <button className="su-btn su-btn-primary" disabled={loading||payLoading} onClick={submit}>
+                  {loading?'Activating…':totalDue>0?'Confirm Registration':'🚀 Activate School — Free'}
+                </button>
+              </div>
+            </>
+          )}
+
+          <div className="su-login-link">
+            Already registered? <a onClick={()=>router.push('/login')}>Sign in here →</a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

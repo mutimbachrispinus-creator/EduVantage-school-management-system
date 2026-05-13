@@ -350,6 +350,17 @@ function LoginContent() {
           <div className="auth-pill"><div className="auth-pill-i">🏗️</div>Scalable Multi-Tenant Architecture — Isolated, secure databases</div>
         </div>
 
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', opacity: 0.45, marginBottom: 12 }}>Supported Curricula</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {[['🇰🇪','CBC'],['🇬🇧','Cambridge'],['🌍','IB'],['📚','British'],['🌱','Montessori'],['⚙️','TVET']].map(([icon,name])=>(
+              <div key={name} style={{ padding:'5px 12px', borderRadius:20, background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)', fontSize:11, fontWeight:600, color:'#fff' }}>
+                {icon} {name}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="auth-announcement" style={{ background: 'rgba(255,255,255,0.05)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', marginBottom: 40, backdropFilter: 'blur(10px)' }}>
            <h4 style={{ color: '#FCD34D', fontSize: 10, textTransform: 'uppercase', marginBottom: 5, letterSpacing: 1.2 }}>📢 EDUVANTAGE NETWORK NEWS</h4>
            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12.5, lineHeight: 1.6 }}>{globalAnnouncement?.message || globalAnnouncement?.text || 'Join the growing network of digitally-empowered schools across East Africa. High-performance school management at your fingertips.'}</p>
