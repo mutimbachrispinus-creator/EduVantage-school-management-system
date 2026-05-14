@@ -1,4 +1,5 @@
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { kvGet, kvSet, execute, query } from '@/lib/db';
 import { getPesapalConfig, getPesapalToken, registerIPN, submitOrder, getTransactionStatus } from '@/lib/pesapal';

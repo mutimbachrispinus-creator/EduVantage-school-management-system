@@ -1,4 +1,5 @@
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { sendSMS, getFeeReminderSMS } from '@/lib/sms-client';
 import { kvGet } from '@/lib/db';

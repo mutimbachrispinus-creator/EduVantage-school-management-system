@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { kvGet } from '@/lib/db';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/saas/lookup-learner?schoolId=xxx&adm=yyy

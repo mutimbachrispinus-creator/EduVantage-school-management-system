@@ -1,5 +1,6 @@
 'use client';
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 /**
  * app/grades/report-card/[id]/page.js — Premium A4 CBC Report Card
  */

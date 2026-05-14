@@ -1,5 +1,6 @@
 'use client';
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 export default function ProposalPage() {
   return (
     <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '40px 0', fontFamily: 'Inter, sans-serif' }}>

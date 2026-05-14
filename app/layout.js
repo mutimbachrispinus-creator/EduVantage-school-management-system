@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth';
 import { kvGet } from '@/lib/db';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 // Using system font stacks to avoid network-dependent build errors
 const inter = { variable: 'font-inter' };

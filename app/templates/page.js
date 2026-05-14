@@ -1,5 +1,6 @@
 'use client';
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 /**
  * app/templates/page.js — Templates & Printables Hub
  *

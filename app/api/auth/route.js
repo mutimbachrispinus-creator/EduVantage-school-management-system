@@ -1,4 +1,5 @@
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 /**
  * app/api/auth/route.js — Authentication endpoints
  *

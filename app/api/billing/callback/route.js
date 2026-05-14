@@ -1,4 +1,5 @@
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { execute, query } from '@/lib/db';
 import { parseStkCallback } from '@/lib/mpesa';
