@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "pages:build": "npx @cloudflare/next-on-pages",
+    "pages:build": "npx @cloudflare/next-on-pages --outdir=.vercel/output",
     "start": "next start",
     "lint": "next lint",
     "preview": "wrangler pages dev"
