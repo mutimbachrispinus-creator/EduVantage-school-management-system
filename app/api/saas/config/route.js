@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { query, kvGet } from '@/lib/db';
+import { query, kvGet, ensureSchema } from '@/lib/db';
 
 /**
  * GET /api/saas/config?tenant=xxx
@@ -10,6 +10,7 @@ import { query, kvGet } from '@/lib/db';
  */
 export async function GET(request) {
   try {
+    await ensureSchema();
     const { searchParams } = new URL(request.url);
     const tenantId = searchParams.get('tenant') || 'platform-master';
 

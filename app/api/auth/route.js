@@ -59,15 +59,11 @@ export async function POST(request) {
   console.log(`[api/auth] Action: ${action} | Runtime: ${process.env.NEXT_RUNTIME || 'node'}`);
   
   try {
-    // Avoid running DDL/migration checks on hot read paths such as login/logout.
-    // On Cloudflare Workers those checks can consume enough CPU to hit resource limits.
-    if (SCHEMA_REQUIRED_ACTIONS.has(action)) {
-      try {
-        await ensureSchema();
-      } catch (dbErr) {
-        console.error('[api/auth] DB Initialization Failed:', dbErr);
-        return err(`Database Initialization Error: ${dbErr.message}`, 500);
-      }
+    try {
+      await ensureSchema();
+    } catch (dbErr) {
+      console.error('[api/auth] DB Initialization Failed:', dbErr);
+      return err(`Database Initialization Error: ${dbErr.message}`, 500);
     }
 
     switch (action) {
