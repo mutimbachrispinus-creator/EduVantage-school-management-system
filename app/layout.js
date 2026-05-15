@@ -4,7 +4,6 @@ import { getSession } from '@/lib/auth';
 import { kvGet } from '@/lib/db';
 
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 
 // Using system font stacks to avoid network-dependent build errors
 const inter = { variable: 'font-inter' };
@@ -28,8 +27,7 @@ export const viewport = {
 
 export default async function RootLayout({ children }) {
   // 🚀 Speed Injection: Pre-fetch session and branding on the server
-  let session = null;
-  try { session = await getSession(); } catch(e) { console.error(e); }
+  const session = await getSession();
   let initialBranding = null;
   
   if (session?.tenantId && session.tenantId !== 'platform-master') {

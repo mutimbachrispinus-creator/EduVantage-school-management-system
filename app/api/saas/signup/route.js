@@ -1,7 +1,6 @@
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { execute, query, batch, forceInitSchema } from '@/lib/db';
+import { execute, query, batch } from '@/lib/db';
 
 /**
  * POST /api/saas/signup
@@ -9,7 +8,6 @@ import { execute, query, batch, forceInitSchema } from '@/lib/db';
  */
 export async function POST(request) {
   try {
-    await forceInitSchema(); // Ensure tables exist
     const { schoolName, adminName, adminUsername, adminPassword, phone, email, curriculum, plan, estimatedStudents } = await request.json();
     const selectedPlan = plan || 'trial';
 

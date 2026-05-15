@@ -1,6 +1,5 @@
 'use client';
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 /**
  * app/allocations/page.js — Subject, Class Teacher & Teacher Code Allocations
  *

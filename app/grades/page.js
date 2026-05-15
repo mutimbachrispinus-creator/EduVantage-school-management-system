@@ -1,6 +1,5 @@
 'use client';
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 /**
  * app/grades/page.js — CBC Marks Entry & Grading
  *

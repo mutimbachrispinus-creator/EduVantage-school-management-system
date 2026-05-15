@@ -1,6 +1,5 @@
 'use client';
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 /**
  * app/duties/page.js — Staff Duties & Presence
  * Fixed: Seek Permission & Report Issue inline form

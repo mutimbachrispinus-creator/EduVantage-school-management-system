@@ -1,18 +1,28 @@
 'use client';
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser } from '@/lib/client-cache';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from '@/components/DynamicCharts';
-
-const DynamicRevenueChart = ({ data, color }) => (
-  <ResponsiveContainer width="100%" height={350}>
-    <AreaChart data={data}>
-      <Area dataKey="rev" stroke={color} fill={color} />
-    </AreaChart>
-  </ResponsiveContainer>
-);
+import dynamic from 'next/dynamic';
+const DynamicRevenueChart = dynamic(async () => {
+  const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = await import('recharts');
+  return ({ data, color }) => (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={color} stopOpacity={0.3}/><stop offset="95%" stopColor={color} stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
+        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
+        <Tooltip />
+        <Area type="monotone" dataKey="rev" stroke={color} strokeWidth={4} fillOpacity={1} fill="url(#colorRev)" />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}, { ssr: false });
 
 const M = '#4F46E5', GOLD = '#FCD34D', NAVY = '#0F172A', EMERALD = '#10B981', SLATE = '#64748B';
 

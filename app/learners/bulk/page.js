@@ -1,6 +1,5 @@
 'use client';
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 /**
  * app/learners/bulk/page.js — Bulk Learner Registration
  *

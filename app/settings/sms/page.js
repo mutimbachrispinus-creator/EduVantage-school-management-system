@@ -1,6 +1,5 @@
 'use client';
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 /**
  * app/settings/sms/page.js — Admin: SMS Provider Configuration (Africa's Talking)
  */

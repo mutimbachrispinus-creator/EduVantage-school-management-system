@@ -104,10 +104,6 @@ export async function GET(request) {
     return response;
 
   } catch (err) {
-    console.error('[Config API] Error:', err);
-    return NextResponse.json({ 
-      error: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ error: err.message }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
   }
 }

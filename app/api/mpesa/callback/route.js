@@ -1,5 +1,4 @@
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { parseStkCallback } from '@/lib/mpesa';
 import { kvRecordPayment, kvGet, kvSet, query } from '@/lib/db';

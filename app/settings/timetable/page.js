@@ -1,6 +1,5 @@
 'use client';
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 /**
  * app/settings/timetable/page.js — Admin: configure school timetable parameters
  * Supports per-level configuration for multi-curriculum schools.

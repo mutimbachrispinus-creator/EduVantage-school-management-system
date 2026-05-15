@@ -1,5 +1,4 @@
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { sendEmail, getReportCardTemplate } from '@/lib/mail';
 import { kvGet } from '@/lib/db';

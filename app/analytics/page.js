@@ -1,7 +1,6 @@
 'use client';
 
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useTransition } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LineChart, Line } from '@/components/DynamicCharts';

@@ -1,5 +1,4 @@
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 /**
  * app/api/sms/route.js — Secure SMS sending endpoint
  *

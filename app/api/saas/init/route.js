@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { batch, forceInitSchema } from '@/lib/db';
+import { batch } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 
 /**
@@ -10,7 +10,6 @@ import { hashPassword } from '@/lib/auth';
  */
 export async function GET() {
   try {
-    await forceInitSchema(); // Ensure tables exist
     const now = Math.floor(Date.now() / 1000);
     const hashedPw = await hashPassword('Junior@#1'); // Requested password
     

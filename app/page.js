@@ -1,6 +1,4 @@
 'use client';
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ChatBot from '@/components/ChatBot';
