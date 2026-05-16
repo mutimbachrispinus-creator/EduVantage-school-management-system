@@ -230,6 +230,8 @@ export default function PredictorPage() {
                 <option>KCSE</option>
                 <option>IGCSE</option>
                 <option>IB Finals</option>
+                <option>CDACC Finals</option>
+                <option>TVET Internal</option>
               </select>
             </div>
           )}
