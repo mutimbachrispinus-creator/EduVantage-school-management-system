@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/attendance/page.js — Full Daily Attendance System
  *

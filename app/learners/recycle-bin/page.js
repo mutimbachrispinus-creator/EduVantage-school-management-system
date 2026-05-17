@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/learners/recycle-bin/page.js — Recycle Bin
  * Restore or permanently delete learner profiles.

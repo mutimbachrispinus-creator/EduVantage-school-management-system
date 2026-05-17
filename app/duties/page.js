@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/duties/page.js — Staff Duties & Presence
  * Fixed: Seek Permission & Report Issue inline form

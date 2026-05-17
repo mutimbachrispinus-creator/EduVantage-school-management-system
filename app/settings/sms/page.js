@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/settings/sms/page.js — Admin: SMS Provider Configuration (Africa's Talking)
  */

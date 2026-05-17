@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/teachers/page.js — Teacher & Staff List
  *

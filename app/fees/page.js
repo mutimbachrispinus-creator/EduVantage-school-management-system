@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/fees/page.js — Fee management (all receipts)
  *

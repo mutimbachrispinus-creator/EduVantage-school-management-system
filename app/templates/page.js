@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/templates/page.js — Templates & Printables Hub
  *

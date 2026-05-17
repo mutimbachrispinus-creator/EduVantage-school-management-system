@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/settings/page.js — Settings Hub
  *

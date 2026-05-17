@@ -506,4 +506,3 @@ function SMSButton({ adm, term, phone }) {
   );
 }
 
-

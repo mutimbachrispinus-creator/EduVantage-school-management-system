@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/learners/bulk/page.js — Bulk Learner Registration
  *

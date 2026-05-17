@@ -1,23 +1,19 @@
-import dynamic from 'next/dynamic';
+'use client';
+
+import { PDFDownloadLink } from '@react-pdf/renderer';
 
 /**
- * A client-side only PDF Download Link.
- * This component dynamically imports @react-pdf/renderer to avoid
- * including it in the server-side bundle.
+ * A client-side PDF Download Link.
  */
-const DynamicPDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
-  { ssr: false }
-);
-
-export default function DynamicPDFLink({ document, fileName, children, className }) {
+export default function DynamicPDFLink({ document, fileName, children, className, ...props }) {
   return (
-    <DynamicPDFDownloadLink 
+    <PDFDownloadLink
       document={document} 
       fileName={fileName}
       className={className}
+      {...props}
     >
       {children}
-    </DynamicPDFDownloadLink>
+    </PDFDownloadLink>
   );
 }

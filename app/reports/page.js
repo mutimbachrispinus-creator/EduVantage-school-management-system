@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 import { useState, useEffect, useCallback } from 'react';
 import { getCachedUser, getCachedDBMulti, fetchWithRetry, invalidateDB } from '@/lib/client-cache';
 import { useSchoolProfile } from '@/lib/school-profile';

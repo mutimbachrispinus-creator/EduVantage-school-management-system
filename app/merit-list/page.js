@@ -1,6 +1,4 @@
 'use client';
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
 /**
  * app/merit-list/page.js — Merit List (Top Learners, CBC-based)
  *

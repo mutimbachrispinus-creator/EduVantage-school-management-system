@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/login/page.js — Faithfully Restored Legacy Login Page (v122 Styles)
  * Updated for EduVantage SaaS Platform.

@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/analytics/activity/page.js — Global Activity Log
  *

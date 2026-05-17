@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/settings/subjects/page.js — Subjects Configuration
  *

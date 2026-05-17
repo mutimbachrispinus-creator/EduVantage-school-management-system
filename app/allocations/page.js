@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/allocations/page.js — Subject, Class Teacher & Teacher Code Allocations
  *

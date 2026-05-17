@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/profile/page.js — Learner & Staff Profile Viewer
  *

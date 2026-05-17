@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 /**
  * app/settings/timetable/page.js — Admin: configure school timetable parameters
  * Supports per-level configuration for multi-curriculum schools.
