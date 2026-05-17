@@ -384,15 +384,40 @@ export default function SignupPage() {
                   <div className="su-pay-title">Amount Due</div>
                   <div className="su-pay-amount">KES {totalDue.toLocaleString()}</div>
                   <div style={{fontSize:12,color:'#64748B',marginBottom:16}}>Select a payment method to activate your school:</div>
-                  <div className="su-pay-methods">
-                    <button className="su-pay-method" disabled={payLoading} onClick={payMpesa}>
-                      <div className="pm-icon">📱</div>
-                      <div><div style={{fontWeight:800}}>M-Pesa STK Push</div><div style={{fontSize:11,color:'#64748B'}}>Instant prompt on your phone</div></div>
-                    </button>
-                    <button className="su-pay-method" disabled={payLoading} onClick={payPesapal}>
-                      <div className="pm-icon">💳</div>
-                      <div><div style={{fontWeight:800}}>Card / Pesapal</div><div style={{fontSize:11,color:'#64748B'}}>Visa, Mastercard, Airtel Money</div></div>
-                    </button>
+                  
+                  {/* M-Pesa STK Push */}
+                  <div style={{background:'#F0F9FF',borderRadius:14,padding:'16px',marginBottom:12,border:'1.5px solid #BAE6FD'}}>
+                    <div style={{fontWeight:800,color:'#0369A1',fontSize:13,marginBottom:10}}>📲 M-Pesa STK Push — Instant</div>
+                    <div className="su-pay-methods">
+                      <button className="su-pay-method" disabled={payLoading} onClick={payMpesa}>
+                        <div className="pm-icon">📱</div>
+                        <div><div style={{fontWeight:800}}>M-Pesa STK Push</div><div style={{fontSize:11,color:'#64748B'}}>Instant prompt on your phone</div></div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card & Digital Wallets */}
+                  <div style={{marginBottom:12}}>
+                    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                      <div style={{flex:1,height:1,background:'#E2E8F0'}}/>
+                      <span style={{fontSize:11,fontWeight:800,color:'#94A3B8',whiteSpace:'nowrap'}}>CARD & DIGITAL WALLETS</span>
+                      <div style={{flex:1,height:1,background:'#E2E8F0'}}/>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                      {[
+                        {label:'Mastercard / Visa',icon:'💳',bg:'#fff',   border:'#E2E8F0',col:'#0F172A',sub:'Secure card',    fn:payPesapal},
+                        {label:'PayPal',           icon:'🅿️',bg:'#003087',border:'#003087',col:'#fff',   sub:'PayPal checkout',fn:payPesapal},
+                        {label:'Google Pay',       icon:'G', bg:'#fff',   border:'#E2E8F0',col:'#0F172A',sub:'One-tap payment', fn:payPesapal},
+                        {label:'Airtel Money',     icon:'📡',bg:'#DC2626',border:'#DC2626',col:'#fff',   sub:'Mobile wallet',   fn:payPesapal},
+                      ].map(({label,icon,bg,border,col,sub,fn})=>(
+                        <button key={label} className="su-pay-method" disabled={payLoading} onClick={fn}
+                          style={{background:bg,borderColor:border,flexDirection:'column',gap:4,padding:'12px 8px',alignItems:'center',textAlign:'center'}}>
+                          <div style={{fontSize:20,color:col}}>{icon}</div>
+                          <div style={{fontWeight:800,fontSize:12,color:col}}>{label}</div>
+                          <div style={{fontSize:10,color:col==='#fff'?'rgba(255,255,255,.65)':'#94A3B8'}}>{sub}</div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ):null}

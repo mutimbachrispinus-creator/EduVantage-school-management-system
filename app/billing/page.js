@@ -19,129 +19,127 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId })
     setMsg({ type: 'info', text: 'Sending STK Push prompt to your phone...' });
     try {
       const res = await fetch('/api/billing/stk-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, planId: plan.id, amount: total })
       });
       const data = await res.json();
       if (data.success) {
-        setMsg({ type: 'success', text: 'Prompt sent! Enter your M-Pesa PIN on your phone to complete. Your portal will activate automatically once paid.' });
+        setMsg({ type: 'success', text: 'Prompt sent! Enter your M-Pesa PIN on your phone. Your portal activates automatically once paid.' });
       } else {
         setMsg({ type: 'error', text: data.error || 'Failed to initiate payment' });
       }
-    } catch (e) {
-      setMsg({ type: 'error', text: e.message });
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setMsg({ type: 'error', text: e.message }); }
+    finally { setLoading(false); }
   }
 
-  async function initiatePesapal() {
+  async function initiateCard(method) {
     setLoading(true);
-    setMsg({ type: 'info', text: 'Preparing secure card checkout...' });
+    setMsg({ type: 'info', text: `Preparing ${method} checkout...` });
     try {
       const res = await fetch('/api/pesapal?action=initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subscriptionPayload: { tenantId, planId: plan.id },
-          amount: total
-        })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionPayload: { tenantId, planId: plan.id, method }, amount: total })
       });
       const data = await res.json();
-      if (data.ok) {
-        window.location.href = data.redirect_url;
-      } else {
-        setMsg({ type: 'error', text: data.error || 'Failed to initiate Pesapal' });
-      }
-    } catch (e) {
-      setMsg({ type: 'error', text: e.message });
-    } finally {
-      setLoading(false);
-    }
+      if (data.ok) { window.location.href = data.redirect_url; }
+      else { setMsg({ type: 'error', text: data.error || `Failed to initiate ${method}` }); }
+    } catch (e) { setMsg({ type: 'error', text: e.message }); }
+    finally { setLoading(false); }
   }
-  
+
+  const DIGITAL = [
+    { label:'Mastercard / Visa', icon:'💳', bg:'#fff',    border:'#E2E8F0', col:'#0F172A', sub:'Secure card checkout',    hoverBorder:'#4F46E5' },
+    { label:'PayPal',            icon:'🅿️', bg:'#003087', border:'#003087', col:'#fff',    sub:'Pay with PayPal',          hoverBorder:'#003087' },
+    { label:'Google Pay',        icon:'G',  bg:'#fff',    border:'#E2E8F0', col:'#0F172A', sub:'One-tap checkout',          hoverBorder:'#34A853' },
+    { label:'Airtel Money',      icon:'📡', bg:'#DC2626', border:'#DC2626', col:'#fff',    sub:'Mobile wallet',             hoverBorder:'#DC2626' },
+  ];
+
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 15 }}>
-      <div className="panel modal-content" style={{ maxWidth: 500, width: '100%', borderRadius: 32, boxShadow: '0 25px 50px rgba(0,0,0,0.3)', position: 'relative' }}>
-        <button onClick={onClose} className="close-btn" style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#64748B' }}>✕</button>
-        
-        <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>💳</div>
-          <h2 style={{ fontSize: 24, fontWeight: 900, color: '#0F172A' }}>Activate {plan.name}</h2>
-          <p style={{ color: '#64748B', fontSize: 14 }}>To upgrade your institutional license, please complete the payment below.</p>
+    <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:15, overflowY:'auto' }}>
+      <div className="panel modal-content" style={{ maxWidth:520, width:'100%', borderRadius:32, boxShadow:'0 25px 50px rgba(0,0,0,0.3)', position:'relative', maxHeight:'92vh', overflowY:'auto' }}>
+        <button onClick={onClose} style={{ position:'absolute', top:20, right:20, background:'none', border:'none', fontSize:24, cursor:'pointer', color:'#64748B' }}>✕</button>
+
+        <div style={{ textAlign:'center', marginBottom:28 }}>
+          <div style={{ fontSize:42, marginBottom:10 }}>🔐</div>
+          <h2 style={{ fontSize:24, fontWeight:900, color:'#0F172A', margin:'0 0 8px' }}>Activate {plan.name}</h2>
+          <p style={{ color:'#64748B', fontSize:14, margin:0 }}>Choose a payment method to upgrade your institutional license.</p>
         </div>
 
-        <div style={{ background: '#F8FAFC', padding: 20, borderRadius: 16, border: '1px solid #E2E8F0', marginBottom: 25, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', marginBottom: 4 }}>Total Amount Payable</div>
-          <div style={{ fontSize: 32, fontWeight: 900, color: '#4F46E5' }}>KES {total.toLocaleString()}</div>
+        <div style={{ background:'linear-gradient(135deg,#EEF2FF,#F0FDF4)', padding:'18px 20px', borderRadius:16, border:'1px solid #E2E8F0', marginBottom:24, textAlign:'center' }}>
+          <div style={{ fontSize:11, fontWeight:800, color:'#64748B', textTransform:'uppercase', marginBottom:6 }}>Total Amount Due</div>
+          <div style={{ fontSize:34, fontWeight:900, color:'#4F46E5' }}>KES {total.toLocaleString()}</div>
           {plan.billingModel === 'per-learner' && (
-            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>({studentCount} Students × KES {plan.price})</div>
+            <div style={{ fontSize:11, color:'#94A3B8', marginTop:4 }}>({studentCount} students × KES {plan.price} / term)</div>
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ padding: 20, background: '#F0F9FF', borderRadius: 16, border: '1.5px solid #0EA5E930' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <span style={{ fontSize: 20 }}>📲</span>
-              <span style={{ fontWeight: 800, color: '#0369A1', fontSize: 13, textTransform: 'uppercase' }}>Instant Activation (STK Push)</span>
+        <div style={{ padding:'18px 20px', background:'#F0F9FF', borderRadius:16, border:'1.5px solid #BAE6FD', marginBottom:16 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+            <span style={{ fontSize:22 }}>📲</span>
+            <div>
+              <div style={{ fontWeight:800, color:'#0369A1', fontSize:14 }}>M-Pesa STK Push</div>
+              <div style={{ fontSize:11, color:'#0EA5E9' }}>Instant activation on payment</div>
             </div>
-            <div className="field" style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 11, color: '#0369A1' }}>M-Pesa Phone Number</label>
-              <input 
-                placeholder="e.g. 0712345678" 
-                value={phone} 
-                onChange={e => setPhone(e.target.value)}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #BAE6FD', fontSize: 16 }}
-              />
-            </div>
-            <button 
-              className="btn" 
-              disabled={loading}
-              onClick={initiatePay}
-              style={{ width: '100%', padding: 14, borderRadius: 12, background: '#0EA5E9', color: '#fff', fontWeight: 900, border: 'none', cursor: 'pointer', marginBottom: 10 }}
-            >
-              {loading ? 'Initiating...' : '📱 Pay via M-Pesa STK'}
-            </button>
-            <button 
-              className="btn" 
-              disabled={loading}
-              onClick={initiatePesapal}
-              style={{ width: '100%', padding: 14, borderRadius: 12, background: '#0F172A', color: '#fff', fontWeight: 900, border: 'none', cursor: 'pointer' }}
-            >
-              {loading ? 'Initiating...' : '💳 Pay via Card / Mobile'}
-            </button>
-            {msg && (
-              <div style={{ marginTop: 12, fontSize: 11, color: msg.type === 'error' ? '#EF4444' : msg.type === 'success' ? '#059669' : '#0284C7', fontWeight: 700 }}>
-                {msg.text}
-              </div>
-            )}
           </div>
+          <input
+            placeholder="Phone e.g. 0712345678"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            style={{ width:'100%', padding:'12px 16px', borderRadius:12, border:'1.5px solid #BAE6FD', fontSize:15, marginBottom:12, boxSizing:'border-box' }}
+          />
+          <button disabled={loading} onClick={initiatePay}
+            style={{ width:'100%', padding:'13px', borderRadius:12, background: loading ? '#94A3B8' : '#0EA5E9', color:'#fff', fontWeight:900, border:'none', cursor:'pointer', fontSize:15 }}>
+            {loading ? 'Initiating...' : '📱 Pay via M-Pesa'}
+          </button>
+        </div>
 
-          <div style={{ textAlign: 'center', margin: '10px 0', fontSize: 11, color: '#94A3B8', fontWeight: 800 }}>OR USE MANUAL CHANNELS</div>
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
+          <div style={{ flex:1, height:1, background:'#E2E8F0' }} />
+          <span style={{ fontSize:11, fontWeight:800, color:'#94A3B8', whiteSpace:'nowrap' }}>OR PAY WITH CARD / DIGITAL WALLET</span>
+          <div style={{ flex:1, height:1, background:'#E2E8F0' }} />
+        </div>
 
-          {payments.map((p, i) => (
-            <div key={i} style={{ padding: 16, border: '1.5px solid #4F46E515', borderRadius: 16, background: '#fff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#4F46E5' }}>{p.type.toUpperCase()} • {p.name}</span>
-                <span style={{ fontSize: 10, background: '#EEF2FF', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>VERIFIED</span>
-              </div>
-              <div className="payment-details" style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                <div style={{ minWidth: 140 }}>
-                  <div style={{ fontSize: 9, color: '#64748B', fontWeight: 800, textTransform: 'uppercase' }}>{p.type === 'Bank' ? 'Account Number' : p.type === 'PesaPal' ? 'Consumer Key' : 'Shortcode'}</div>
-                  <div style={{ fontWeight: 900, fontSize: 18, color: '#0F172A' }}>{p.shortcode || p.account || p.consumerKey}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 9, color: '#64748B', fontWeight: 800, textTransform: 'uppercase' }}>Account / Reference</div>
-                  <div style={{ fontWeight: 900, fontSize: 18, color: '#0F172A' }}>{p.account || 'EDUVANTAGE'}</div>
-                </div>
-              </div>
-            </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
+          {DIGITAL.map(({ label, icon, bg, border, col, sub, hoverBorder }) => (
+            <button key={label} disabled={loading} onClick={() => initiateCard(label)}
+              style={{ padding:'16px 12px', borderRadius:14, background:bg, border:`1.5px solid ${border}`, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:6, transition:'0.2s', boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}
+              onMouseOver={e => { e.currentTarget.style.borderColor=hoverBorder; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 20px rgba(0,0,0,.1)'; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor=border; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,.04)'; }}>
+              <div style={{ fontSize:24, fontWeight:900, color:col }}>{icon}</div>
+              <div style={{ fontWeight:800, fontSize:12, color:col }}>{label}</div>
+              <div style={{ fontSize:10, color: col==='#fff' ? 'rgba(255,255,255,.65)' : '#94A3B8' }}>{sub}</div>
+            </button>
           ))}
         </div>
 
-        <div style={{ marginTop: 25, padding: 15, background: '#EFF6FF', borderRadius: 12, border: '1px solid #DBEAFE', fontSize: 12, color: '#1E40AF', lineHeight: 1.5 }}>
-          <strong>Note:</strong> Once you make the payment, your license will be updated within 5-10 minutes. For instant activation, send your payment screenshot to <b>+254 792 656 579</b>.
+        {msg && (
+          <div style={{ marginBottom:16, fontSize:12, color: msg.type==='error'?'#EF4444': msg.type==='success'?'#059669':'#0284C7', fontWeight:700, padding:'12px 16px', background: msg.type==='error'?'#FEF2F2': msg.type==='success'?'#ECFDF5':'#EFF6FF', borderRadius:12, border:`1px solid ${msg.type==='error'?'#FECACA': msg.type==='success'?'#A7F3D0':'#BFDBFE'}` }}>
+            {msg.text}
+          </div>
+        )}
+
+        {payments.length > 0 && (
+          <>
+            <div style={{ textAlign:'center', margin:'4px 0 12px', fontSize:11, color:'#94A3B8', fontWeight:800 }}>OR USE MANUAL CHANNELS</div>
+            {payments.map((p, i) => (
+              <div key={i} style={{ padding:16, border:'1.5px solid #4F46E515', borderRadius:16, background:'#fff', marginBottom:10 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                  <span style={{ fontSize:12, fontWeight:800, color:'#4F46E5' }}>{p.type.toUpperCase()} • {p.name}</span>
+                  <span style={{ fontSize:10, background:'#EEF2FF', padding:'2px 6px', borderRadius:4, fontWeight:700 }}>VERIFIED</span>
+                </div>
+                <div style={{ display:'flex', gap:20, flexWrap:'wrap' }}>
+                  <div><div style={{ fontSize:9, color:'#64748B', fontWeight:800, textTransform:'uppercase' }}>{p.type==='Bank'?'Account Number':p.type==='PesaPal'?'Consumer Key':'Shortcode'}</div>
+                    <div style={{ fontWeight:900, fontSize:18, color:'#0F172A' }}>{p.shortcode||p.account||p.consumerKey}</div></div>
+                  <div><div style={{ fontSize:9, color:'#64748B', fontWeight:800, textTransform:'uppercase' }}>Account / Reference</div>
+                    <div style={{ fontWeight:900, fontSize:18, color:'#0F172A' }}>{p.account||'EDUVANTAGE'}</div></div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        <div style={{ marginTop:8, padding:14, background:'#EFF6FF', borderRadius:12, border:'1px solid #DBEAFE', fontSize:12, color:'#1E40AF', lineHeight:1.5 }}>
+          <strong>Note:</strong> License updates within 5-10 minutes of payment. For instant activation send screenshot to <b>+254 792 656 579</b>.
         </div>
       </div>
     </div>
