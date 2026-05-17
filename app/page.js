@@ -484,13 +484,14 @@ export default function LandingPage() {
               <h4>Company</h4>
               <a href="#">About Us</a>
               <a href="#">Support</a>
-              <a href="#">Privacy Policy</a>
+              <a href="/privacy">Privacy Policy</a>
+              <a href="/terms">Terms of Service</a>
             </div>
           </div>
         </div>
         <div className="footer-bottom">
           <div className="container">
-            <p>&copy; {new Date().getFullYear()} EduVantage Platform. Built with ❤️ for African Education.</p>
+            <p>&copy; {new Date().getFullYear()} EduVantage Platform. Built with ❤️ for African Education. &nbsp;·&nbsp; <a href="/privacy" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 700 }}>Privacy Policy</a> &nbsp;·&nbsp; <a href="/terms" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 700 }}>Terms of Service</a></p>
           </div>
         </div>
       </footer>

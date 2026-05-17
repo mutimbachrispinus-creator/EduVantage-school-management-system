@@ -409,6 +409,12 @@ export default function SignupPage() {
           <div className="su-login-link">
             Already registered? <a onClick={()=>router.push('/login')}>Sign in here →</a>
           </div>
+          <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: '#94A3B8', lineHeight: 1.7 }}>
+            By registering, you agree to EduVantage's{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#4F46E5', fontWeight: 700, textDecoration: 'underline' }}>Terms of Service</a>
+            {' '}and{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#4F46E5', fontWeight: 700, textDecoration: 'underline' }}>Privacy Policy</a>.
+          </div>
         </div>
       </div>
     </div>
