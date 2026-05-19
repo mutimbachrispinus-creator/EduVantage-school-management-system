@@ -17,7 +17,7 @@ export async function POST(request) {
 
     // 0. Verify OTP Status
     const { kvGet } = await import('@/lib/db');
-    const otpStatus = await kvGet(`reg_otp_verified_${phone.replace(/\D/g, '')}`, null, 'platform-master');
+    const otpStatus = await kvGet(`reg_otp_verified_${String(phone).replace(/\D/g, '')}`, null, 'platform-master');
     if (!otpStatus || !otpStatus.verified) {
       return NextResponse.json({ error: 'Phone number not verified. Please request and verify OTP first.' }, { status: 403 });
     }

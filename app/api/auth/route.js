@@ -248,12 +248,12 @@ async function handleRegister({ role, name, username, phone, password, links, gr
   }
 
   if (!name || !password || !username) return err('Name, username and password are required');
-  if (!phone) return err('Phone number is required for verification');
+  if (!phone && role === 'parent') return err('Phone number is required for verification');
   if (password.length < 6) return err('Password must be at least 6 characters');
 
   // 1.5 Verify OTP Status (Only for public self-registration)
   if (!session) {
-    const otpStatus = await kvGet(`reg_otp_verified_${phone.replace(/\D/g, '')}`, null, 'platform-master');
+    const otpStatus = await kvGet(`reg_otp_verified_${String(phone).replace(/\D/g, '')}`, null, 'platform-master');
     if (!otpStatus || !otpStatus.verified) {
       return err('Phone number not verified. Please request and verify OTP first.');
     }
@@ -287,7 +287,12 @@ async function handleRegister({ role, name, username, phone, password, links, gr
       await execute(
         `INSERT INTO staff (id, tenant_id, name, username, role, phone, password, status, childAdm, createdAt)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, link.schoolId, name.toUpperCase(), username.toLowerCase(), 'parent', phone, hashedPassword, 'active', link.adm, new Date().toISOString()]
+        [userId, link.schoolId, name.toUpperCase(), username.toLowerCase(), 'parent', phone || '', hashedPassword, 'active', link.adm, new Date().toISOString()]
+      );
+      await execute(
+        `INSERT INTO kv (key, tenant_id, updated_at) VALUES (?, ?, strftime('%s','now'))
+         ON CONFLICT(key, tenant_id) DO UPDATE SET updated_at = excluded.updated_at`,
+        ['paav6_staff', link.schoolId]
       );
     }
   } else {
@@ -295,7 +300,12 @@ async function handleRegister({ role, name, username, phone, password, links, gr
     await execute(
       `INSERT INTO staff (id, tenant_id, name, username, role, phone, password, status, grade, createdAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, tenantId, name.toUpperCase(), username.toLowerCase(), role, phone, hashedPassword, 'active', grade || null, new Date().toISOString()]
+      [userId, tenantId, name.toUpperCase(), username.toLowerCase(), role, phone || '', hashedPassword, 'active', grade || null, new Date().toISOString()]
+    );
+    await execute(
+      `INSERT INTO kv (key, tenant_id, updated_at) VALUES (?, ?, strftime('%s','now'))
+       ON CONFLICT(key, tenant_id) DO UPDATE SET updated_at = excluded.updated_at`,
+      ['paav6_staff', tenantId]
     );
   }
 
