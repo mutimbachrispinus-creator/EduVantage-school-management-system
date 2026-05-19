@@ -71,21 +71,21 @@ export async function POST(request) {
     }
 
     switch (action) {
-      case 'login':      return handleLogin(body, request);
-      case 'logout':     return handleLogout(request);
-      case 'register':   return handleRegister(body, request);
-      case 'add_child':  return handleAddChild(body, request);
-      case 'edit_user':  return handleEditUser(body, request);
-      case 'google':     return handleGoogle(body, request);
-      case 'whoami':     return handleWhoami(request);
-      case 'forgot':     return handleForgot(body);
-      case 'request_otp': return handleRequestOtp(body, request);
-      case 'verify_otp_reset': return handleVerifyOtpReset(body, request);
-      case 'request_reg_otp': return handleRequestRegOtp(body, request);
-      case 'verify_reg_otp':  return handleVerifyRegOtp(body, request);
-      case 'resetpw':    return handleResetPw(body);
-      case 'change_password': return handleChangePassword(body, request);
-      case 'delete_user': return handleDeleteUser(body, request);
+      case 'login':      return await handleLogin(body, request);
+      case 'logout':     return await handleLogout(request);
+      case 'register':   return await handleRegister(body, request);
+      case 'add_child':  return await handleAddChild(body, request);
+      case 'edit_user':  return await handleEditUser(body, request);
+      case 'google':     return await handleGoogle(body, request);
+      case 'whoami':     return await handleWhoami(request);
+      case 'forgot':     return await handleForgot(body);
+      case 'request_otp': return await handleRequestOtp(body, request);
+      case 'verify_otp_reset': return await handleVerifyOtpReset(body, request);
+      case 'request_reg_otp': return await handleRequestRegOtp(body, request);
+      case 'verify_reg_otp':  return await handleVerifyRegOtp(body, request);
+      case 'resetpw':    return await handleResetPw(body);
+      case 'change_password': return await handleChangePassword(body, request);
+      case 'delete_user': return await handleDeleteUser(body, request);
       default:           return err(`Unknown action: ${action}`);
     }
   } catch (e) {

@@ -229,20 +229,24 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
     }
 
     setBusy(true);
-    const res = await fetch('/api/auth', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: isEdit ? 'edit_user' : 'register',
-        ...(isEdit ? { id: user.id } : {}),
-        ...form,
-      }),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!data.ok) { setErr(data.error || 'Save failed'); return; }
-    playSuccessSound();
-    onClose();
-
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: isEdit ? 'edit_user' : 'register',
+          ...(isEdit ? { id: user.id } : {}),
+          ...form,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) { setErr(data.error || 'Save failed'); return; }
+      playSuccessSound();
+      onClose();
+    } catch (err) {
+      setErr(err.message || 'Network error occurred. Please try again.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
