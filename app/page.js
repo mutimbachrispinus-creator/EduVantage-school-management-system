@@ -32,9 +32,9 @@ const ALL_FEATURES = [
 ];
 
 const TRUST_POINTS = [
-  { label: 'Use Today', value: 'Admissions, fees, grading, attendance, reports, SMS, finance and parent portal workflows.' },
-  { label: 'Configure First', value: 'Database, auth secrets, SMS, email and payment provider credentials must be set before production use.' },
-  { label: 'Deployment Target', value: 'Cloudflare Pages build is supported; dynamic routes run on the Edge runtime.' },
+  { label: 'Comprehensive Workflows', value: 'Admissions, fees, grading, attendance, reports, SMS, finance and parent portal workflows.' },
+  { label: 'Seamless Integrations', value: 'Built-in support for SMS, email, and major payment providers to streamline operations.' },
+  { label: 'Cloud-Native Architecture', value: 'Optimized for high performance and reliability on the Cloudflare Edge network.' },
 ];
 
 export default function LandingPage() {
@@ -104,11 +104,11 @@ export default function LandingPage() {
             Run the school.<br/>See the <span className="text-gradient">whole picture.</span>
           </h1>
           <p className="hero-subtitle">
-            EduVantage brings admissions, fees, academics, attendance, communication, finance and parent access into one tenant-aware platform. Start with the core workflows, then connect SMS, email and payments when your provider accounts are ready.
+            EduVantage brings admissions, fees, academics, attendance, communication, finance and parent access into one tenant-aware platform. Experience unified school management with built-in tools for SMS, email, and automated payments.
           </p>
           
           <div className="hero-actions">
-            <Link href="/saas/signup" className="btn btn-xl btn-primary btn-glow">Start Setup</Link>
+            <Link href="/saas/signup" className="btn btn-xl btn-primary btn-glow">Get Started</Link>
             <Link href="/demo" className="btn btn-xl btn-outline glass-btn">Explore Live Demo</Link>
           </div>
 
@@ -185,10 +185,10 @@ export default function LandingPage() {
       <section id="audit" className="readiness-section">
         <div className="container readiness-grid">
           <div>
-            <div className="badge-pill">Implementation Readiness</div>
-            <h2 className="section-title">Powerful, but honest about setup.</h2>
+            <div className="badge-pill">Enterprise Grade</div>
+            <h2 className="section-title">Powerful, secure, and ready to scale.</h2>
             <p className="section-subtitle left">
-              EduVantage includes the operational screens and provider integrations schools expect, but production value depends on clean school data and configured external APIs.
+              EduVantage provides the operational depth and reliable infrastructure that modern institutions demand, ensuring your data is accessible, secure, and actionable.
             </p>
           </div>
           <div className="readiness-cards">
@@ -252,7 +252,7 @@ export default function LandingPage() {
             <div className="module-card reverse">
               <div className="mod-content">
                 <h3>Payments & Finance</h3>
-                <p>Connect M-Pesa or Pesapal when your credentials are ready, then manage school collections, fee balances, receipts, expenses and reconciliation from one finance workspace. Settlement workflows are available for teams using the supported payment model.</p>
+                <p>Accept M-Pesa and Pesapal payments directly, and manage school collections, fee balances, receipts, expenses and reconciliation from one finance workspace. Settlement workflows are available for teams using the supported payment model.</p>
                 <ul className="mod-features">
                   <li>M-Pesa STK Push and Callback Support</li>
                   <li>Pesapal Checkout Support</li>
@@ -296,7 +296,7 @@ export default function LandingPage() {
             <div className="module-card reverse">
               <div className="mod-content">
                 <h3>Communication Hub</h3>
-                <p>Bring internal messaging and SMS workflows into one place. Schools can send absence alerts, fee reminders, report-card links and school-wide announcements after SMS credentials are configured.</p>
+                <p>Bring internal messaging and SMS workflows into one place. Schools can send absence alerts, fee reminders, report-card links and school-wide announcements directly to parents and staff.</p>
                 <ul className="mod-features">
                   <li>Bulk SMS Campaigns</li>
                   <li>Attendance and Fee Reminder Templates</li>
@@ -459,7 +459,7 @@ export default function LandingPage() {
                 <PriceCard 
                   name="1 Term Free" 
                   price={0} 
-                  desc="Try the core workflows for one term while your school prepares data and integrations."
+                  desc="Try the core workflows for one term and experience the full power of the platform."
                   features={['Full Platform Access', 'Bulk CSV Learner Uploads', 'M-Pesa Test Integration', 'CBC / Montessori / IB / British Support', 'Standard Support']}
                 />
                 <PriceCard 
