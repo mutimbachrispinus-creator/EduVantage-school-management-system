@@ -97,8 +97,7 @@ export default function ProfilePanel({ user, onClose }) {
       // 1. Save auth level (phone/pw) via targeted action
       const res = await fetchWithRetry('/api/auth', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'edit_user', id: user.id, phone: form.phone, password: form.newPw || undefined }),
-        timeout: 10000
+        body: JSON.stringify({ action:'edit_user', id: user.id, phone: form.phone, password: form.newPw || undefined })
       });
       const d = await safeJson(res);
       if (!d.ok) throw new Error(d.error || 'Failed to update credentials');
@@ -107,8 +106,7 @@ export default function ProfilePanel({ user, onClose }) {
       const pRes = await fetchWithRetry('/api/db', { 
         method:'POST', 
         headers:{'Content-Type':'application/json'}, 
-        body: JSON.stringify({ requests: [{type:'get', key:'paav_profiles'}] }),
-        timeout: 8000
+        body: JSON.stringify({ requests: [{type:'get', key:'paav_profiles'}] })
       });
       const pdb = await safeJson(pRes);
       const profiles = pdb.results?.[0]?.value || {};
@@ -128,14 +126,13 @@ export default function ProfilePanel({ user, onClose }) {
       await fetchWithRetry('/api/db', { 
         method:'POST', 
         headers:{'Content-Type':'application/json'}, 
-        body: JSON.stringify({ requests: [{type:'set', key:'paav_profiles', value: profiles}] }),
-        timeout: 10000
+        body: JSON.stringify({ requests: [{type:'set', key:'paav_profiles', value: profiles}] })
       });
 
       setMsg('✅ Profile updated!');
       if (form.newPw) setForm(f => ({ ...f, newPw: '' })); // clear pw field
     } catch(e) { 
-      setMsg('❌ ' + e.message); 
+      setMsg('❌ ' + (e.message || String(e))); 
     }
     setSaving(false);
     setTimeout(()=>setMsg(''),3000);
