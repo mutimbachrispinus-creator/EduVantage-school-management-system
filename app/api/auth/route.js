@@ -264,7 +264,7 @@ async function handleRegister({ role, name, username, phone, password, links, gr
 
   // 2. Enforce Admin Limit for Staff
   if (role === 'admin' && session) {
-    const adminCountRes = await query('SELECT COUNT(*) as count FROM staff WHERE role = "admin" AND tenant_id = ?', [session.tenantId]);
+    const adminCountRes = await query("SELECT COUNT(*) as count FROM staff WHERE role = 'admin' AND tenant_id = ?", [session.tenantId]);
     if (adminCountRes[0].count >= 4) {
       return err('Limit reached: Maximum of 4 administrators allowed per institution.');
     }
@@ -711,7 +711,7 @@ async function handleEditUser({ id, name, role, grade, phone, status, password, 
     const finalGrade = grade !== undefined ? grade : existing.grade;
 
     if (finalRole === 'admin' && existing.role !== 'admin') {
-      const adminCountRes = await query('SELECT COUNT(*) as count FROM staff WHERE role = "admin" AND tenant_id = ?', [session.tenantId]);
+      const adminCountRes = await query("SELECT COUNT(*) as count FROM staff WHERE role = 'admin' AND tenant_id = ?", [session.tenantId]);
       if (adminCountRes[0].count >= 4) {
         return err('Limit reached: Maximum of 4 administrators allowed per institution.');
       }
