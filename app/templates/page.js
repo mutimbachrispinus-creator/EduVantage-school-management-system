@@ -111,7 +111,7 @@ export default function TemplatesPage() {
     const pageRule = landscape
       ? '@page { size: A4 landscape; margin: 8mm; }'
       : '@page { size: A4 portrait; margin: 10mm 12mm; }';
-    const showRule = '@media print { .print-container > div { display: none !important; } .print-container > div.print-me { display: block !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }';
+    const showRule = '@media print { .print-container > div { display: none !important; } .print-container > div.print-me { display: block !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative; } body::after { content: "EDUVANTAGE"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 140px; color: rgba(0,0,0,0.03); font-weight: 900; pointer-events: none; z-index: 9999; } }';
     style.innerHTML = pageRule + '\n' + showRule;
     document.head.appendChild(style);
 
@@ -228,48 +228,32 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      {/* Instant tab switching — all tabs rendered, only active is shown */}
+      {/* Instant tab switching — all tabs rendered to load data, only active is shown */}
       <div className="print-container">
-        {tab === 'merit' && (
-          <div id="pct-merit" className="print-me">
-            <MeritListTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} />
-          </div>
-        )}
-        {tab === 'report' && (
-          <div id="pct-report" className="print-me">
-            <ReportCardTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} gradCfg={gradCfg} profile={profile} att={att} weights={weights} terms={terms} mode={gradingMode} />
-          </div>
-        )}
-        {tab === 'class' && (
-          <div id="pct-class" className="print-me">
-            <ClassListTemplate learners={filteredLearners} grade={grade} profile={profile} />
-          </div>
-        )}
-        {tab === 'balance' && (
-          <div id="pct-balance" className="print-me">
-            <FeeBalanceListTemplate learners={filteredLearners} fees={fees} grade={grade} feeCfg={feeCfg} profile={profile} />
-          </div>
-        )}
-        {tab === 'receipt' && (
-          <div id="pct-receipt" className="print-me">
-            <ReceiptTemplate learners={filteredLearners} fees={fees} grade={grade} selLearner={selLearner} feeCfg={feeCfg} profile={profile} />
-          </div>
-        )}
-        {tab === 'id' && (
-          <div id="pct-id" className="print-me">
-            <IDCardTemplate learners={filteredLearners} grade={grade} profile={profile} />
-          </div>
-        )}
-        {tab === 'register' && (
-          <div id="pct-register" className="print-me">
-            <AttendanceRegisterTemplate learners={filteredLearners} grade={grade} type={regType} att={att} profile={profile} />
-          </div>
-        )}
-        {tab === 'exam_summary' && (
-          <div id="pct-exam_summary" className="print-me">
-            <ExamSummaryTemplate learners={learners} subjects={subjCfg} marks={marks} gradCfg={gradCfg} profile={profile} mainTerm={term} mainAssess={assess} mode={gradingMode} />
-          </div>
-        )}
+        <div id="pct-merit" className={`print-content ${tab === 'merit' ? 'print-me' : ''}`} style={{ display: tab === 'merit' ? 'block' : 'none' }}>
+          <MeritListTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} />
+        </div>
+        <div id="pct-report" className={`print-content ${tab === 'report' ? 'print-me' : ''}`} style={{ display: tab === 'report' ? 'block' : 'none' }}>
+          <ReportCardTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} gradCfg={gradCfg} profile={profile} att={att} weights={weights} terms={terms} mode={gradingMode} />
+        </div>
+        <div id="pct-class" className={`print-content ${tab === 'class' ? 'print-me' : ''}`} style={{ display: tab === 'class' ? 'block' : 'none' }}>
+          <ClassListTemplate learners={filteredLearners} grade={grade} profile={profile} />
+        </div>
+        <div id="pct-balance" className={`print-content ${tab === 'balance' ? 'print-me' : ''}`} style={{ display: tab === 'balance' ? 'block' : 'none' }}>
+          <FeeBalanceListTemplate learners={filteredLearners} fees={fees} grade={grade} feeCfg={feeCfg} profile={profile} />
+        </div>
+        <div id="pct-receipt" className={`print-content ${tab === 'receipt' ? 'print-me' : ''}`} style={{ display: tab === 'receipt' ? 'block' : 'none' }}>
+          <ReceiptTemplate learners={filteredLearners} fees={fees} grade={grade} selLearner={selLearner} feeCfg={feeCfg} profile={profile} />
+        </div>
+        <div id="pct-id" className={`print-content ${tab === 'id' ? 'print-me' : ''}`} style={{ display: tab === 'id' ? 'block' : 'none' }}>
+          <IDCardTemplate learners={filteredLearners} grade={grade} profile={profile} />
+        </div>
+        <div id="pct-register" className={`print-content ${tab === 'register' ? 'print-me' : ''}`} style={{ display: tab === 'register' ? 'block' : 'none' }}>
+          <AttendanceRegisterTemplate learners={filteredLearners} grade={grade} type={regType} att={att} profile={profile} />
+        </div>
+        <div id="pct-exam_summary" className={`print-content ${tab === 'exam_summary' ? 'print-me' : ''}`} style={{ display: tab === 'exam_summary' ? 'block' : 'none' }}>
+          <ExamSummaryTemplate learners={learners} subjects={subjCfg} marks={marks} gradCfg={gradCfg} profile={profile} mainTerm={term} mainAssess={assess} mode={gradingMode} />
+        </div>
       </div>
     </div>
   );
@@ -602,14 +586,14 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
     <div className="rc-batch">
       {rankedData.map(l => (
         <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'hidden', padding: '15mm', border: `8px double ${themeColor}22` }}>
-          {/* Elite Watermark */}
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-45deg)', fontSize: 130, color: `${themeColor}08`, fontWeight: 900, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 0, textTransform: 'uppercase' }}>
-            {profile.name?.split(' ')[0] || 'OFFICIAL'}
+          {/* EduVantage Watermark */}
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-45deg)', fontSize: 130, color: `${themeColor}05`, fontWeight: 900, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 0, textTransform: 'uppercase' }}>
+            EDUVANTAGE
           </div>
           
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ position: 'absolute', top: 10, right: 10, textAlign: 'center' }}>
-              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=https://eduvantage.app/verify/${profile?.tenantId || 'demo'}/${encodeURIComponent(l.adm)}`} alt="QR Verification" style={{ width: 60, height: 60, border: '1px solid #ddd', padding: 2, background: '#fff' }} />
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`https://eduvantage.app/verify/${profile?.tenantId || 'demo'}/${encodeURIComponent(l.adm)}`)}`} alt="QR Verification" style={{ width: 60, height: 60, border: '1px solid #ddd', padding: 2, background: '#fff' }} />
               <div style={{ fontSize: 7, fontWeight: 800, color: '#94A3B8', marginTop: 2 }}>SCAN TO VERIFY</div>
             </div>
             <PrintHeader title="OFFICIAL PROGRESS REPORT" grade={grade} profile={profile} />
@@ -647,6 +631,7 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
                   <th key={a.key} style={{ padding: 8 }}>{a.label.replace(/^[^\s]+\s/, '')}</th>
                 ))}
                 <th style={{ padding: 8, background: 'rgba(255,255,255,0.1)' }}>Avg %</th>
+                <th style={{ padding: 8 }}>Dev</th>
                 <th style={{ padding: 8, borderRadius: '0 8px 0 0' }}>Performance Level</th>
               </tr>
             </thead>
@@ -670,6 +655,23 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
                       );
                     })}
                     <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center', fontWeight: 800, background: 'rgba(0,0,0,0.02)' }}>{s.avg}</td>
+                    <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center' }}>
+                      {(() => {
+                        let dev = 0;
+                        if (s.scores?.et1 !== undefined && s.scores?.mt1 !== undefined && s.scores?.et1 !== null && s.scores?.mt1 !== null) {
+                           dev = s.scores.et1 - s.scores.mt1;
+                        } else if (s.scores?.mt1 !== undefined && s.scores?.op1 !== undefined && s.scores?.mt1 !== null && s.scores?.op1 !== null) {
+                           dev = s.scores.mt1 - s.scores.op1;
+                        } else {
+                           return <span style={{ color: '#94A3B8' }}>—</span>;
+                        }
+                        return dev !== 0 ? (
+                          <span style={{ color: dev > 0 ? '#059669' : '#DC2626', fontWeight: 800, fontSize: 10 }}>
+                            {dev > 0 ? `↗ +${dev}` : `↘ ${dev}`}
+                          </span>
+                        ) : <span style={{ color: '#94A3B8' }}>—</span>;
+                      })()}
+                    </td>
                     <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center' }}>
                       <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 900, background: (colors[s.avgLv] || '#333') + '22', color: colors[s.avgLv] || '#333', border: `1px solid ${colors[s.avgLv] || '#333'}` }}>
                         {s.avgLv}

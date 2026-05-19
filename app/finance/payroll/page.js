@@ -105,7 +105,7 @@ export default function UnifiedPayrollPage() {
   const [tab, setTab] = useState('calc'); 
   const [selStaffId, setSelStaffId] = useState('');
   const [printSlip, setPrintSlip] = useState(null);
-  const [oneOffDeduction, setOneOffDeduction] = useState({ label: 'Bank/SACCO Loan', amount: '' });
+  const [oneOffDeductions, setOneOffDeductions] = useState([{ label: '', amount: '' }]);
 
   const load = useCallback(async () => {
     const u = await getCachedUser();
@@ -120,18 +120,16 @@ export default function UnifiedPayrollPage() {
   }, [router]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setOneOffDeduction({ label: 'Bank/SACCO Loan', amount: '' }); }, [selStaffId]);
+  useEffect(() => { setOneOffDeductions([{ label: '', amount: '' }]); }, [selStaffId]);
 
   const selStaff = useMemo(() => staff.find(s => s.username === selStaffId), [staff, selStaffId]);
 
   /* ── Kenyan Payroll Logic ── */
   const currentPay = useMemo(() => {
     if (!selStaff) return null;
-    const manual = moneyValue(oneOffDeduction.amount) > 0
-      ? [{ label: oneOffDeduction.label || 'Other Deduction', amount: oneOffDeduction.amount }]
-      : [];
+    const manual = oneOffDeductions.filter(d => moneyValue(d.amount) > 0).map(d => ({ label: d.label || 'Other Deduction', amount: d.amount }));
     return calcPayrollForStaff(selStaff, manual);
-  }, [selStaff, oneOffDeduction]);
+  }, [selStaff, oneOffDeductions]);
 
   const schoolSummary = useMemo(() => {
     const activeMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -333,15 +331,24 @@ export default function UnifiedPayrollPage() {
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selStaff.role.toUpperCase()} • Base: KSH {money(selStaff.salary)}</div>
                      </div>
                   </div>
-                  <div className="field-row" style={{ marginTop: 18 }}>
-                    <div className="field" style={{ marginBottom: 0 }}>
-                      <label>One-off deduction</label>
-                      <input value={oneOffDeduction.label} onChange={e => setOneOffDeduction(d => ({ ...d, label: e.target.value }))} placeholder="e.g. Bank loan" />
+                  <div style={{ marginTop: 18 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <label style={{ fontWeight: 700, fontSize: 13, color: 'var(--slate)' }}>Additional Deductions</label>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setOneOffDeductions(d => [...d, { label: '', amount: '' }])}>+ Add Deduction</button>
                     </div>
-                    <div className="field" style={{ marginBottom: 0 }}>
-                      <label>Amount (KSH)</label>
-                      <input type="number" min="0" value={oneOffDeduction.amount} onChange={e => setOneOffDeduction(d => ({ ...d, amount: e.target.value }))} placeholder="0" />
-                    </div>
+                    {oneOffDeductions.map((deduction, idx) => (
+                      <div className="field-row" key={idx} style={{ marginBottom: 10, alignItems: 'center' }}>
+                        <div className="field" style={{ marginBottom: 0, flex: 2 }}>
+                          <input value={deduction.label} onChange={e => setOneOffDeductions(prev => { const n = [...prev]; n[idx].label = e.target.value; return n; })} placeholder="e.g. Welfare, Damage" />
+                        </div>
+                        <div className="field" style={{ marginBottom: 0, flex: 1 }}>
+                          <input type="number" min="0" value={deduction.amount} onChange={e => setOneOffDeductions(prev => { const n = [...prev]; n[idx].amount = e.target.value; return n; })} placeholder="KSH" />
+                        </div>
+                        {oneOffDeductions.length > 1 && (
+                          <button style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: 16 }} onClick={() => setOneOffDeductions(prev => prev.filter((_, i) => i !== idx))}>✕</button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
