@@ -5,10 +5,10 @@ import '@/styles/signup.css';
 
 const CURRICULA = [
   { id:'CBC',  icon:'🇰🇪', name:'CBC',        desc:'Kenya Competency Based' },
-  { id:'IGCSE',icon:'🇬🇧', name:'Cambridge',  desc:'IGCSE / A-Levels' },
+  { id:'CAMBRIDGE',icon:'🇬🇧', name:'Cambridge',  desc:'IGCSE / A-Levels' },
   { id:'IB',   icon:'🌍', name:'IB',          desc:'International Baccalaureate' },
-  { id:'British',icon:'📚',name:'British',    desc:'British National Curriculum' },
-  { id:'Montessori',icon:'🌱',name:'Montessori',desc:'Child-Led Learning' },
+  { id:'BRITISH',icon:'📚',name:'British',    desc:'British National Curriculum' },
+  { id:'MONTESSORI',icon:'🌱',name:'Montessori',desc:'Child-Led Learning' },
   { id:'TVET', icon:'⚙️', name:'TVET',        desc:'Technical & Vocational' },
 ];
 

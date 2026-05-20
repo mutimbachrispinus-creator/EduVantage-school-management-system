@@ -281,8 +281,10 @@ function SchoolProfileContent() {
                       {[
                         { id: 'CBC', label: 'Kenya CBC', icon: '🇰🇪', desc: 'Competency-Based Education focusing on skills and application.' },
                         { id: 'BRITISH', label: 'British Curriculum', icon: '🇬🇧', desc: 'IGCSE and A-Level standards with a focus on core subjects.' },
+                        { id: 'CAMBRIDGE', label: 'Cambridge Assessment', icon: '🎓', desc: 'Cambridge International examinations for world-class standards.' },
                         { id: 'IB', label: 'IB World', icon: '🌍', desc: 'International Baccalaureate program for global citizenship.' },
-                        { id: 'MONTESSORI', label: 'Montessori', icon: '🌀', desc: 'Student-led, hands-on learning with multi-age classrooms.' }
+                        { id: 'MONTESSORI', label: 'Montessori', icon: '🌀', desc: 'Student-led, hands-on learning with multi-age classrooms.' },
+                        { id: 'TVET', label: 'TVET / CBET', icon: '⚙️', desc: 'Technical & Vocational training focusing on hands-on industry skills.' }
                       ].map(c => {
                         const active = (profile.curriculum || 'CBC') === c.id;
                         return (

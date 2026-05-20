@@ -408,7 +408,12 @@ function LoginContent() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div className="choice-icon">🏫</div>
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>{c.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {c.name}
+                          <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: '#F1F5F9', color: '#64748B' }}>
+                            {c.curriculum || 'CBC'}
+                          </span>
+                        </div>
                         <div style={{ fontSize: 10, opacity: 0.6 }}>Login to this institution</div>
                       </div>
                     </div>
@@ -532,7 +537,7 @@ function LoginContent() {
                               const newLinks = [...links]; newLinks[idx].schoolId = e.target.value; setLinks(newLinks);
                             }} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #CBD5E1', fontSize: 13 }}>
                               <option value="">Select School</option>
-                              {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                              {schools.map(s => <option key={s.id} value={s.id}>{s.name} ({s.curriculum || 'CBC'})</option>)}
                             </select>
                             <input required placeholder="Adm No." value={link.adm} onChange={e => {
                               const newLinks = [...links]; newLinks[idx].adm = e.target.value; setLinks(newLinks);

@@ -322,7 +322,10 @@ export default function ParentHome() {
         </div>
         <div style={{flex:1}}>
           <h2 style={{fontSize:20,margin:0}}>Welcome, {user?.name}</h2>
-          <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2, fontWeight: 700 }}>{payInfo.profile?.name || 'EduVantage School'}</div>
+          <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2, fontWeight: 700 }}>
+            {payInfo.profile?.name || 'EduVantage School'}
+            {payInfo.profile?.curriculum && ` (${payInfo.profile.curriculum})`}
+          </div>
           {children.length > 1 && (
             <div style={{marginTop:6,display:'flex',gap:6,flexWrap:'wrap'}}>
               {children.map(c=>(
@@ -967,7 +970,7 @@ export default function ParentHome() {
                   style={{width:'100%',padding:'12px 14px',border:'2px solid var(--border)',borderRadius:10,fontSize:13,outline:'none'}}
                 >
                   <option value="">— Choose School —</option>
-                  {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {schools.map(s => <option key={s.id} value={s.id}>{s.name} ({s.curriculum || 'CBC'})</option>)}
                 </select>
               </div>
               <div>

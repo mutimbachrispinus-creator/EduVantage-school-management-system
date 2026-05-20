@@ -5,7 +5,7 @@ import { getCachedUser } from '@/lib/client-cache';
 import dynamic from 'next/dynamic';
 const DynamicRevenueChart = dynamic(async () => {
   const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = await import('recharts');
-  return ({ data, color }) => (
+  const ChartComponent = ({ data, color }) => (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data}>
         <defs>
@@ -21,6 +21,8 @@ const DynamicRevenueChart = dynamic(async () => {
       </AreaChart>
     </ResponsiveContainer>
   );
+  ChartComponent.displayName = 'DynamicRevenueChart';
+  return ChartComponent;
 }, { ssr: false });
 
 const M = '#4F46E5', GOLD = '#FCD34D', NAVY = '#0F172A', EMERALD = '#10B981', SLATE = '#64748B';
@@ -837,6 +839,8 @@ export default function SuperAdminPage() {
                     <option value="BRITISH">British Curriculum</option>
                     <option value="CAMBRIDGE">Cambridge International</option>
                     <option value="IB">International Baccalaureate</option>
+                    <option value="MONTESSORI">Montessori</option>
+                    <option value="TVET">TVET / CBET</option>
                   </select>
                 </div>
               </div>
@@ -945,6 +949,8 @@ export default function SuperAdminPage() {
                       <option value="BRITISH">British Curriculum</option>
                       <option value="CAMBRIDGE">Cambridge International</option>
                       <option value="IB">International Baccalaureate</option>
+                      <option value="MONTESSORI">Montessori</option>
+                      <option value="TVET">TVET / CBET</option>
                     </select>
                   </div>
                 </div>

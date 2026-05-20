@@ -114,7 +114,7 @@ function DashboardContent() {
       <div className="page-hdr home-hero">
         <div>
           <h2>Welcome, {user.name}</h2>
-          <p>{isSuper ? 'EduVantage Platform Oversight' : 'Here is your institutional overview for today.'}</p>
+          <p>{isSuper ? 'EduVantage Platform Oversight' : `Here is your institutional overview for today · Curriculum: ${school?.curriculum || 'CBC'}`}</p>
         </div>
         <div className="page-hdr-acts">
            <button className="btn btn-ghost btn-sm home-refresh" onClick={load}>

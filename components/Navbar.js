@@ -109,6 +109,22 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
           } : {}}>
             {(user.role === 'super-admin' && !impersonateId) ? 'EduVantage Master' : (profile.name?.toUpperCase() || 'SCHOOL PORTAL')}
             {(user.role !== 'super-admin' || impersonateId) && ` — ${new Date().getFullYear()}`}
+            {(user.role !== 'super-admin' || impersonateId) && profile.curriculum && (
+              <span className="curriculum-badge" style={{
+                fontSize: '9px',
+                fontWeight: 900,
+                background: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                marginLeft: '8px',
+                verticalAlign: 'middle',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                letterSpacing: '0.5px'
+              }}>
+                {profile.curriculum}
+              </span>
+            )}
           </div>
           <div className="tb-stag">
             {(user.role === 'super-admin' && !impersonateId) ? 'SaaS Management Platform' : (profile.motto || 'Education Portal')}
