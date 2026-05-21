@@ -120,15 +120,16 @@ export default function AnalyticsPage() {
           <button className={`btn btn-sm ${activeTab === 'performance' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('performance')}>📈 Academic Detail</button>
           <button className={`btn btn-sm ${activeTab === 'staff' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('staff')}>👨‍🏫 Staff Efficiency</button>
           <button className={`btn btn-sm ${activeTab === 'outreach' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('outreach')}>📲 Parent Outreach</button>
+          <button className={`btn btn-sm ${activeTab === 'pathways' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('pathways')}>🛣️ Learner Pathways</button>
         </div>
       </div>
 
-      {activeTab === 'insights' || activeTab === 'outreach' ? (
+      {activeTab === 'insights' || activeTab === 'outreach' || activeTab === 'pathways' ? (
         <>
           <div className="page-hdr" style={{ marginTop: 20, border: 'none' }}>
             <div>
-              <h3 style={{ fontSize: 20, fontWeight: 800 }}>{activeTab === 'outreach' ? 'Parent Communications' : 'Global Analytics'}</h3>
-              <p style={{ color: 'var(--muted)', fontSize: 13 }}><Users size={14} className="inline mr-1" /> {activeTab === 'outreach' ? `Broadcasting to ${grade}` : stats ? `Analyzing ${stats.studentCount} ${(stats.labels || currLabels).learners} in ${grade}` : `Loading data for ${grade}...`}</p>
+              <h3 style={{ fontSize: 20, fontWeight: 800 }}>{activeTab === 'outreach' ? 'Parent Communications' : activeTab === 'pathways' ? 'Curriculum Pathways' : 'Global Analytics'}</h3>
+              <p style={{ color: 'var(--muted)', fontSize: 13 }}><Users size={14} className="inline mr-1" /> {activeTab === 'outreach' ? `Broadcasting to ${grade}` : activeTab === 'pathways' ? `Analyzing pathways for ${grade}` : stats ? `Analyzing ${stats.studentCount} ${(stats.labels || currLabels).learners} in ${grade}` : `Loading data for ${grade}...`}</p>
             </div>
             <div className="page-hdr-acts">
               <select value={grade} onChange={(e) => setGrade(e.target.value)} style={{ background: 'var(--slate-50)', fontWeight: 700 }}>
@@ -163,6 +164,17 @@ export default function AnalyticsPage() {
           </div>
           {/* Performance UI ... */}
         </>
+      ) : null}
+
+      {activeTab === 'pathways' ? (
+        <PathwaysTab 
+          grade={grade} 
+          term={term} 
+          learners={learners} 
+          marks={marks} 
+          curriculum={profile?.curriculum || 'CBC'} 
+          subjects={getDefaultSubjects(grade, profile?.curriculum || 'CBC')} 
+        />
       ) : null}
 
       {activeTab === 'insights' ? (
@@ -1062,6 +1074,107 @@ function LearnerList({ title, learners, tone }) {
           );
         })}
         {learners.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13 }}>No learners in this band for the current selection.</div>}
+      </div>
+    </div>
+  );
+}
+
+function PathwaysTab({ grade, term, learners, marks, curriculum, subjects }) {
+  const gradeLearners = learners.filter(l => l.grade === grade);
+  
+  const mapped = gradeLearners.map(l => {
+    let total = 0, count = 0;
+    const scores = [];
+    subjects.forEach(s => {
+      ['et1', 'mt1', 'op1'].forEach(assess => {
+        const score = marks[`${term}:${grade}|${s}|${assess}`]?.[l.adm];
+        if (score !== undefined && score !== null && score !== '') {
+          total += Number(score);
+          count++;
+          scores.push({ subject: s, score: Number(score) });
+        }
+      });
+    });
+    
+    const avg = count ? Math.round(total / count) : 0;
+    let pathway = 'General Education';
+    let pathwayColor = 'var(--blue)';
+    
+    if (curriculum === 'CBC') {
+      if (['GRADE 7','GRADE 8','GRADE 9'].includes(grade)) {
+        const stemScores = scores.filter(s => ['Math','Science','Computer','Pre-Technical'].some(x => s.subject.includes(x)));
+        const artsScores = scores.filter(s => ['Art','Music','Sports','Creative'].some(x => s.subject.includes(x)));
+        const socScores = scores.filter(s => ['Social','Language','English','Kiswahili'].some(x => s.subject.includes(x)));
+        
+        const avgStem = stemScores.length ? stemScores.reduce((a, b) => a + b.score, 0) / stemScores.length : 0;
+        const avgArts = artsScores.length ? artsScores.reduce((a, b) => a + b.score, 0) / artsScores.length : 0;
+        const avgSoc = socScores.length ? socScores.reduce((a, b) => a + b.score, 0) / socScores.length : 0;
+        
+        if (avgStem >= avgArts && avgStem >= avgSoc && avgStem > 50) { pathway = 'STEM Pathway'; pathwayColor = 'var(--blue)'; }
+        else if (avgArts >= avgStem && avgArts >= avgSoc && avgArts > 50) { pathway = 'Arts & Sports Pathway'; pathwayColor = 'var(--amber)'; }
+        else if (avgSoc > 50) { pathway = 'Social Sciences Pathway'; pathwayColor = 'var(--green)'; }
+        else { pathway = 'General / Remedial'; pathwayColor = 'var(--red)'; }
+      } else {
+         pathway = 'Progression to Next Grade';
+         pathwayColor = 'var(--green)';
+      }
+    } else if (curriculum === 'TVET') {
+      if (avg >= 70) { pathway = 'Diploma / Advanced Diploma'; pathwayColor = 'var(--green)'; }
+      else if (avg >= 50) { pathway = 'Certificate Level'; pathwayColor = 'var(--blue)'; }
+      else { pathway = 'Artisan Level / Retrain'; pathwayColor = 'var(--amber)'; }
+    } else if (curriculum === 'Cambridge' || curriculum === 'British') {
+      if (avg >= 70) { pathway = 'A-Level (Extended)'; pathwayColor = 'var(--green)'; }
+      else if (avg >= 50) { pathway = 'AS-Level (Core)'; pathwayColor = 'var(--blue)'; }
+      else { pathway = 'Vocational Training'; pathwayColor = 'var(--amber)'; }
+    } else {
+      if (avg >= 60) { pathway = 'Advanced Stream'; pathwayColor = 'var(--green)'; }
+      else { pathway = 'General Stream'; pathwayColor = 'var(--blue)'; }
+    }
+    
+    return { ...l, avg, pathway, pathwayColor };
+  }).sort((a, b) => b.avg - a.avg);
+
+  return (
+    <div className="panel" style={{ marginTop: 20 }}>
+      <div className="panel-hdr">
+        <h3>Learner Pathways Analysis — {grade}</h3>
+        <p>Curriculum-aware tracking mapping current performance to optimal educational tracks.</p>
+      </div>
+      <div className="panel-body">
+        {mapped.length > 0 ? (
+          <div className="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Adm</th>
+                  <th>Learner Name</th>
+                  <th>Current Avg</th>
+                  <th>Recommended Pathway</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mapped.map(l => (
+                  <tr key={l.adm}>
+                    <td style={{ color: 'var(--muted)', fontSize: 12 }}>{l.adm}</td>
+                    <td style={{ fontWeight: 700 }}>{l.name}</td>
+                    <td>{l.avg}%</td>
+                    <td>
+                      <span className="badge" style={{ background: l.pathwayColor + '15', color: l.pathwayColor, border: `1px solid ${l.pathwayColor}30` }}>
+                        {l.pathway}
+                      </span>
+                    </td>
+                    <td><button className="btn btn-ghost btn-sm" onClick={() => window.open(`/report-card?adm=${l.adm}`, '_blank')}>Review Profile</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+            No learner data available for pathway analysis in {grade}.
+          </div>
+        )}
       </div>
     </div>
   );
