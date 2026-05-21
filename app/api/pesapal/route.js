@@ -184,7 +184,9 @@ async function finalizeRegistration(orderTrackingId) {
     const planData = (gConf.plans || []).find(p => p.id === planId);
     const cycle = planData?.cycle || 'termly';
     
-    const expiresAt = new Date();
+    const subRows = await query('SELECT expires_at FROM subscriptions WHERE tenant_id = ?', [tenantId]);
+    const currentExpiry = subRows[0]?.expires_at ? new Date(subRows[0].expires_at) : null;
+    const expiresAt = currentExpiry && currentExpiry > new Date() ? currentExpiry : new Date();
     if (cycle === 'annually' || cycle === 'annual') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     else expiresAt.setMonth(expiresAt.getMonth() + 4);
 
@@ -200,6 +202,19 @@ async function finalizeRegistration(orderTrackingId) {
 
   // Registration Flow
   const tenantId = payload.schoolName.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
+
+  const [existingTenant, existingUser] = await Promise.all([
+    query('SELECT tenant_id FROM subscriptions WHERE tenant_id = ?', [tenantId]),
+    query('SELECT id FROM staff WHERE LOWER(username) = ?', [String(payload.adminUsername || '').toLowerCase().trim()])
+  ]);
+  if (existingTenant.length) {
+    await kvSet(`pesapal_pending_${orderTrackingId}`, null, 'platform-master');
+    return { message: 'A school with a similar name already exists. Please contact support to attach this payment to the correct school.' };
+  }
+  if (existingUser.length) {
+    await kvSet(`pesapal_pending_${orderTrackingId}`, null, 'platform-master');
+    return { message: 'The selected admin username is already taken. Please contact support to finish activation with a new username.' };
+  }
   
   const oneYearFromNow = new Date();
   oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
@@ -218,6 +233,23 @@ async function finalizeRegistration(orderTrackingId) {
     'annually', 
     payload.amount || 0
   ]);
+
+  const now = Math.floor(Date.now() / 1000);
+  await execute(
+    'INSERT INTO kv (key, tenant_id, value, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(key, tenant_id) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at',
+    ['paav_school_profile', tenantId, JSON.stringify({
+      name: payload.schoolName,
+      phone: payload.phone || '',
+      email: payload.email || '',
+      logo: '',
+      motto: 'Quality Education',
+      curriculum: payload.curriculum || 'CBC'
+    }), now]
+  );
+  await execute(
+    'INSERT INTO kv (key, tenant_id, value, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(key, tenant_id) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at',
+    ['paav_theme', tenantId, JSON.stringify({ primary: '#10B981', secondary: '#0F172A', accent: '#1E293B' }), now]
+  );
 
   const { hashPassword } = await import('@/lib/auth');
   const hp = await hashPassword(payload.adminPassword);

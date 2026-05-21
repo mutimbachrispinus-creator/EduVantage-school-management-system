@@ -2099,33 +2099,161 @@ export default function LandingPage() {
           .comp-table th, .comp-table td { padding: 16px 12px; font-size: 14px; }
           .footer-grid { grid-template-columns: 1fr; gap: 60px; }
         }
+
+        /* ── TABLET / LARGE PHONE (≤768px) ── */
         @media (max-width: 768px) {
-          .hero { padding: 120px 0 60px; }
-          .hero-title { font-size: 36px; letter-spacing: -0.02em; }
-          .hero-subtitle { font-size: 16px; }
-          .hero-actions { flex-direction: column; gap: 12px; }
-          .btn-xl { padding: 14px 28px; font-size: 15px; }
+          /* Nav — hide links, keep both CTA buttons but compact them */
+          .nav { padding: 14px 0; }
+          .nav-actions { gap: 12px; }
+          .nav-btns { gap: 8px; }
+          .btn-ghost { padding: 10px 14px; font-size: 14px; }
+          .btn.btn-primary.btn-glow { padding: 10px 16px; font-size: 14px; border-radius: 12px; }
           .desktop-only { display: none; }
+
+          /* Hero */
+          .hero { padding: 110px 0 60px; }
+          .hero-title { font-size: 38px; letter-spacing: -0.02em; }
+          .hero-subtitle { font-size: 16px; padding: 0 8px; }
+          .hero-actions { flex-direction: column; align-items: center; gap: 12px; margin-bottom: 48px; }
+          .hero-actions .btn-xl { width: 100%; max-width: 340px; }
+          .btn-xl { padding: 14px 28px; font-size: 15px; }
           .card-1, .card-2 { display: none; }
+
+          /* Stats */
           .stats-box { flex-direction: column; gap: 30px; }
           .stat-sep { width: 100px; height: 1px; }
+
+          /* Section headers */
           .section-title { font-size: 32px; }
-          .curriculum-card { padding: 24px; }
+          .section-subtitle { font-size: 17px; }
+          .badge-pill { font-size: 12px; padding: 6px 14px; }
+
+          /* Curriculum */
+          .curriculum-section { padding: 80px 0; }
+          .curriculum-card { padding: 24px; border-radius: 20px; }
           .specs-grid { grid-template-columns: 1fr; gap: 16px; }
           .curr-header h3 { font-size: 24px; }
-          .curr-desc { font-size: 15px; }
+          .curr-desc { font-size: 15px; margin-bottom: 24px; }
+
+          /* Portals workspace */
+          .portals-section { padding: 80px 0; }
+          .portals-layout { grid-template-columns: 1fr; gap: 24px; }
+          .portal-menu { flex-direction: column; gap: 10px; }
+          .portal-menu-item { padding: 14px 16px; gap: 12px; border-radius: 14px; }
+          .pmi-icon { width: 44px; height: 44px; font-size: 24px; border-radius: 10px; }
+          .pmi-title { font-size: 15px; }
+          .portal-display { padding: 24px; border-radius: 20px; border-left-width: 5px; }
+          .pd-header h3 { font-size: 22px; }
+          .pd-desc { font-size: 15px; margin-bottom: 20px; }
+          .pd-bullets li { font-size: 14px; }
+          .pd-bullets { margin-bottom: 28px; }
+
+          /* Feature catalog */
+          .blueprint-section { padding: 80px 0; }
           .blueprint-grid { grid-template-columns: 1fr; }
+          .search-box { padding: 14px 18px; }
+          .search-box input { font-size: 14px; }
+          .filter-btn { padding: 8px 14px; font-size: 12px; }
+
+          /* Security / readiness */
+          .security-blueprint-section { padding: 80px 0; }
           .readiness-grid { grid-template-columns: 1fr; gap: 28px; }
+
+          /* Demo */
           .demo-section { padding: 70px 0; }
           .demo-cards { grid-template-columns: 1fr; gap: 16px; }
-          .demo-card { padding: 28px 24px; }
+          .demo-card { padding: 28px 24px; border-radius: 24px; }
           .dc-emoji { font-size: 40px; }
           .demo-card h3 { font-size: 20px; }
-          .comp-table { display: block; overflow-x: auto; white-space: nowrap; }
-          .pricing-grid { grid-template-columns: 1fr; }
-          .pricing-section { border-radius: 40px; margin: 0 12px; padding: 80px 0; }
+
+          /* Compare */
+          .compare-section { padding: 80px 0; }
+          .comparison-box { padding: 28px 16px; border-radius: 24px; }
+          .comp-hdr h3 { font-size: 26px; }
+          .comp-hdr p { font-size: 15px; }
+          .comp-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+          .comp-table th, .comp-table td { padding: 14px 12px; font-size: 13px; }
+
+          /* FAQ */
+          .faq-section { padding: 80px 0; }
+          .faq-item { padding: 18px 20px; }
+          .faq-question h4 { font-size: 15px; }
+          .faq-item.expanded .faq-answer { max-height: 600px; } /* prevent clipping on mobile */
+
+          /* Pricing */
+          .pricing-section { border-radius: 32px; margin: 0 12px; padding: 70px 0; }
+          .pricing-grid { grid-template-columns: 1fr; gap: 20px; }
+
+          /* Footer */
+          .footer { padding: 70px 0 0; }
           .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+          .footer-links { grid-template-columns: 1fr 1fr; gap: 24px; }
         }
+
+        /* ── SMALL PHONE (≤480px) ── */
+        @media (max-width: 480px) {
+          .container { padding: 0 16px; }
+
+          /* Nav — keep logo + single CTA, hide ghost sign-in button on very small screens */
+          .btn-ghost { display: none; }
+          .btn.btn-primary.btn-glow { padding: 10px 14px; font-size: 13px; }
+          .logo-text { font-size: 20px; }
+          .logo-icon { width: 36px; height: 36px; border-radius: 10px; }
+          .logo-icon img { width: 20px; height: 20px; }
+
+          /* Hero */
+          .hero { padding: 100px 0 50px; }
+          .hero-title { font-size: 30px; line-height: 1.1; }
+          .hero-subtitle { font-size: 15px; }
+          .badge-pill { font-size: 11px; padding: 5px 12px; }
+
+          /* Stats */
+          .stat-item strong { font-size: 30px; }
+
+          /* Section headings */
+          .section-title { font-size: 26px; }
+          .section-subtitle { font-size: 15px; }
+
+          /* Curriculum tabs — scroll horizontally */
+          .tabs-container { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; padding-bottom: 6px; scrollbar-width: none; }
+          .tabs-container::-webkit-scrollbar { display: none; }
+          .tab-btn { white-space: nowrap; flex-shrink: 0; padding: 10px 16px; font-size: 13px; }
+
+          /* Portal workspace */
+          .portal-menu-item { padding: 12px 14px; }
+          .pmi-icon { width: 38px; height: 38px; font-size: 20px; flex-shrink: 0; }
+          .pmi-title { font-size: 14px; }
+          .pmi-badge { font-size: 11px; }
+          .portal-display { padding: 18px 16px; }
+          .pd-header h3 { font-size: 19px; }
+
+          /* Feature filters — scroll horizontally */
+          .filters-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; padding-bottom: 4px; scrollbar-width: none; }
+          .filters-row::-webkit-scrollbar { display: none; }
+          .filter-btn { white-space: nowrap; flex-shrink: 0; }
+
+          /* Comparison table container padding */
+          .comparison-box { padding: 20px 12px; border-radius: 18px; }
+          .comp-hdr { margin-bottom: 32px; }
+          .comp-hdr h3 { font-size: 22px; }
+
+          /* Pricing */
+          .pricing-section { border-radius: 24px; margin: 0 8px; padding: 60px 0; }
+
+          /* FAQ */
+          .faq-question h4 { font-size: 14px; }
+          .faq-item.expanded .faq-answer { max-height: 800px; }
+
+          /* Demo cards */
+          .demo-card { padding: 22px 18px; }
+          .dc-emoji { font-size: 34px; }
+          .demo-card h3 { font-size: 18px; }
+
+          /* Footer */
+          .footer-links { grid-template-columns: 1fr; gap: 28px; }
+          .footer-bottom p { font-size: 12px; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .fade-in-up, .pulse-glow, .floating-card { animation: none !important; }
           .btn-primary:hover, .portal-menu-item:hover, .blueprint-card:hover { transform: none !important; }

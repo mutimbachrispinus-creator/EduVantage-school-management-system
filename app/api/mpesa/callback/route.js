@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { parseStkCallback } from '@/lib/mpesa';
-import { kvRecordPayment, kvGet, kvSet, query } from '@/lib/db';
+import { kvRecordPayment, kvGet, kvSet, query, execute } from '@/lib/db';
 
 /**
  * Resolve which tenant owns a given Paybill shortcode.
@@ -78,6 +78,16 @@ export async function POST(req) {
               console.log('[M-Pesa Callback] Duplicate transaction ignored:', result.mpesaCode);
               return;
             }
+            const lock = await execute(
+              `INSERT INTO kv (key, tenant_id, value, updated_at)
+               VALUES (?, ?, ?, strftime('%s','now'))
+               ON CONFLICT(key, tenant_id) DO NOTHING`,
+              [`mpesa_receipt_${result.mpesaCode}`, tenantId, JSON.stringify({ checkoutRequestId, lockedAt: new Date().toISOString() })]
+            );
+            if (Number(lock.rowsAffected || 0) === 0) {
+              console.log('[M-Pesa Callback] Duplicate receipt lock ignored:', result.mpesaCode);
+              return;
+            }
           }
 
           // Process Subscription
@@ -91,12 +101,14 @@ export async function POST(req) {
             await kvSet('paav_learning_subs', subs, tenantId);
             
             await kvRecordPayment({
+              id: result.mpesaCode ? `mpesa_${result.mpesaCode}` : undefined,
               adm, term: 'Platform Subscription', amount: result.amount, method: 'M-Pesa',
               ref: result.mpesaCode, by: 'M-Pesa STK', status: 'approved'
             }, tenantId);
           } else {
             // Record standard fee payment
             await kvRecordPayment({
+              id: result.mpesaCode ? `mpesa_${result.mpesaCode}` : undefined,
               adm, term, amount: result.schoolAmount || result.amount, method: 'M-Pesa',
               ref: result.mpesaCode, by: 'M-Pesa STK', status: 'approved'
             }, tenantId);
@@ -104,12 +116,14 @@ export async function POST(req) {
             // Add to Central Settlement Queue
             if ((result.schoolAmount || result.amount) > 0) {
               const queue = (await kvGet('paav_settlement_queue', [], 'platform-master')) || [];
-              queue.push({
-                tenantId, adm, amount: result.schoolAmount || result.amount,
-                settlementAccount: result.settlementAccount || 'Primary',
-                timestamp: new Date().toISOString(), status: 'pending', ref: result.mpesaCode
-              });
-              await kvSet('paav_settlement_queue', queue, 'platform-master');
+              if (!queue.some(item => item.ref && item.ref === result.mpesaCode)) {
+                queue.push({
+                  tenantId, adm, amount: result.schoolAmount || result.amount,
+                  settlementAccount: result.settlementAccount || 'Primary',
+                  timestamp: new Date().toISOString(), status: 'pending', ref: result.mpesaCode
+                });
+                await kvSet('paav_settlement_queue', queue, 'platform-master');
+              }
             }
           }
 

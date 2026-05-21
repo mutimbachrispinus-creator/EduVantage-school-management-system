@@ -1,16 +1,16 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { kvGet, kvSet } from '@/lib/db';
-import { hashPassword, getSession } from '@/lib/auth';
+import { hashPassword } from '@/lib/auth';
 import { ALL_GRADES } from '@/lib/cbe';
 
 export async function GET(request) {
   const authHeader = request.headers.get('authorization');
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 });
+  }
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    const session = await getSession();
-    if (!session || !['admin', 'super-admin'].includes(session.role)) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
+    return new NextResponse('Unauthorized', { status: 401 });
   }
   try {
     const staff = (await kvGet('paav6_staff')) || [];
