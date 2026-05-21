@@ -36,6 +36,15 @@ export async function POST(request) {
 
     if (action === 'update_billing') {
       const { curriculum } = body;
+
+      // Audit fix: normalise expires_at to full ISO-8601 regardless of what the caller sends
+      // Accepts: ISO string, bare date string ('2027-05-01'), or UNIX timestamp integer
+      let normalizedExpiry = null;
+      if (expiresAt) {
+        const parsed = new Date(typeof expiresAt === 'number' ? expiresAt * 1000 : expiresAt);
+        normalizedExpiry = isNaN(parsed.getTime()) ? null : parsed.toISOString();
+      }
+
       const sqlSub = `
         INSERT INTO subscriptions (tenant_id, plan, status, amount, billing_model, cycle, expires_at, learner_limit, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))
@@ -56,7 +65,7 @@ export async function POST(request) {
         Number(amount || 0), 
         billingModel || 'flat',
         cycle || 'annual', 
-        expiresAt || null,
+        normalizedExpiry,
         Number(learnerLimit || 0)
       ]);
 

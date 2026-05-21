@@ -7,8 +7,17 @@ import { hashPassword } from '@/lib/auth';
 /**
  * GET /api/saas/init
  * One-time setup for the Platform Master.
+ * PROTECTED: Requires Bearer CRON_SECRET header.
  */
-export async function GET() {
+export async function GET(request) {
+  // Security: protect this destructive route with CRON_SECRET
+  const authHeader = request.headers.get('authorization');
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'CRON_SECRET is not configured on this environment.' }, { status: 500 });
+  }
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
   try {
     const now = Math.floor(Date.now() / 1000);
     const hashedPw = await hashPassword('Junior@#1'); // Requested password
@@ -48,9 +57,10 @@ export async function GET() {
         args: ['paav_theme', 'paav-gitombo', JSON.stringify({ primary: '#8B1A1A', secondary: '#F4A460', accent: '#1E293B' }), now]
       },
       // 5. Upgrade PAAV Gitombo to Premium Full Year
+      // Audit fix: use full ISO-8601 string for expires_at (bare date '2027-05-01' fails datetime() comparisons)
       {
         sql: "INSERT INTO subscriptions (tenant_id, plan, status, expires_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(tenant_id) DO UPDATE SET plan=excluded.plan, expires_at=excluded.expires_at",
-        args: ['paav-gitombo', 'Premium', 'active', '2027-05-01', now]
+        args: ['paav-gitombo', 'Premium', 'active', '2027-05-01T00:00:00.000Z', now]
       }
     ]);
 
