@@ -13,10 +13,11 @@ import { getCurriculum } from '@/lib/curriculum';
 import { useProfile } from '@/app/PortalShell';
 
 const ROLES       = ['teacher','jss_teacher','senior_teacher','staff','parent'];
-const ADMIN_ROLES = ['admin','teacher','jss_teacher','senior_teacher','staff','parent'];
-const MAX_ADMINS  = 4;
+const ADMIN_ROLES = ['admin','admin_finance','admin_academics','admin_admissions','teacher','jss_teacher','senior_teacher','staff','parent'];
+const MAX_ADMINS  = 12;
 const COLORS = {
-  admin:'#8B1A1A', 'super_admin':'#D97706', teacher:'#059669',
+  admin:'#8B1A1A', admin_finance:'#059669', admin_academics:'#2563EB', admin_admissions:'#D97706',
+  'super_admin':'#D97706', teacher:'#059669',
   'jss_teacher':'#2563EB', 'senior_teacher':'#EA580C', staff:'#0D9488', parent:'#7C3AED', member:'#64748B',
 };
 
@@ -219,10 +220,10 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
     if (!form.name || !form.username) { setErr('Name and username are required'); return; }
     if (!isEdit && !form.password)    { setErr('Password is required for new users'); return; }
     
-    // Enforce 4 admin limit
-    if (form.role === 'admin') {
-      const adminCount = allStaff.filter(s => s.role === 'admin').length;
-      if (adminCount >= MAX_ADMINS && !(isEdit && user.role === 'admin')) {
+    // Enforce admin limit
+    if (form.role.startsWith('admin')) {
+      const adminCount = allStaff.filter(s => s.role.startsWith('admin')).length;
+      if (adminCount >= MAX_ADMINS && !(isEdit && user.role.startsWith('admin'))) {
         setErr(`Limit reached: Maximum of ${MAX_ADMINS} admins allowed.`);
         return;
       }
