@@ -29,8 +29,8 @@ input,select,textarea,button{font-family:var(--font-inter),sans-serif}
 /* ── AUTH ── */
 #auth{min-height:100vh;display:flex;align-items:stretch;background:linear-gradient(135deg,#050F1C 0%,#0D1F3C 40%,#152D4F 100%)}
 .auth-bg{position:fixed;inset:0;pointer-events:none;overflow:hidden}
-.auth-bg::before{content:'';position:absolute;top:10%;left:10%;width:320px;height:320px;background:radial-gradient(circle,rgba(139,26,26,.25),transparent 70%);border-radius:50%}
-.auth-bg::after{content:'';position:absolute;bottom:15%;right:8%;width:420px;height:420px;background:radial-gradient(circle,rgba(217,119,6,.18),transparent 70%);border-radius:50%}
+.auth-bg::before{content:"";position:absolute;top:10%;left:10%;width:320px;height:320px;background:radial-gradient(circle,rgba(139,26,26,.25),transparent 70%);border-radius:50%}
+.auth-bg::after{content:"";position:absolute;bottom:15%;right:8%;width:420px;height:420px;background:radial-gradient(circle,rgba(217,119,6,.18),transparent 70%);border-radius:50%}
 .auth-left{flex:1;display:flex;flex-direction:column;justify-content:center;padding:64px;position:relative;z-index:1}
 .auth-logo{width:90px;height:90px;margin-bottom:28px;display:flex;align-items:center;justify-content:center}
 .auth-h{font-family:var(--font-sora),sans-serif;font-size:36px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:10px}
@@ -67,7 +67,7 @@ input,select,textarea,button{font-family:var(--font-inter),sans-serif}
 .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;width:100%;justify-content:center;position:relative;overflow:hidden}
 .btn-primary:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 12px 28px rgba(37,99,235,0.35)}
 .btn-primary:active{transform:scale(0.97)}
-.btn-primary::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent,rgba(255,255,255,0.25),transparent);transform:rotate(45deg) translateX(-100%);pointer-events:none}
+.btn-primary::after{content:"";position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent,rgba(255,255,255,0.25),transparent);transform:rotate(45deg) translateX(-100%);pointer-events:none}
 .btn-primary:hover::after{transform:rotate(45deg) translateX(100%);transition:transform 0.6s ease-in-out}
 .btn-sm{padding:7px 14px;font-size:12px;border-radius:var(--r3)}
 .btn-ghost{background:none;border:2px solid var(--border);color:var(--text)}
@@ -110,7 +110,7 @@ input,select,textarea,button{font-family:var(--font-inter),sans-serif}
 .tb-nbtn:hover{background:rgba(255,255,255,0.08);color:#fff;transform:translateY(-2px)}
 .tb-nbtn:active{transform:scale(0.95) translateY(0)}
 .tb-nbtn.on{background:rgba(255,255,255,.12);color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,0.15)}
-.tb-nbtn.on::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:2px;background:var(--gold);border-radius:2px;box-shadow:0 0 8px var(--gold)}
+.tb-nbtn.on::after{content:"";position:absolute;bottom:0;left:20%;right:20%;height:2px;background:var(--gold);border-radius:2px;box-shadow:0 0 8px var(--gold)}
 .nav-scroll-btn{background:none;border:none;color:rgba(255,255,255,.45);font-size:22px;padding:0 5px;cursor:pointer;line-height:1;flex-shrink:0;transition:all .2s;border-radius:6px}
 .nav-scroll-btn:hover{color:#fff;background:rgba(255,255,255,.12);transform:scale(1.1)}
 .grading-scale-bar{padding:10px 14px;background:#F8FAFF;border-top:1.5px solid var(--border);display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-radius:0 0 var(--r) var(--r)}
@@ -312,7 +312,7 @@ tr:hover td{background:#F8FAFF}
 
 /* Side accent stripe */
 .rc-a4::before {
-  content:''; position:absolute; left:0; top:0; bottom:0;
+  content:""; position:absolute; left:0; top:0; bottom:0;
   width:8px; background:linear-gradient(180deg,#8B1A1A 0%,#C2372D 50%,#E9A800 100%);
   border-radius:0;
 }
@@ -455,7 +455,7 @@ tr:hover td{background:#F8FAFF}
 .msg-item{padding:13px 15px;border-radius:var(--r2);cursor:pointer;transition:all .15s;border:1.5px solid transparent;position:relative}
 .msg-item:hover{background:#F0F4FF;border-color:var(--border)}
 .msg-item.unread{background:#EFF6FF;border-color:#BFDBFE}
-.msg-item.unread::before{content:'';position:absolute;left:6px;top:50%;transform:translateY(-50%);width:6px;height:6px;background:var(--blue);border-radius:50%}
+.msg-item.unread::before{content:"";position:absolute;left:6px;top:50%;transform:translateY(-50%);width:6px;height:6px;background:var(--blue);border-radius:50%}
 .msg-bubble{margin-bottom:10px;display:flex;gap:9px;align-items:flex-start}
 .msg-bubble.sent{flex-direction:row-reverse}
 .bbl{max-width:75%;padding:9px 13px;border-radius:14px;font-size:12.5px;line-height:1.5}
@@ -701,7 +701,7 @@ tr:hover td{background:#F8FAFF}
 }
 
 .mobile-bottom-nav a.active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 6px;
   width: 4px;
@@ -888,7 +888,7 @@ tr:hover td{background:#F8FAFF}
   max-width: none !important;
 }
 .tb-nbtn::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 50%;
@@ -955,7 +955,7 @@ tr:hover td{background:#F8FAFF}
   padding-bottom: 6px;
 }
 .page-hdr h2::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -1154,747 +1154,6 @@ tr:hover td{background:#F8FAFF}
 @media print {
   body.print-landscape { page: landscape-page; }
 }
-2026-05-17T16:59:12.4095Z	Cloning repository...
-2026-05-17T16:59:13.172336Z	From https://github.com/mutimbachrispinus-creator/EduVantage-school-management-system
-2026-05-17T16:59:13.172755Z	 * branch            437299faa928bccd70ad74ee25bc21877814a99d -> FETCH_HEAD
-2026-05-17T16:59:13.172873Z	
-2026-05-17T16:59:13.233795Z	HEAD is now at 437299f fix: resolve PortalShell redirects on public pages and CSS linter errors
-2026-05-17T16:59:13.234321Z	
-2026-05-17T16:59:13.282916Z	
-2026-05-17T16:59:13.283483Z	Using v2 root directory strategy
-2026-05-17T16:59:13.296702Z	Success: Finished cloning repository files
-2026-05-17T16:59:15.032183Z	Checking for configuration in a Wrangler configuration file (BETA)
-2026-05-17T16:59:15.032704Z	
-2026-05-17T16:59:15.033133Z	Found wrangler.toml file. Reading build configuration...
-2026-05-17T16:59:15.0412Z	pages_build_output_dir: .vercel/output/static
-2026-05-17T16:59:15.041413Z	Build environment variables: (none found)
-2026-05-17T16:59:16.193454Z	Successfully read the Wrangler configuration file.
-2026-05-17T16:59:16.392206Z	Detected the following tools from environment: nodejs@20.20.0, npm@10.9.2
-2026-05-17T16:59:16.392655Z	Installing nodejs 20.20.0
-2026-05-17T16:59:16.991663Z	Trying to update node-build... ok
-2026-05-17T16:59:17.057176Z	To follow progress, use 'tail -f /tmp/node-build.20260517165917.806.log' or pass --verbose
-2026-05-17T16:59:17.107823Z	Downloading node-v20.20.0-linux-x64.tar.gz...
-2026-05-17T16:59:17.263459Z	-> https://nodejs.org/dist/v20.20.0/node-v20.20.0-linux-x64.tar.gz
-2026-05-17T16:59:19.595231Z	
-2026-05-17T16:59:19.59547Z	WARNING: node-v20.20.0-linux-x64 is in LTS Maintenance mode and nearing its end of life.
-2026-05-17T16:59:19.595524Z	It only receives *critical* security updates, *critical* bug fixes and documentation updates.
-2026-05-17T16:59:19.595558Z	
-2026-05-17T16:59:19.595591Z	Installing node-v20.20.0-linux-x64...
-2026-05-17T16:59:20.095704Z	Installed node-v20.20.0-linux-x64 to /opt/buildhome/.asdf/installs/nodejs/20.20.0
-2026-05-17T16:59:20.096259Z	
-2026-05-17T16:59:20.671256Z	Installing project dependencies: npm clean-install --progress=false
-2026-05-17T16:59:26.726099Z	npm warn deprecated rollup-plugin-inject@3.0.2: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-inject.
-2026-05-17T16:59:26.869699Z	npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
-2026-05-17T16:59:26.903965Z	npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
-2026-05-17T16:59:27.397979Z	npm warn deprecated path-match@1.2.4: This package is archived and no longer maintained. For support, visit https://github.com/expressjs/express/discussions
-2026-05-17T16:59:28.859727Z	npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
-2026-05-17T16:59:29.921991Z	npm warn deprecated tar@6.2.1: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
-2026-05-17T16:59:30.162797Z	npm warn deprecated @humanwhocodes/config-array@0.11.14: Use @eslint/config-array instead
-2026-05-17T16:59:30.165403Z	npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
-2026-05-17T16:59:30.244725Z	npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
-2026-05-17T16:59:30.510613Z	npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
-2026-05-17T16:59:30.560857Z	npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
-2026-05-17T16:59:31.721705Z	npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
-2026-05-17T16:59:31.974297Z	npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
-2026-05-17T16:59:32.023352Z	npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
-2026-05-17T16:59:32.785581Z	npm warn deprecated source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
-2026-05-17T16:59:32.861687Z	npm warn deprecated source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
-2026-05-17T16:59:34.232193Z	npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
-2026-05-17T16:59:37.59697Z	npm warn deprecated eslint@8.57.0: This version is no longer supported. Please see https://eslint.org/version-support for other options.
-2026-05-17T16:59:54.751126Z	npm warn deprecated next@15.5.2: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/CVE-2025-66478 for more details.
-2026-05-17T16:59:55.610195Z	
-2026-05-17T16:59:55.610504Z	added 1037 packages, and audited 1038 packages in 35s
-2026-05-17T16:59:55.610623Z	
-2026-05-17T16:59:55.610701Z	214 packages are looking for funding
-2026-05-17T16:59:55.610771Z	  run `npm fund` for details
-2026-05-17T16:59:55.913746Z	
-2026-05-17T16:59:55.91401Z	34 vulnerabilities (2 low, 16 moderate, 15 high, 1 critical)
-2026-05-17T16:59:55.914086Z	
-2026-05-17T16:59:55.914133Z	To address issues that do not require attention, run:
-2026-05-17T16:59:55.914174Z	  npm audit fix
-2026-05-17T16:59:55.914212Z	
-2026-05-17T16:59:55.914251Z	To address all issues possible (including breaking changes), run:
-2026-05-17T16:59:55.914283Z	  npm audit fix --force
-2026-05-17T16:59:55.914313Z	
-2026-05-17T16:59:55.914345Z	Some issues need review, and may require choosing
-2026-05-17T16:59:55.914402Z	a different dependency.
-2026-05-17T16:59:55.914438Z	
-2026-05-17T16:59:55.914473Z	Run `npm audit` for details.
-2026-05-17T16:59:55.96916Z	Executing user command: npm run pages:build
-2026-05-17T16:59:56.276232Z	
-2026-05-17T16:59:56.276495Z	> eduvantage-school-management-system@2.1.0 pages:build
-2026-05-17T16:59:56.276556Z	> npm run build
-2026-05-17T16:59:56.276591Z	
-2026-05-17T16:59:56.465516Z	
-2026-05-17T16:59:56.4658Z	> eduvantage-school-management-system@2.1.0 build
-2026-05-17T16:59:56.465878Z	> npx @cloudflare/next-on-pages --disable-worker-minification
-2026-05-17T16:59:56.465914Z	
-2026-05-17T16:59:57.293126Z	⚡️ @cloudflare/next-on-pages CLI v.1.13.16
-2026-05-17T16:59:57.492948Z	⚡️ Detected Package Manager: npm (10.8.2)
-2026-05-17T16:59:57.493279Z	⚡️ Preparing project...
-2026-05-17T16:59:57.496704Z	⚡️ Project is ready
-2026-05-17T16:59:57.496838Z	⚡️ Building project...
-2026-05-17T16:59:58.331398Z	▲  Vercel CLI 47.0.4
-2026-05-17T16:59:58.337146Z	▲  > NOTE: The Vercel CLI now collects telemetry regarding usage of the CLI.
-2026-05-17T16:59:58.337494Z	▲  > This information is used to shape the CLI roadmap and prioritize features.
-2026-05-17T16:59:58.337635Z	▲  > You can learn more, including how to opt-out if you'd not like to participate in this program, by visiting the following URL:
-2026-05-17T16:59:58.337743Z	▲  > https://vercel.com/docs/cli/about-telemetry
-2026-05-17T16:59:58.466864Z	▲  WARN! Build not running on Vercel. System environment variables will not be available.
-2026-05-17T16:59:58.620483Z	▲  Installing dependencies...
-2026-05-17T17:00:00.33776Z	▲  up to date in 2s
-2026-05-17T17:00:00.338313Z	▲  214 packages are looking for funding
-2026-05-17T17:00:00.338445Z	▲  run `npm fund` for details
-2026-05-17T17:00:00.3521Z	▲  Detected Next.js version: 15.5.2
-2026-05-17T17:00:00.35379Z	▲  Running "npm run next:build"
-2026-05-17T17:00:00.625237Z	▲  > eduvantage-school-management-system@2.1.0 next:build
-2026-05-17T17:00:00.625668Z	▲  > next build
-2026-05-17T17:00:02.079799Z	▲  Attention: Next.js now collects completely anonymous telemetry regarding usage.
-2026-05-17T17:00:02.080225Z	▲  This information is used to shape Next.js' roadmap and prioritize features.
-2026-05-17T17:00:02.080333Z	▲  You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
-2026-05-17T17:00:02.080396Z	▲  https://nextjs.org/telemetry
-2026-05-17T17:00:02.206737Z	▲  ▲ Next.js 15.5.2
-2026-05-17T17:00:02.207098Z	▲  - Experiments (use with caution):
-2026-05-17T17:00:02.207315Z	▲    ⨯ webpackBuildWorker
-2026-05-17T17:00:02.341762Z	▲  Creating an optimized production build ...
-2026-05-17T17:00:03.181943Z	▲  ✓ (pwa) Compiling for server...
-2026-05-17T17:00:03.194075Z	▲  ✓ (pwa) Compiling for server...
-2026-05-17T17:00:03.208872Z	▲  ✓ (pwa) Compiling for client (static)...
-2026-05-17T17:00:03.212199Z	▲  ○ (pwa) Service worker: /opt/buildhome/repo/public/sw.js
-2026-05-17T17:00:03.212372Z	▲  ○ (pwa)   URL: /sw.js
-2026-05-17T17:00:03.212473Z	▲  ○ (pwa)   Scope: /
-2026-05-17T17:00:58.444435Z	▲  ✓ Compiled successfully in 55s
-2026-05-17T17:00:58.448687Z	▲  Skipping validation of types
-2026-05-17T17:00:58.448889Z	▲  Skipping linting
-2026-05-17T17:00:58.578336Z	▲  Collecting page data ...
-2026-05-17T17:00:59.170122Z	▲  ⚠ Using edge runtime on a page currently disables static generation for that page
-2026-05-17T17:01:01.005354Z	▲  Generating static pages (0/3) ...
-2026-05-17T17:01:01.725986Z	▲  ✓ Generating static pages (3/3)
-2026-05-17T17:01:02.383564Z	▲  Finalizing page optimization ...
-2026-05-17T17:01:02.384518Z	▲  Collecting build traces ...
-2026-05-17T17:01:11.551207Z	▲  
-2026-05-17T17:01:11.563296Z	▲  Route (app)                                 Size  First Load JS
-2026-05-17T17:01:11.563525Z	▲  ┌ ƒ /                                    18.6 kB         126 kB
-2026-05-17T17:01:11.563619Z	▲  ├ ○ /_not-found                            265 B         105 kB
-2026-05-17T17:01:11.56369Z	▲  ├ ƒ /allocations                          2.8 kB         137 kB
-2026-05-17T17:01:11.563748Z	▲  ├ ƒ /analytics                           15.8 kB         128 kB
-2026-05-17T17:01:11.563799Z	▲  ├ ƒ /analytics/activity                  4.01 kB         111 kB
-2026-05-17T17:01:11.563856Z	▲  ├ ƒ /api/auth                              265 B         105 kB
-2026-05-17T17:01:11.56395Z	▲  ├ ƒ /api/auth/check-username               265 B         105 kB
-2026-05-17T17:01:11.564015Z	▲  ├ ƒ /api/auth/recovery                     265 B         105 kB
-2026-05-17T17:01:11.564239Z	▲  ├ ƒ /api/billing                           265 B         105 kB
-2026-05-17T17:01:11.564324Z	▲  ├ ƒ /api/billing/callback                  265 B         105 kB
-2026-05-17T17:01:11.564393Z	▲  ├ ƒ /api/billing/stk-push                  265 B         105 kB
-2026-05-17T17:01:11.564451Z	▲  ├ ƒ /api/comms/push                        265 B         105 kB
-2026-05-17T17:01:11.564531Z	▲  ├ ƒ /api/cron/backup                       265 B         105 kB
-2026-05-17T17:01:11.564598Z	▲  ├ ƒ /api/cron/promote                      265 B         105 kB
-2026-05-17T17:01:11.564655Z	▲  ├ ƒ /api/db                                265 B         105 kB
-2026-05-17T17:01:11.564718Z	▲  ├ ƒ /api/debug                             265 B         105 kB
-2026-05-17T17:01:11.56477Z	▲  ├ ƒ /api/email/receipt                     265 B         105 kB
-2026-05-17T17:01:11.564851Z	▲  ├ ƒ /api/email/report-card                 265 B         105 kB
-2026-05-17T17:01:11.564883Z	▲  ├ ƒ /api/finance/expenses                  265 B         105 kB
-2026-05-17T17:01:11.564952Z	▲  ├ ƒ /api/finance/ledger                    265 B         105 kB
-2026-05-17T17:01:11.564996Z	▲  ├ ƒ /api/health                            265 B         105 kB
-2026-05-17T17:01:11.565135Z	▲  ├ ƒ /api/mpesa/callback                    265 B         105 kB
-2026-05-17T17:01:11.56519Z	▲  ├ ƒ /api/mpesa/status                      265 B         105 kB
-2026-05-17T17:01:11.565223Z	▲  ├ ƒ /api/mpesa/stk                         265 B         105 kB
-2026-05-17T17:01:11.565304Z	▲  ├ ƒ /api/notifications                     265 B         105 kB
-2026-05-17T17:01:11.565349Z	▲  ├ ƒ /api/pesapal                           265 B         105 kB
-2026-05-17T17:01:11.565379Z	▲  ├ ƒ /api/ping                              265 B         105 kB
-2026-05-17T17:01:11.565413Z	▲  ├ ƒ /api/repair                            265 B         105 kB
-2026-05-17T17:01:11.565445Z	▲  ├ ƒ /api/repair-engine                     265 B         105 kB
-2026-05-17T17:01:11.565518Z	▲  ├ ƒ /api/saas/config                       265 B         105 kB
-2026-05-17T17:01:11.565612Z	▲  ├ ƒ /api/saas/diagnostics                  265 B         105 kB
-2026-05-17T17:01:11.565682Z	▲  ├ ƒ /api/saas/global-config                265 B         105 kB
-2026-05-17T17:01:11.565715Z	▲  ├ ƒ /api/saas/init                         265 B         105 kB
-2026-05-17T17:01:11.565781Z	▲  ├ ƒ /api/saas/lookup-learner               265 B         105 kB
-2026-05-17T17:01:11.56587Z	▲  ├ ƒ /api/saas/maintenance                  265 B         105 kB
-2026-05-17T17:01:11.565983Z	▲  ├ ƒ /api/saas/manage                       265 B         105 kB
-2026-05-17T17:01:11.566651Z	▲  ├ ƒ /api/saas/schools                      265 B         105 kB
-2026-05-17T17:01:11.570142Z	▲  ├ ƒ /api/saas/schools/delete               265 B         105 kB
-2026-05-17T17:01:11.570253Z	▲  ├ ƒ /api/saas/settlements                  265 B         105 kB
-2026-05-17T17:01:11.570317Z	▲  ├ ƒ /api/saas/signup                       265 B         105 kB
-2026-05-17T17:01:11.57035Z	▲  ├ ƒ /api/saas/stats                        265 B         105 kB
-2026-05-17T17:01:11.570382Z	▲  ├ ƒ /api/saas/subscription                 265 B         105 kB
-2026-05-17T17:01:11.570423Z	▲  ├ ƒ /api/seed                              265 B         105 kB
-2026-05-17T17:01:11.570482Z	▲  ├ ƒ /api/sms                               265 B         105 kB
-2026-05-17T17:01:11.570538Z	▲  ├ ƒ /api/sms/delivery                      265 B         105 kB
-2026-05-17T17:01:11.570587Z	▲  ├ ƒ /api/stats                             265 B         105 kB
-2026-05-17T17:01:11.570621Z	▲  ├ ƒ /api/stats/dashboard                   265 B         105 kB
-2026-05-17T17:01:11.570654Z	▲  ├ ƒ /api/stats/red-flags                   265 B         105 kB
-2026-05-17T17:01:11.570682Z	▲  ├ ƒ /api/stats/unread                      265 B         105 kB
-2026-05-17T17:01:11.570709Z	▲  ├ ƒ /api/temp-diag                         265 B         105 kB
-2026-05-17T17:01:11.570736Z	▲  ├ ƒ /api/temp-restore                      265 B         105 kB
-2026-05-17T17:01:11.570763Z	▲  ├ ƒ /api/upload                            265 B         105 kB
-2026-05-17T17:01:11.57079Z	▲  ├ ƒ /api/upload/[id]                       265 B         105 kB
-2026-05-17T17:01:11.570817Z	▲  ├ ƒ /api/v1/payments/stk-callback          265 B         105 kB
-2026-05-17T17:01:11.570844Z	▲  ├ ƒ /api/whatsapp/reminder                 265 B         105 kB
-2026-05-17T17:01:11.571014Z	▲  ├ ƒ /api/whatsapp/report-card              265 B         105 kB
-2026-05-17T17:01:11.571074Z	▲  ├ ƒ /attendance                          5.11 kB         139 kB
-2026-05-17T17:01:11.571112Z	▲  ├ ƒ /audit                               1.39 kB         109 kB
-2026-05-17T17:01:11.571155Z	▲  ├ ƒ /billing                             8.24 kB         113 kB
-2026-05-17T17:01:11.571211Z	▲  ├ ƒ /classes                             1.82 kB         136 kB
-2026-05-17T17:01:11.571285Z	▲  ├ ƒ /classes/[grade]                     2.53 kB         136 kB
-2026-05-17T17:01:11.57134Z	▲  ├ ƒ /comms/push                          7.46 kB         123 kB
-2026-05-17T17:01:11.571421Z	▲  ├ ƒ /dashboard                           6.39 kB         140 kB
-2026-05-17T17:01:11.571493Z	▲  ├ ƒ /database                            2.27 kB         110 kB
-2026-05-17T17:01:11.571552Z	▲  ├ ƒ /debug-restore                         726 B         105 kB
-2026-05-17T17:01:11.571615Z	▲  ├ ƒ /demo                                 2.4 kB         110 kB
-2026-05-17T17:01:11.571668Z	▲  ├ ƒ /demo/parent                         4.04 kB         112 kB
-2026-05-17T17:01:11.571805Z	▲  ├ ƒ /demo/staff                          3.84 kB         112 kB
-2026-05-17T17:01:11.571915Z	▲  ├ ƒ /demo/teacher                        3.75 kB         112 kB
-2026-05-17T17:01:11.572004Z	▲  ├ ƒ /diary                               6.63 kB         141 kB
-2026-05-17T17:01:11.572088Z	▲  ├ ƒ /documents                           4.66 kB         117 kB
-2026-05-17T17:01:11.572144Z	▲  ├ ƒ /duties                              4.99 kB         139 kB
-2026-05-17T17:01:11.572215Z	▲  ├ ƒ /fees                                7.74 kB         142 kB
-2026-05-17T17:01:11.572288Z	▲  ├ ƒ /fees/[adm]/receipt                  2.77 kB         137 kB
-2026-05-17T17:01:11.572405Z	▲  ├ ƒ /fees/pay                            6.19 kB         118 kB
-2026-05-17T17:01:11.572473Z	▲  ├ ƒ /finance                             7.29 kB         115 kB
-2026-05-17T17:01:11.572625Z	▲  ├ ƒ /finance/budgets                     3.57 kB         111 kB
-2026-05-17T17:01:11.572699Z	▲  ├ ƒ /finance/expenses                    5.64 kB         113 kB
-2026-05-17T17:01:11.572755Z	▲  ├ ƒ /finance/invoices                    7.68 kB         123 kB
-2026-05-17T17:01:11.572816Z	▲  ├ ƒ /finance/payroll                     5.61 kB         139 kB
-2026-05-17T17:01:11.572917Z	▲  ├ ƒ /finance/petty-cash                  2.57 kB         110 kB
-2026-05-17T17:01:11.572953Z	▲  ├ ƒ /finance/reconcile                   5.26 kB         113 kB
-2026-05-17T17:01:11.573024Z	▲  ├ ƒ /finance/transactions                2.06 kB         110 kB
-2026-05-17T17:01:11.573098Z	▲  ├ ƒ /grades                               5.9 kB         140 kB
-2026-05-17T17:01:11.573135Z	▲  ├ ƒ /grades/report-card/[id]             7.53 kB         120 kB
-2026-05-17T17:01:11.573166Z	▲  ├ ƒ /grades/report-card/bulk             9.87 kB         122 kB
-2026-05-17T17:01:11.573194Z	▲  ├ ƒ /learners                            6.81 kB         141 kB
-2026-05-17T17:01:11.573241Z	▲  ├ ƒ /learners/[id]                       6.43 kB         140 kB
-2026-05-17T17:01:11.573279Z	▲  ├ ƒ /learners/bulk                       6.34 kB         140 kB
-2026-05-17T17:01:11.573319Z	▲  ├ ƒ /learners/recycle-bin                1.37 kB         109 kB
-2026-05-17T17:01:11.573347Z	▲  ├ ƒ /learning                            8.46 kB         142 kB
-2026-05-17T17:01:11.573374Z	▲  ├ ƒ /login                               8.05 kB         142 kB
-2026-05-17T17:01:11.573401Z	▲  ├ ƒ /merit-list                          6.17 kB         140 kB
-2026-05-17T17:01:11.573435Z	▲  ├ ƒ /messages                            12.4 kB         127 kB
-2026-05-17T17:01:11.573473Z	▲  ├ ƒ /nexed                               18.4 kB         152 kB
-2026-05-17T17:01:11.573502Z	▲  ├ ƒ /parent-home                         16.4 kB         128 kB
-2026-05-17T17:01:11.57353Z	▲  ├ ƒ /parent-marks                        3.85 kB         116 kB
-2026-05-17T17:01:11.57356Z	▲  ├ ƒ /predictor                            5.6 kB         139 kB
-2026-05-17T17:01:11.573602Z	▲  ├ ƒ /privacy                             9.71 kB         118 kB
-2026-05-17T17:01:11.573639Z	▲  ├ ƒ /profile                             11.4 kB         145 kB
-2026-05-17T17:01:11.573667Z	▲  ├ ƒ /proposal                             4.7 kB         109 kB
-2026-05-17T17:01:11.573699Z	▲  ├ ƒ /report-card                         3.49 kB         137 kB
-2026-05-17T17:01:11.573729Z	▲  ├ ƒ /reports                             4.47 kB         112 kB
-2026-05-17T17:01:11.573756Z	▲  ├ ƒ /saas/signup                         5.92 kB         110 kB
-2026-05-17T17:01:11.573786Z	▲  ├ ƒ /settings                            4.72 kB         116 kB
-2026-05-17T17:01:11.573819Z	▲  ├ ƒ /settings/billing                    4.77 kB         112 kB
-2026-05-17T17:01:11.573881Z	▲  ├ ƒ /settings/calendar                   5.23 kB         113 kB
-2026-05-17T17:01:11.573946Z	▲  ├ ƒ /settings/grading                     6.1 kB         121 kB
-2026-05-17T17:01:11.573995Z	▲  ├ ƒ /settings/profile                    6.28 kB         140 kB
-2026-05-17T17:01:11.574169Z	▲  ├ ƒ /settings/sms                        1.45 kB         106 kB
-2026-05-17T17:01:11.574227Z	▲  ├ ƒ /settings/subjects                   2.87 kB         118 kB
-2026-05-17T17:01:11.574274Z	▲  ├ ƒ /settings/timetable                  2.16 kB         110 kB
-2026-05-17T17:01:11.574355Z	▲  ├ ƒ /settings/weights                     2.9 kB         118 kB
-2026-05-17T17:01:11.57447Z	▲  ├ ƒ /sms/api/send                          265 B         105 kB
-2026-05-17T17:01:11.574537Z	▲  ├ ƒ /streams                             1.89 kB         136 kB
-2026-05-17T17:01:11.574641Z	▲  ├ ƒ /super-admin                           14 kB         122 kB
-2026-05-17T17:01:11.574697Z	▲  ├ ƒ /teachers                            3.56 kB         137 kB
-2026-05-17T17:01:11.574758Z	▲  ├ ƒ /teachers/subjects                   3.54 kB         116 kB
-2026-05-17T17:01:11.57481Z	▲  ├ ƒ /templates                           14.9 kB         149 kB
-2026-05-17T17:01:11.574906Z	▲  ├ ƒ /terms                               11.2 kB         119 kB
-2026-05-17T17:01:11.574983Z	▲  ├ ƒ /timetable                           7.61 kB         141 kB
-2026-05-17T17:01:11.575069Z	▲  ├ ƒ /welfare                             3.81 kB         119 kB
-2026-05-17T17:01:11.575124Z	▲  └ ƒ /welfare/portfolio                    7.2 kB         122 kB
-2026-05-17T17:01:11.57517Z	▲  + First Load JS shared by all             104 kB
-2026-05-17T17:01:11.575217Z	▲  ├ chunks/4696-1ecd196612c104e8.js      47.9 kB
-2026-05-17T17:01:11.575301Z	▲  ├ chunks/4bd1b696-100b9d70ed4e49c1.js  54.2 kB
-2026-05-17T17:01:11.57536Z	▲  └ other shared chunks (total)          2.29 kB
-2026-05-17T17:01:11.575417Z	▲  
-2026-05-17T17:01:11.575484Z	▲  
-2026-05-17T17:01:11.575538Z	▲  ƒ Middleware                             34.6 kB
-2026-05-17T17:01:11.575587Z	▲  
-2026-05-17T17:01:11.575632Z	▲  ○  (Static)   prerendered as static content
-2026-05-17T17:01:11.575691Z	▲  ƒ  (Dynamic)  server-rendered on demand
-2026-05-17T17:01:12.206677Z	▲  Traced Next.js server files in: 290.302ms
-2026-05-17T17:01:12.524935Z	▲  Created all serverless functions in: 317.861ms
-2026-05-17T17:01:23.070612Z	▲  Collected static files (public/, static/, .next/static): 25.803ms
-2026-05-17T17:01:24.094147Z	▲  Build Completed in .vercel/output [1m]
-2026-05-17T17:01:24.424137Z	⚡️ Completed `npx vercel build`.
-2026-05-17T17:02:15.563834Z	
-2026-05-17T17:02:15.564168Z	⚡️ Build Summary (@cloudflare/next-on-pages v1.13.16)
-2026-05-17T17:02:15.564262Z	⚡️ 
-2026-05-17T17:02:15.564326Z	⚡️ Middleware Functions (1)
-2026-05-17T17:02:15.564385Z	⚡️   - middleware
-2026-05-17T17:02:15.564442Z	⚡️ 
-2026-05-17T17:02:15.564496Z	⚡️ Edge Function Routes (122)
-2026-05-17T17:02:15.564542Z	⚡️   ┌ /
-2026-05-17T17:02:15.564603Z	⚡️   ├ /allocations
-2026-05-17T17:02:15.564652Z	⚡️   ├ /analytics
-2026-05-17T17:02:15.5647Z	⚡️   ├ /analytics/activity
-2026-05-17T17:02:15.564749Z	⚡️   ├ /api/auth
-2026-05-17T17:02:15.564782Z	⚡️   ├ /api/auth/check-username
-2026-05-17T17:02:15.564926Z	⚡️   ├ /api/auth/recovery
-2026-05-17T17:02:15.564969Z	⚡️   ├ /api/billing
-2026-05-17T17:02:15.564999Z	⚡️   ├ /api/billing/callback
-2026-05-17T17:02:15.565042Z	⚡️   ├ /api/billing/stk-push
-2026-05-17T17:02:15.565078Z	⚡️   ├ /api/comms/push
-2026-05-17T17:02:15.565136Z	⚡️   ├ /api/cron/backup
-2026-05-17T17:02:15.5652Z	⚡️   ├ /api/cron/promote
-2026-05-17T17:02:15.565263Z	⚡️   ├ /api/db
-2026-05-17T17:02:15.565321Z	⚡️   ├ /api/debug
-2026-05-17T17:02:15.565366Z	⚡️   ├ /api/email/receipt
-2026-05-17T17:02:15.565401Z	⚡️   ├ /api/email/report-card
-2026-05-17T17:02:15.565443Z	⚡️   ├ /api/finance/expenses
-2026-05-17T17:02:15.565484Z	⚡️   ├ /api/finance/ledger
-2026-05-17T17:02:15.565532Z	⚡️   ├ /api/health
-2026-05-17T17:02:15.565583Z	⚡️   ├ /api/mpesa/callback
-2026-05-17T17:02:15.565632Z	⚡️   ├ /api/mpesa/status
-2026-05-17T17:02:15.565677Z	⚡️   ├ /api/mpesa/stk
-2026-05-17T17:02:15.565727Z	⚡️   ├ /api/notifications
-2026-05-17T17:02:15.565776Z	⚡️   ├ /api/pesapal
-2026-05-17T17:02:15.56583Z	⚡️   ├ /api/ping
-2026-05-17T17:02:15.565879Z	⚡️   ├ /api/repair
-2026-05-17T17:02:15.56593Z	⚡️   ├ /api/repair-engine
-2026-05-17T17:02:15.565973Z	⚡️   ├ /api/saas/config
-2026-05-17T17:02:15.566007Z	⚡️   ├ /api/saas/diagnostics
-2026-05-17T17:02:15.56761Z	⚡️   ├ /api/saas/global-config
-2026-05-17T17:02:15.567714Z	⚡️   ├ /api/saas/init
-2026-05-17T17:02:15.567787Z	⚡️   ├ /api/saas/lookup-learner
-2026-05-17T17:02:15.567835Z	⚡️   ├ /api/saas/maintenance
-2026-05-17T17:02:15.567882Z	⚡️   ├ /api/saas/manage
-2026-05-17T17:02:15.567942Z	⚡️   ├ /api/saas/schools
-2026-05-17T17:02:15.568011Z	⚡️   ├ /api/saas/schools/delete
-2026-05-17T17:02:15.56809Z	⚡️   ├ /api/saas/settlements
-2026-05-17T17:02:15.568154Z	⚡️   ├ /api/saas/signup
-2026-05-17T17:02:15.568214Z	⚡️   ├ /api/saas/stats
-2026-05-17T17:02:15.568272Z	⚡️   ├ /api/saas/subscription
-2026-05-17T17:02:15.568332Z	⚡️   ├ /api/seed
-2026-05-17T17:02:15.568391Z	⚡️   ├ /api/sms
-2026-05-17T17:02:15.568439Z	⚡️   ├ /api/sms/delivery
-2026-05-17T17:02:15.568472Z	⚡️   ├ /api/stats
-2026-05-17T17:02:15.568504Z	⚡️   ├ /api/stats/dashboard
-2026-05-17T17:02:15.568634Z	⚡️   ├ /api/stats/red-flags
-2026-05-17T17:02:15.56867Z	⚡️   ├ /api/stats/unread
-2026-05-17T17:02:15.568701Z	⚡️   ├ /api/temp-diag
-2026-05-17T17:02:15.568733Z	⚡️   ├ /api/temp-restore
-2026-05-17T17:02:15.568764Z	⚡️   ├ /api/upload
-2026-05-17T17:02:15.568795Z	⚡️   ├ /api/upload/[id]
-2026-05-17T17:02:15.568832Z	⚡️   ├ /api/v1/payments/stk-callback
-2026-05-17T17:02:15.568884Z	⚡️   ├ /api/whatsapp/reminder
-2026-05-17T17:02:15.568931Z	⚡️   ├ /api/whatsapp/report-card
-2026-05-17T17:02:15.568965Z	⚡️   ├ /attendance
-2026-05-17T17:02:15.568996Z	⚡️   ├ /audit
-2026-05-17T17:02:15.569043Z	⚡️   ├ /billing
-2026-05-17T17:02:15.569079Z	⚡️   ├ /classes
-2026-05-17T17:02:15.56911Z	⚡️   ├ /classes/[grade]
-2026-05-17T17:02:15.569157Z	⚡️   ├ /comms/push
-2026-05-17T17:02:15.569206Z	⚡️   ├ /dashboard
-2026-05-17T17:02:15.569252Z	⚡️   ├ /database
-2026-05-17T17:02:15.569299Z	⚡️   ├ /debug-restore
-2026-05-17T17:02:15.569343Z	⚡️   ├ /demo
-2026-05-17T17:02:15.569386Z	⚡️   ├ /demo/parent
-2026-05-17T17:02:15.569421Z	⚡️   ├ /demo/staff
-2026-05-17T17:02:15.569471Z	⚡️   ├ /demo/teacher
-2026-05-17T17:02:15.569526Z	⚡️   ├ /diary
-2026-05-17T17:02:15.569584Z	⚡️   ├ /documents
-2026-05-17T17:02:15.569634Z	⚡️   ├ /duties
-2026-05-17T17:02:15.569683Z	⚡️   ├ /fees
-2026-05-17T17:02:15.569738Z	⚡️   ├ /fees/[adm]/receipt
-2026-05-17T17:02:15.569781Z	⚡️   ├ /fees/pay
-2026-05-17T17:02:15.569831Z	⚡️   ├ /finance
-2026-05-17T17:02:15.569876Z	⚡️   ├ /finance/budgets
-2026-05-17T17:02:15.569913Z	⚡️   ├ /finance/expenses
-2026-05-17T17:02:15.569961Z	⚡️   ├ /finance/invoices
-2026-05-17T17:02:15.570948Z	⚡️   ├ /finance/payroll
-2026-05-17T17:02:15.571431Z	⚡️   ├ /finance/petty-cash
-2026-05-17T17:02:15.571508Z	⚡️   ├ /finance/reconcile
-2026-05-17T17:02:15.571593Z	⚡️   ├ /finance/transactions
-2026-05-17T17:02:15.571657Z	⚡️   ├ /grades
-2026-05-17T17:02:15.571713Z	⚡️   ├ /grades/report-card/[id]
-2026-05-17T17:02:15.571808Z	⚡️   ├ /grades/report-card/bulk
-2026-05-17T17:02:15.571907Z	⚡️   ├ /learners
-2026-05-17T17:02:15.572014Z	⚡️   ├ /learners/[id]
-2026-05-17T17:02:15.572126Z	⚡️   ├ /learners/bulk
-2026-05-17T17:02:15.572227Z	⚡️   ├ /learners/recycle-bin
-2026-05-17T17:02:15.572323Z	⚡️   ├ /learning
-2026-05-17T17:02:15.57241Z	⚡️   ├ /login
-2026-05-17T17:02:15.572626Z	⚡️   ├ /merit-list
-2026-05-17T17:02:15.572693Z	⚡️   ├ /messages
-2026-05-17T17:02:15.572759Z	⚡️   ├ /nexed
-2026-05-17T17:02:15.572853Z	⚡️   ├ /parent-home
-2026-05-17T17:02:15.572952Z	⚡️   ├ /parent-marks
-2026-05-17T17:02:15.573107Z	⚡️   ├ /predictor
-2026-05-17T17:02:15.57323Z	⚡️   ├ /privacy
-2026-05-17T17:02:15.573337Z	⚡️   ├ /profile
-2026-05-17T17:02:15.573431Z	⚡️   ├ /proposal
-2026-05-17T17:02:15.57356Z	⚡️   ├ /report-card
-2026-05-17T17:02:15.573675Z	⚡️   ├ /reports
-2026-05-17T17:02:15.573812Z	⚡️   ├ /saas/signup
-2026-05-17T17:02:15.573931Z	⚡️   ├ /settings
-2026-05-17T17:02:15.574076Z	⚡️   ├ /settings/billing
-2026-05-17T17:02:15.574223Z	⚡️   ├ /settings/calendar
-2026-05-17T17:02:15.574376Z	⚡️   ├ /settings/grading
-2026-05-17T17:02:15.574503Z	⚡️   ├ /settings/profile
-2026-05-17T17:02:15.574606Z	⚡️   ├ /settings/sms
-2026-05-17T17:02:15.57474Z	⚡️   ├ /settings/subjects
-2026-05-17T17:02:15.574862Z	⚡️   ├ /settings/timetable
-2026-05-17T17:02:15.575007Z	⚡️   ├ /settings/weights
-2026-05-17T17:02:15.575145Z	⚡️   ├ /sms/api/send
-2026-05-17T17:02:15.575287Z	⚡️   ├ /streams
-2026-05-17T17:02:15.575388Z	⚡️   ├ /super-admin
-2026-05-17T17:02:15.57548Z	⚡️   ├ /teachers
-2026-05-17T17:02:15.575777Z	⚡️   ├ /teachers/subjects
-2026-05-17T17:02:15.575916Z	⚡️   ├ /templates
-2026-05-17T17:02:15.576053Z	⚡️   ├ /terms
-2026-05-17T17:02:15.576221Z	⚡️   ├ /timetable
-2026-05-17T17:02:15.576369Z	⚡️   ├ /welfare
-2026-05-17T17:02:15.576474Z	⚡️   └ /welfare/portfolio
-2026-05-17T17:02:15.576574Z	⚡️ 
-2026-05-17T17:02:15.576707Z	⚡️ Prerendered Routes (2)
-2026-05-17T17:02:15.576805Z	⚡️   ┌ /_not-found
-2026-05-17T17:02:15.576844Z	⚡️   └ /_not-found.rsc
-2026-05-17T17:02:15.576884Z	⚡️ 
-2026-05-17T17:02:15.576919Z	⚡️ Other Static Assets (184)
-2026-05-17T17:02:15.576952Z	⚡️   ┌ /_app.rsc.json
-2026-05-17T17:02:15.576984Z	⚡️   ├ /_document.rsc.json
-2026-05-17T17:02:15.577016Z	⚡️   ├ /_error.rsc.json
-2026-05-17T17:02:15.577062Z	⚡️   ├ /404.html
-2026-05-17T17:02:15.577097Z	⚡️   └ ... 180 more
-2026-05-17T17:02:15.577127Z	
-2026-05-17T17:02:15.589494Z	⚡️ Build log saved to '.vercel/output/static/_worker.js/nop-build-log.json'
-2026-05-17T17:02:15.589847Z	⚡️ Generated '.vercel/output/static/_worker.js/index.js'.
-2026-05-17T17:02:15.590111Z	⚡️ Build completed in 51.16s
-2026-05-17T17:02:15.697409Z	Finished
-2026-05-17T17:02:16.515752Z	Checking for configuration in a Wrangler configuration file (BETA)
-2026-05-17T17:02:16.516271Z	
-2026-05-17T17:02:16.5166Z	Found wrangler.toml file. Reading build configuration...
-2026-05-17T17:02:16.524859Z	pages_build_output_dir: .vercel/output/static
-2026-05-17T17:02:16.525762Z	Build environment variables: (none found)
-2026-05-17T17:02:17.64506Z	Successfully read the Wrangler configuration file.
-2026-05-17T17:02:17.647446Z	Found _worker.js in output directory. Uploading.
-2026-05-17T17:02:17.658632Z	 ⛅️ wrangler 3.101.0
-2026-05-17T17:02:17.658878Z	-------------------
-2026-05-17T17:02:18.581164Z	Attaching additional modules:
-2026-05-17T17:02:18.62062Z	┌───────────────────────────────────────────────────────────────────────┬──────┬──────────────┐
-2026-05-17T17:02:18.620986Z	│ Name                                                                  │ Type │ Size         │
-2026-05-17T17:02:18.62112Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62128Z	│ __next-on-pages-dist__/cache/adaptor.js                               │ esm  │ 4.23 KiB     │
-2026-05-17T17:02:18.621625Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.621723Z	│ __next-on-pages-dist__/cache/cache-api.js                             │ esm  │ 0.69 KiB     │
-2026-05-17T17:02:18.621774Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.621816Z	│ __next-on-pages-dist__/cache/kv.js                                    │ esm  │ 0.55 KiB     │
-2026-05-17T17:02:18.62185Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.621986Z	│ __next-on-pages-dist__/functions/allocations.func.js                  │ esm  │ 75.53 KiB    │
-2026-05-17T17:02:18.622112Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.622228Z	│ __next-on-pages-dist__/functions/analytics/activity.func.js           │ esm  │ 70.69 KiB    │
-2026-05-17T17:02:18.622351Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.622496Z	│ __next-on-pages-dist__/functions/analytics.func.js                    │ esm  │ 141.63 KiB   │
-2026-05-17T17:02:18.622577Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62265Z	│ __next-on-pages-dist__/functions/api/auth/check-username.func.js      │ esm  │ 46.89 KiB    │
-2026-05-17T17:02:18.622712Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.622767Z	│ __next-on-pages-dist__/functions/api/auth/recovery.func.js            │ esm  │ 48.05 KiB    │
-2026-05-17T17:02:18.622819Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62288Z	│ __next-on-pages-dist__/functions/api/auth.func.js                     │ esm  │ 64.52 KiB    │
-2026-05-17T17:02:18.622961Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.623025Z	│ __next-on-pages-dist__/functions/api/billing/callback.func.js         │ esm  │ 48.35 KiB    │
-2026-05-17T17:02:18.623097Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.623166Z	│ __next-on-pages-dist__/functions/api/billing/stk-push.func.js         │ esm  │ 49.05 KiB    │
-2026-05-17T17:02:18.623228Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.623292Z	│ __next-on-pages-dist__/functions/api/billing.func.js                  │ esm  │ 47.97 KiB    │
-2026-05-17T17:02:18.623349Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.6234Z	│ __next-on-pages-dist__/functions/api/comms/push.func.js               │ esm  │ 73.47 KiB    │
-2026-05-17T17:02:18.623448Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.623497Z	│ __next-on-pages-dist__/functions/api/cron/backup.func.js              │ esm  │ 48.25 KiB    │
-2026-05-17T17:02:18.623548Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.623608Z	│ __next-on-pages-dist__/functions/api/cron/promote.func.js             │ esm  │ 47.67 KiB    │
-2026-05-17T17:02:18.623652Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.623686Z	│ __next-on-pages-dist__/functions/api/db.func.js                       │ esm  │ 56.28 KiB    │
-2026-05-17T17:02:18.62373Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62379Z	│ __next-on-pages-dist__/functions/api/debug.func.js                    │ esm  │ 47.65 KiB    │
-2026-05-17T17:02:18.62385Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.623915Z	│ __next-on-pages-dist__/functions/api/email/receipt.func.js            │ esm  │ 70.70 KiB    │
-2026-05-17T17:02:18.623978Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.624049Z	│ __next-on-pages-dist__/functions/api/email/report-card.func.js        │ esm  │ 70.56 KiB    │
-2026-05-17T17:02:18.62411Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.624162Z	│ __next-on-pages-dist__/functions/api/finance/expenses.func.js         │ esm  │ 48.34 KiB    │
-2026-05-17T17:02:18.624226Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62429Z	│ __next-on-pages-dist__/functions/api/finance/ledger.func.js           │ esm  │ 48.75 KiB    │
-2026-05-17T17:02:18.624353Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62442Z	│ __next-on-pages-dist__/functions/api/health.func.js                   │ esm  │ 46.78 KiB    │
-2026-05-17T17:02:18.624487Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.624546Z	│ __next-on-pages-dist__/functions/api/mpesa/callback.func.js           │ esm  │ 50.67 KiB    │
-2026-05-17T17:02:18.624595Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.624644Z	│ __next-on-pages-dist__/functions/api/mpesa/status.func.js             │ esm  │ 48.36 KiB    │
-2026-05-17T17:02:18.624698Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.624758Z	│ __next-on-pages-dist__/functions/api/mpesa/stk.func.js                │ esm  │ 49.06 KiB    │
-2026-05-17T17:02:18.624808Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.624862Z	│ __next-on-pages-dist__/functions/api/notifications.func.js            │ esm  │ 49.00 KiB    │
-2026-05-17T17:02:18.624917Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.624983Z	│ __next-on-pages-dist__/functions/api/pesapal.func.js                  │ esm  │ 54.29 KiB    │
-2026-05-17T17:02:18.625054Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625094Z	│ __next-on-pages-dist__/functions/api/ping.func.js                     │ esm  │ 46.01 KiB    │
-2026-05-17T17:02:18.625128Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625159Z	│ __next-on-pages-dist__/functions/api/repair-engine.func.js            │ esm  │ 48.84 KiB    │
-2026-05-17T17:02:18.62519Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625227Z	│ __next-on-pages-dist__/functions/api/repair.func.js                   │ esm  │ 47.87 KiB    │
-2026-05-17T17:02:18.625285Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625335Z	│ __next-on-pages-dist__/functions/api/saas/config.func.js              │ esm  │ 48.45 KiB    │
-2026-05-17T17:02:18.62537Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625416Z	│ __next-on-pages-dist__/functions/api/saas/diagnostics.func.js         │ esm  │ 47.73 KiB    │
-2026-05-17T17:02:18.625476Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625537Z	│ __next-on-pages-dist__/functions/api/saas/global-config.func.js       │ esm  │ 49.48 KiB    │
-2026-05-17T17:02:18.625596Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62565Z	│ __next-on-pages-dist__/functions/api/saas/init.func.js                │ esm  │ 49.44 KiB    │
-2026-05-17T17:02:18.6257Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625749Z	│ __next-on-pages-dist__/functions/api/saas/lookup-learner.func.js      │ esm  │ 47.09 KiB    │
-2026-05-17T17:02:18.625798Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625847Z	│ __next-on-pages-dist__/functions/api/saas/maintenance.func.js         │ esm  │ 46.97 KiB    │
-2026-05-17T17:02:18.62588Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62591Z	│ __next-on-pages-dist__/functions/api/saas/manage.func.js              │ esm  │ 50.47 KiB    │
-2026-05-17T17:02:18.625945Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.625975Z	│ __next-on-pages-dist__/functions/api/saas/schools/delete.func.js      │ esm  │ 48.00 KiB    │
-2026-05-17T17:02:18.626008Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626149Z	│ __next-on-pages-dist__/functions/api/saas/schools.func.js             │ esm  │ 47.10 KiB    │
-2026-05-17T17:02:18.626209Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626263Z	│ __next-on-pages-dist__/functions/api/saas/settlements.func.js         │ esm  │ 49.30 KiB    │
-2026-05-17T17:02:18.626313Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626362Z	│ __next-on-pages-dist__/functions/api/saas/signup.func.js              │ esm  │ 50.69 KiB    │
-2026-05-17T17:02:18.626416Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626475Z	│ __next-on-pages-dist__/functions/api/saas/stats.func.js               │ esm  │ 49.00 KiB    │
-2026-05-17T17:02:18.626511Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626546Z	│ __next-on-pages-dist__/functions/api/saas/subscription.func.js        │ esm  │ 47.00 KiB    │
-2026-05-17T17:02:18.626579Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626612Z	│ __next-on-pages-dist__/functions/api/seed.func.js                     │ esm  │ 49.01 KiB    │
-2026-05-17T17:02:18.626646Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626685Z	│ __next-on-pages-dist__/functions/api/sms/delivery.func.js             │ esm  │ 47.21 KiB    │
-2026-05-17T17:02:18.626723Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626753Z	│ __next-on-pages-dist__/functions/api/sms.func.js                      │ esm  │ 47.38 KiB    │
-2026-05-17T17:02:18.626781Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62681Z	│ __next-on-pages-dist__/functions/api/stats/dashboard.func.js          │ esm  │ 48.57 KiB    │
-2026-05-17T17:02:18.626839Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626873Z	│ __next-on-pages-dist__/functions/api/stats/red-flags.func.js          │ esm  │ 48.32 KiB    │
-2026-05-17T17:02:18.626902Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62693Z	│ __next-on-pages-dist__/functions/api/stats/unread.func.js             │ esm  │ 47.78 KiB    │
-2026-05-17T17:02:18.626958Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.626987Z	│ __next-on-pages-dist__/functions/api/stats.func.js                    │ esm  │ 47.17 KiB    │
-2026-05-17T17:02:18.627015Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627055Z	│ __next-on-pages-dist__/functions/api/temp-diag.func.js                │ esm  │ 47.26 KiB    │
-2026-05-17T17:02:18.627093Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627123Z	│ __next-on-pages-dist__/functions/api/temp-restore.func.js             │ esm  │ 48.13 KiB    │
-2026-05-17T17:02:18.627153Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627186Z	│ __next-on-pages-dist__/functions/api/upload/[id].func.js              │ esm  │ 47.82 KiB    │
-2026-05-17T17:02:18.627215Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627245Z	│ __next-on-pages-dist__/functions/api/upload.func.js                   │ esm  │ 47.83 KiB    │
-2026-05-17T17:02:18.627285Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627335Z	│ __next-on-pages-dist__/functions/api/v1/payments/stk-callback.func.js │ esm  │ 119.28 KiB   │
-2026-05-17T17:02:18.627381Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62742Z	│ __next-on-pages-dist__/functions/api/whatsapp/reminder.func.js        │ esm  │ 47.48 KiB    │
-2026-05-17T17:02:18.627452Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62754Z	│ __next-on-pages-dist__/functions/api/whatsapp/report-card.func.js     │ esm  │ 48.09 KiB    │
-2026-05-17T17:02:18.627571Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627607Z	│ __next-on-pages-dist__/functions/attendance.func.js                   │ esm  │ 83.71 KiB    │
-2026-05-17T17:02:18.627636Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627672Z	│ __next-on-pages-dist__/functions/audit.func.js                        │ esm  │ 69.46 KiB    │
-2026-05-17T17:02:18.627704Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627738Z	│ __next-on-pages-dist__/functions/billing.func.js                      │ esm  │ 85.75 KiB    │
-2026-05-17T17:02:18.627771Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627817Z	│ __next-on-pages-dist__/functions/classes/[grade].func.js              │ esm  │ 72.64 KiB    │
-2026-05-17T17:02:18.627872Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.627925Z	│ __next-on-pages-dist__/functions/classes.func.js                      │ esm  │ 70.60 KiB    │
-2026-05-17T17:02:18.627977Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628038Z	│ __next-on-pages-dist__/functions/comms/push.func.js                   │ esm  │ 74.84 KiB    │
-2026-05-17T17:02:18.628094Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628143Z	│ __next-on-pages-dist__/functions/dashboard.func.js                    │ esm  │ 90.43 KiB    │
-2026-05-17T17:02:18.628194Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628246Z	│ __next-on-pages-dist__/functions/database.func.js                     │ esm  │ 71.33 KiB    │
-2026-05-17T17:02:18.628299Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628353Z	│ __next-on-pages-dist__/functions/debug-restore.func.js                │ esm  │ 67.63 KiB    │
-2026-05-17T17:02:18.628417Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628471Z	│ __next-on-pages-dist__/functions/demo/parent.func.js                  │ esm  │ 80.26 KiB    │
-2026-05-17T17:02:18.628522Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628571Z	│ __next-on-pages-dist__/functions/demo/staff.func.js                   │ esm  │ 80.32 KiB    │
-2026-05-17T17:02:18.628621Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628695Z	│ __next-on-pages-dist__/functions/demo/teacher.func.js                 │ esm  │ 78.34 KiB    │
-2026-05-17T17:02:18.628755Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628813Z	│ __next-on-pages-dist__/functions/demo.func.js                         │ esm  │ 72.72 KiB    │
-2026-05-17T17:02:18.628868Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.628924Z	│ __next-on-pages-dist__/functions/diary.func.js                        │ esm  │ 85.77 KiB    │
-2026-05-17T17:02:18.628975Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629038Z	│ __next-on-pages-dist__/functions/documents.func.js                    │ esm  │ 73.46 KiB    │
-2026-05-17T17:02:18.6291Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629158Z	│ __next-on-pages-dist__/functions/duties.func.js                       │ esm  │ 85.61 KiB    │
-2026-05-17T17:02:18.629202Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629239Z	│ __next-on-pages-dist__/functions/fees/[adm]/receipt.func.js           │ esm  │ 76.45 KiB    │
-2026-05-17T17:02:18.629271Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629307Z	│ __next-on-pages-dist__/functions/fees/pay.func.js                     │ esm  │ 79.28 KiB    │
-2026-05-17T17:02:18.629352Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629403Z	│ __next-on-pages-dist__/functions/fees.func.js                         │ esm  │ 91.96 KiB    │
-2026-05-17T17:02:18.629439Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629469Z	│ __next-on-pages-dist__/functions/finance/budgets.func.js              │ esm  │ 73.72 KiB    │
-2026-05-17T17:02:18.629497Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629526Z	│ __next-on-pages-dist__/functions/finance/expenses.func.js             │ esm  │ 78.51 KiB    │
-2026-05-17T17:02:18.629554Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629588Z	│ __next-on-pages-dist__/functions/finance/invoices.func.js             │ esm  │ 78.29 KiB    │
-2026-05-17T17:02:18.629621Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62965Z	│ __next-on-pages-dist__/functions/finance/payroll.func.js              │ esm  │ 92.59 KiB    │
-2026-05-17T17:02:18.629681Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.62971Z	│ __next-on-pages-dist__/functions/finance/petty-cash.func.js           │ esm  │ 74.03 KiB    │
-2026-05-17T17:02:18.629738Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629766Z	│ __next-on-pages-dist__/functions/finance/reconcile.func.js            │ esm  │ 75.12 KiB    │
-2026-05-17T17:02:18.629795Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629824Z	│ __next-on-pages-dist__/functions/finance/transactions.func.js         │ esm  │ 71.95 KiB    │
-2026-05-17T17:02:18.629857Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629889Z	│ __next-on-pages-dist__/functions/finance.func.js                      │ esm  │ 79.23 KiB    │
-2026-05-17T17:02:18.629918Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.629946Z	│ __next-on-pages-dist__/functions/grades/report-card/[id].func.js      │ esm  │ 83.26 KiB    │
-2026-05-17T17:02:18.629977Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.630005Z	│ __next-on-pages-dist__/functions/grades/report-card/bulk.func.js      │ esm  │ 85.50 KiB    │
-2026-05-17T17:02:18.630216Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.630295Z	│ __next-on-pages-dist__/functions/grades.func.js                       │ esm  │ 83.54 KiB    │
-2026-05-17T17:02:18.630376Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.630492Z	│ __next-on-pages-dist__/functions/index.func.js                        │ esm  │ 163.56 KiB   │
-2026-05-17T17:02:18.630616Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.630725Z	│ __next-on-pages-dist__/functions/learners/[id].func.js                │ esm  │ 89.06 KiB    │
-2026-05-17T17:02:18.630835Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.630957Z	│ __next-on-pages-dist__/functions/learners/bulk.func.js                │ esm  │ 85.74 KiB    │
-2026-05-17T17:02:18.631088Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.631213Z	│ __next-on-pages-dist__/functions/learners/recycle-bin.func.js         │ esm  │ 70.32 KiB    │
-2026-05-17T17:02:18.631336Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.631461Z	│ __next-on-pages-dist__/functions/learners.func.js                     │ esm  │ 94.75 KiB    │
-2026-05-17T17:02:18.631571Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.631879Z	│ __next-on-pages-dist__/functions/learning.func.js                     │ esm  │ 99.92 KiB    │
-2026-05-17T17:02:18.631972Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632068Z	│ __next-on-pages-dist__/functions/login.func.js                        │ esm  │ 101.95 KiB   │
-2026-05-17T17:02:18.632153Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.63223Z	│ __next-on-pages-dist__/functions/merit-list.func.js                   │ esm  │ 94.01 KiB    │
-2026-05-17T17:02:18.632297Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632351Z	│ __next-on-pages-dist__/functions/messages.func.js                     │ esm  │ 92.27 KiB    │
-2026-05-17T17:02:18.632398Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632444Z	│ __next-on-pages-dist__/functions/middleware.func.js                   │ esm  │ 114.34 KiB   │
-2026-05-17T17:02:18.632499Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632553Z	│ __next-on-pages-dist__/functions/nexed.func.js                        │ esm  │ 202.47 KiB   │
-2026-05-17T17:02:18.632602Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632635Z	│ __next-on-pages-dist__/functions/parent-home.func.js                  │ esm  │ 112.68 KiB   │
-2026-05-17T17:02:18.632663Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632696Z	│ __next-on-pages-dist__/functions/parent-marks.func.js                 │ esm  │ 71.06 KiB    │
-2026-05-17T17:02:18.632725Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632754Z	│ __next-on-pages-dist__/functions/predictor.func.js                    │ esm  │ 86.82 KiB    │
-2026-05-17T17:02:18.632784Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632813Z	│ __next-on-pages-dist__/functions/privacy.func.js                      │ esm  │ 88.16 KiB    │
-2026-05-17T17:02:18.632841Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632869Z	│ __next-on-pages-dist__/functions/profile.func.js                      │ esm  │ 109.08 KiB   │
-2026-05-17T17:02:18.632896Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632924Z	│ __next-on-pages-dist__/functions/proposal.func.js                     │ esm  │ 73.93 KiB    │
-2026-05-17T17:02:18.63296Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.632992Z	│ __next-on-pages-dist__/functions/report-card.func.js                  │ esm  │ 76.93 KiB    │
-2026-05-17T17:02:18.633022Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633071Z	│ __next-on-pages-dist__/functions/reports.func.js                      │ esm  │ 78.09 KiB    │
-2026-05-17T17:02:18.6331Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633128Z	│ __next-on-pages-dist__/functions/saas/signup.func.js                  │ esm  │ 85.91 KiB    │
-2026-05-17T17:02:18.633156Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633184Z	│ __next-on-pages-dist__/functions/settings/billing.func.js             │ esm  │ 72.67 KiB    │
-2026-05-17T17:02:18.63322Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633252Z	│ __next-on-pages-dist__/functions/settings/calendar.func.js            │ esm  │ 74.20 KiB    │
-2026-05-17T17:02:18.63328Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633307Z	│ __next-on-pages-dist__/functions/settings/grading.func.js             │ esm  │ 76.56 KiB    │
-2026-05-17T17:02:18.63334Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633369Z	│ __next-on-pages-dist__/functions/settings/profile.func.js             │ esm  │ 92.35 KiB    │
-2026-05-17T17:02:18.633397Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633425Z	│ __next-on-pages-dist__/functions/settings/sms.func.js                 │ esm  │ 70.10 KiB    │
-2026-05-17T17:02:18.633452Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.63348Z	│ __next-on-pages-dist__/functions/settings/subjects.func.js            │ esm  │ 72.17 KiB    │
-2026-05-17T17:02:18.633507Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633535Z	│ __next-on-pages-dist__/functions/settings/timetable.func.js           │ esm  │ 72.28 KiB    │
-2026-05-17T17:02:18.633566Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633596Z	│ __next-on-pages-dist__/functions/settings/weights.func.js             │ esm  │ 72.23 KiB    │
-2026-05-17T17:02:18.633625Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633751Z	│ __next-on-pages-dist__/functions/settings.func.js                     │ esm  │ 70.63 KiB    │
-2026-05-17T17:02:18.633789Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633823Z	│ __next-on-pages-dist__/functions/sms/api/send.func.js                 │ esm  │ 47.56 KiB    │
-2026-05-17T17:02:18.633852Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633881Z	│ __next-on-pages-dist__/functions/streams.func.js                      │ esm  │ 71.43 KiB    │
-2026-05-17T17:02:18.633909Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633937Z	│ __next-on-pages-dist__/functions/super-admin.func.js                  │ esm  │ 123.57 KiB   │
-2026-05-17T17:02:18.633966Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.633994Z	│ __next-on-pages-dist__/functions/teachers/subjects.func.js            │ esm  │ 70.10 KiB    │
-2026-05-17T17:02:18.634174Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.634272Z	│ __next-on-pages-dist__/functions/teachers.func.js                     │ esm  │ 76.73 KiB    │
-2026-05-17T17:02:18.634352Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.634429Z	│ __next-on-pages-dist__/functions/templates.func.js                    │ esm  │ 139.14 KiB   │
-2026-05-17T17:02:18.634508Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.634586Z	│ __next-on-pages-dist__/functions/terms.func.js                        │ esm  │ 92.79 KiB    │
-2026-05-17T17:02:18.634659Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.634728Z	│ __next-on-pages-dist__/functions/timetable.func.js                    │ esm  │ 93.18 KiB    │
-2026-05-17T17:02:18.634803Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.634885Z	│ __next-on-pages-dist__/functions/welfare/portfolio.func.js            │ esm  │ 73.60 KiB    │
-2026-05-17T17:02:18.634982Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.635078Z	│ __next-on-pages-dist__/functions/welfare.func.js                      │ esm  │ 71.37 KiB    │
-2026-05-17T17:02:18.635151Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.635218Z	│ __next-on-pages-dist__/manifest/88a389dd6c068190adb2efc795e4063c.js   │ esm  │ 4.29 KiB     │
-2026-05-17T17:02:18.635284Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.63535Z	│ __next-on-pages-dist__/webpack/1c70de64eda8babb2b983369b0e04da2.js    │ esm  │ 0.47 KiB     │
-2026-05-17T17:02:18.635415Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.63547Z	│ __next-on-pages-dist__/webpack/20961.js                               │ esm  │ 3.92 KiB     │
-2026-05-17T17:02:18.635527Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.63558Z	│ __next-on-pages-dist__/webpack/213cdcdd92be4e63879fff22bd00cd7d.js    │ esm  │ 718.22 KiB   │
-2026-05-17T17:02:18.635614Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.635651Z	│ __next-on-pages-dist__/webpack/22186.js                               │ esm  │ 29.08 KiB    │
-2026-05-17T17:02:18.635687Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.63572Z	│ __next-on-pages-dist__/webpack/27558.js                               │ esm  │ 0.25 KiB     │
-2026-05-17T17:02:18.635753Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.635782Z	│ __next-on-pages-dist__/webpack/3545.js                                │ esm  │ 3.50 KiB     │
-2026-05-17T17:02:18.635816Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.635845Z	│ __next-on-pages-dist__/webpack/43030.js                               │ esm  │ 0.26 KiB     │
-2026-05-17T17:02:18.635875Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.635904Z	│ __next-on-pages-dist__/webpack/46407.js                               │ esm  │ 30.69 KiB    │
-2026-05-17T17:02:18.635937Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.635965Z	│ __next-on-pages-dist__/webpack/481b8ca9f604d5d97c0a1f8ea5beb0e3.js    │ esm  │ 16.73 KiB    │
-2026-05-17T17:02:18.636Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.63604Z	│ __next-on-pages-dist__/webpack/49194.js                               │ esm  │ 0.53 KiB     │
-2026-05-17T17:02:18.63607Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636099Z	│ __next-on-pages-dist__/webpack/54749.js                               │ esm  │ 0.25 KiB     │
-2026-05-17T17:02:18.636128Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636157Z	│ __next-on-pages-dist__/webpack/58914.js                               │ esm  │ 2.23 KiB     │
-2026-05-17T17:02:18.636194Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636242Z	│ __next-on-pages-dist__/webpack/625569799f8c700c04388bf36e8faa35.js    │ esm  │ 599.82 KiB   │
-2026-05-17T17:02:18.636293Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636338Z	│ __next-on-pages-dist__/webpack/64888.js                               │ esm  │ 0.21 KiB     │
-2026-05-17T17:02:18.636386Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636451Z	│ __next-on-pages-dist__/webpack/6ce3deae6e149c893f46ac18472382d1.js    │ esm  │ 30.37 KiB    │
-2026-05-17T17:02:18.636487Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636516Z	│ __next-on-pages-dist__/webpack/74134.js                               │ esm  │ 0.42 KiB     │
-2026-05-17T17:02:18.636581Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.63663Z	│ __next-on-pages-dist__/webpack/84913.js                               │ esm  │ 0.31 KiB     │
-2026-05-17T17:02:18.63668Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636733Z	│ __next-on-pages-dist__/webpack/86796.js                               │ esm  │ 0.36 KiB     │
-2026-05-17T17:02:18.636784Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636834Z	│ __next-on-pages-dist__/webpack/88576.js                               │ esm  │ 1.75 KiB     │
-2026-05-17T17:02:18.636889Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.636948Z	│ __next-on-pages-dist__/webpack/9026.js                                │ esm  │ 3.04 KiB     │
-2026-05-17T17:02:18.637001Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637067Z	│ __next-on-pages-dist__/webpack/95000.js                               │ esm  │ 0.79 KiB     │
-2026-05-17T17:02:18.637122Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637173Z	│ __next-on-pages-dist__/webpack/a8bd430ffc35759dd2766730299a0459.js    │ esm  │ 152.42 KiB   │
-2026-05-17T17:02:18.637216Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637266Z	│ __next-on-pages-dist__/webpack/b01308d5730d863eecfa84369e8e4940.js    │ esm  │ 87.37 KiB    │
-2026-05-17T17:02:18.637322Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637374Z	│ __next-on-pages-dist__/webpack/b7b479cbe7aeca03e425651fd63d9790.js    │ esm  │ 1.65 KiB     │
-2026-05-17T17:02:18.637424Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637479Z	│ __next-on-pages-dist__/webpack/b9b14f2d6880d5ad9e0513aa93e44374.js    │ esm  │ 166.71 KiB   │
-2026-05-17T17:02:18.637517Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637547Z	│ __next-on-pages-dist__/webpack/caa5c0cd6f0a2274f8c11e609e339e3b.js    │ esm  │ 63.29 KiB    │
-2026-05-17T17:02:18.637576Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637604Z	│ __next-on-pages-dist__/webpack/ea42a0301175eaaba4dee39dac6c9216.js    │ esm  │ 1.56 KiB     │
-2026-05-17T17:02:18.63764Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637669Z	│ __next-on-pages-dist__/webpack/ec404f13debda4516c431c1a3dafb1d3.js    │ esm  │ 0.72 KiB     │
-2026-05-17T17:02:18.637696Z	├───────────────────────────────────────────────────────────────────────┼──────┼──────────────┤
-2026-05-17T17:02:18.637724Z	│ Total (155 modules)                                                   │      │ 10734.04 KiB │
-2026-05-17T17:02:18.637756Z	└───────────────────────────────────────────────────────────────────────┴──────┴──────────────┘
-2026-05-17T17:02:18.779126Z	✨ Compiled Worker successfully
-2026-05-17T17:02:20.021677Z	Found _routes.json in output directory. Uploading.
-2026-05-17T17:02:20.031388Z	Validating asset output directory
-2026-05-17T17:02:22.703383Z	Deploying your site to Cloudflare's global network...
-2026-05-17T17:02:25.105958Z	Parsed 2 valid header rules.
-2026-05-17T17:02:26.453763Z	Uploading... (116/187)
-2026-05-17T17:02:27.220915Z	Uploading... (139/187)
-2026-05-17T17:02:27.275925Z	Uploading... (163/187)
-2026-05-17T17:02:27.54314Z	Uploading... (187/187)
-2026-05-17T17:02:27.543577Z	✨ Success! Uploaded 71 files (116 already uploaded) (1.50 sec)
-2026-05-17T17:02:27.543677Z	
-2026-05-17T17:02:28.108038Z	✨ Upload complete!
-2026-05-17T17:02:32.637323Z	Success: Assets published!
-2026-05-17T17:02:35.24474Z	Error: Failed to publish your Function. Got error: Your Worker exceeded the size limit of 3 MiB. Please upgrade to a paid plan to deploy Workers up to 10 MiB. https://dash.cloudflare.com/fee68628ead7ff7fff88804a6a6d5c9e/workers/plans
 /* ═══════════════════════════════════════════
    ROUND 5: Nav animation, maroon polish,
    profile tab, hero pic, payslip print
@@ -1935,7 +1194,7 @@ tr:hover td{background:#F8FAFF}
   gap: 4px;
 }
 .tb-nbtn::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -1px;
   left: 50%;
@@ -2600,7 +1859,7 @@ input:focus, select:focus, textarea:focus {
   }
 
   body::before{
-    content:'';
+    content:"";
     position:fixed;
     inset:68px 0 auto;
     height:280px;
@@ -2805,7 +2064,7 @@ input:focus, select:focus, textarea:focus {
   }
 
   .stat-card::before{
-    content:'';
+    content:"";
     position:absolute;
     inset:0;
     background:linear-gradient(135deg,rgba(37,99,235,.09),transparent 38%);
@@ -3244,4 +2503,3 @@ input:focus, select:focus, textarea:focus {
 .hover-glow:hover {
   box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
 }
-
