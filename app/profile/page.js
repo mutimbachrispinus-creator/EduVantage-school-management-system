@@ -13,7 +13,7 @@ import { useProfile } from '@/app/PortalShell';
 const M = '#8B1A1A', ML = '#FDF2F2';
 const PROFILE_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff', 'parent', 'super-admin'];
 const PEOPLE_DIRECTORY_ROLES = ['admin', 'super-admin'];
-const LEARNER_LOOKUP_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff'];
+const LEARNER_LOOKUP_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher'];
 const MY_LEARNERS_ROLES = ['parent', 'teacher', 'staff', 'admin', 'super-admin', 'jss_teacher', 'senior_teacher'];
 const PREDICTOR_ROLES = ['parent', 'teacher', 'staff', 'admin', 'super-admin', 'jss_teacher', 'senior_teacher'];
 const BULK_ENROLL_ROLES = ['admin', 'super-admin'];

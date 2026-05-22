@@ -229,7 +229,9 @@ export default function MessagesPage() {
           m.to === user.role ||
           m.to === 'ALL' || 
           (m.to === 'ALL_PARENTS' && user.role === 'parent') || 
-          (m.to === 'ALL_STAFF' && ['admin','teacher','staff'].includes(user.role))
+          (m.to === 'ALL_STAFF' && ['admin','teacher','staff'].includes(user.role)) ||
+          (m.to === 'ALL_TEACHERS' && ['admin','teacher'].includes(user.role)) ||
+          (m.to === 'NON_TEACHING_STAFF' && ['admin','staff'].includes(user.role))
         );
       } else if (activeTab === 'sent') {
         return m.from === user.username;
@@ -479,6 +481,8 @@ export default function MessagesPage() {
                       <select value={cmpTo} onChange={e => setCmpTo(e.target.value)} style={{ borderRadius: 12, height: 45 }}>
                         <option value="ALL">All Portal Users</option>
                         <option value="ALL_STAFF">All Staff & Teachers</option>
+                        <option value="ALL_TEACHERS">Only Teachers</option>
+                        <option value="NON_TEACHING_STAFF">Only Non-Teaching Staff</option>
                         <option value="ALL_PARENTS">All Parents</option>
                         {user.role === 'parent' && <option value="admin">School Admin</option>}
                       </select>
