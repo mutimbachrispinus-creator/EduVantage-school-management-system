@@ -2,6 +2,7 @@
 import '@/styles/landing.css';
 import LandingNavbar from '@/components/landing/LandingNavbar';
 import LandingFooter from '@/components/landing/LandingFooter';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 const CURRICULUM_DETAILS = {
@@ -69,7 +70,6 @@ const CURRICULUM_DETAILS = {
 
 
 export default function Page() {
-
   const [activeCurriculum, setActiveCurriculum] = useState('CBC');
   
   useEffect(() => {
@@ -83,79 +83,6 @@ export default function Page() {
   return (
     <div className="landing-wrap">
       <LandingNavbar />
-      <section className="hero">
-        <div className="hero-mesh"></div>
-        
-        <div className="container hero-content fade-in-up">
-          <div className="badge-pill pulse-glow">Complete School Management Platform</div>
-          <h1 className="hero-title">
-            Run the school.<br/>See the <span className="text-gradient">whole picture.</span>
-          </h1>
-          <p className="hero-subtitle">
-            EduVantage simplifies admissions, fee collections, academics, payroll, and messaging. Manage your entire school efficiently with an intuitive, all-in-one system.
-          </p>
-          
-          <div className="hero-actions">
-            <Link href="/saas/signup" className="btn btn-xl btn-primary btn-glow">Get Started</Link>
-            <Link href="/demo" className="btn btn-xl btn-outline glass-btn">Explore Live Demo</Link>
-          </div>
-
-          {/* Floating UI Grid */}
-          <div className="experience-grid desktop-only">
-             <div className="exp-card teacher-exp fade-in-up" style={{ animationDelay: '0.2s' }}>
-                <div className="exp-icon">👩‍🏫</div>
-                <div className="exp-info">
-                   <strong>Teacher Workspace</strong>
-                   <span>Markbooks · Attendance</span>
-                </div>
-             </div>
-             <div className="exp-card parent-exp fade-in-up" style={{ animationDelay: '0.4s' }}>
-                <div className="exp-icon">👨‍👩‍👧</div>
-                <div className="exp-info">
-                   <strong>Parent Portal</strong>
-                   <span>Live Ledger · M-Pesa STK</span>
-                </div>
-             </div>
-             <div className="exp-card staff-exp fade-in-up" style={{ animationDelay: '0.6s' }}>
-                <div className="exp-icon">🏢</div>
-                <div className="exp-info">
-                   <strong>Finance Suite</strong>
-                   <span>Deductions Payroll · Collections</span>
-                </div>
-             </div>
-          </div>
-
-          <div className="hero-mockup">
-            <div className="mockup-frame">
-              <img src="/eduvantage-hero-new.png" alt="Dashboard Mockup" className="mockup-img" />
-              
-              {/* Floating Glass Cards Removed for simplicity */}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── STATS STRIP (HONEST FIGURES) ── */}
-      <section className="stats-strip">
-        <div className="container stats-box">
-          <div className="stat-item">
-            <strong>{stats.schools > 0 ? `${stats.schools}+` : 'Multi-School'}</strong>
-            <span>Active Institutional Tenants</span>
-          </div>
-          <div className="stat-sep"></div>
-          <div className="stat-item">
-            <strong>{stats.learners > 0 ? `${(stats.learners / 1000).toFixed(1)}k+` : 'Direct Bulk'}</strong>
-            <span>Active Student Records</span>
-          </div>
-          <div className="stat-sep"></div>
-          <div className="stat-item">
-            <strong>100%</strong>
-            <span>Secure & Private</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── DYNAMIC CURRICULUM ADAPTER (SHOWCASE FEATURE 1) ── */}
       <section id="curriculum" className="curriculum-section">
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 50 }}>
@@ -199,5 +126,4 @@ export default function Page() {
       <LandingFooter />
     </div>
   );
-
 }

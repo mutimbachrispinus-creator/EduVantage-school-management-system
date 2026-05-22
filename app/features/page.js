@@ -2,6 +2,7 @@
 import '@/styles/landing.css';
 import LandingNavbar from '@/components/landing/LandingNavbar';
 import LandingFooter from '@/components/landing/LandingFooter';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 const ALL_FEATURES_BLUEPRINT = [
@@ -37,7 +38,6 @@ const ALL_FEATURES_BLUEPRINT = [
 
 
 export default function Page() {
-
   const [featureFilter, setFeatureFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -58,175 +58,6 @@ export default function Page() {
   return (
     <div className="landing-wrap">
       <LandingNavbar />
-      <section className="hero">
-        <div className="hero-mesh"></div>
-        
-        <div className="container hero-content fade-in-up">
-          <div className="badge-pill pulse-glow">Complete School Management Platform</div>
-          <h1 className="hero-title">
-            Run the school.<br/>See the <span className="text-gradient">whole picture.</span>
-          </h1>
-          <p className="hero-subtitle">
-            EduVantage simplifies admissions, fee collections, academics, payroll, and messaging. Manage your entire school efficiently with an intuitive, all-in-one system.
-          </p>
-          
-          <div className="hero-actions">
-            <Link href="/saas/signup" className="btn btn-xl btn-primary btn-glow">Get Started</Link>
-            <Link href="/demo" className="btn btn-xl btn-outline glass-btn">Explore Live Demo</Link>
-          </div>
-
-          {/* Floating UI Grid */}
-          <div className="experience-grid desktop-only">
-             <div className="exp-card teacher-exp fade-in-up" style={{ animationDelay: '0.2s' }}>
-                <div className="exp-icon">👩‍🏫</div>
-                <div className="exp-info">
-                   <strong>Teacher Workspace</strong>
-                   <span>Markbooks · Attendance</span>
-                </div>
-             </div>
-             <div className="exp-card parent-exp fade-in-up" style={{ animationDelay: '0.4s' }}>
-                <div className="exp-icon">👨‍👩‍👧</div>
-                <div className="exp-info">
-                   <strong>Parent Portal</strong>
-                   <span>Live Ledger · M-Pesa STK</span>
-                </div>
-             </div>
-             <div className="exp-card staff-exp fade-in-up" style={{ animationDelay: '0.6s' }}>
-                <div className="exp-icon">🏢</div>
-                <div className="exp-info">
-                   <strong>Finance Suite</strong>
-                   <span>Deductions Payroll · Collections</span>
-                </div>
-             </div>
-          </div>
-
-          <div className="hero-mockup">
-            <div className="mockup-frame">
-              <img src="/eduvantage-hero-new.png" alt="Dashboard Mockup" className="mockup-img" />
-              
-              {/* Floating Glass Cards Removed for simplicity */}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── STATS STRIP (HONEST FIGURES) ── */}
-      <section className="stats-strip">
-        <div className="container stats-box">
-          <div className="stat-item">
-            <strong>{stats.schools > 0 ? `${stats.schools}+` : 'Multi-School'}</strong>
-            <span>Active Institutional Tenants</span>
-          </div>
-          <div className="stat-sep"></div>
-          <div className="stat-item">
-            <strong>{stats.learners > 0 ? `${(stats.learners / 1000).toFixed(1)}k+` : 'Direct Bulk'}</strong>
-            <span>Active Student Records</span>
-          </div>
-          <div className="stat-sep"></div>
-          <div className="stat-item">
-            <strong>100%</strong>
-            <span>Secure & Private</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── DYNAMIC CURRICULUM ADAPTER (SHOWCASE FEATURE 1) ── */}
-      <section id="curriculum" className="curriculum-section">
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
-            <div className="badge-pill">Unified Grading Matrix</div>
-            <h2 className="section-title">The Curriculum-Aware<br /><span className="text-gradient">Grading Engine</span></h2>
-            <p className="section-subtitle">No more rigid setups. Scale grades, rubrics, and certificates per student or level with a single engine built for global education systems.</p>
-          </div>
-
-          {/* Tab Selector */}
-          <div className="tabs-container">
-            {Object.keys(CURRICULUM_DETAILS).map((key) => (
-              <button
-                key={key}
-                className={`tab-btn ${activeCurriculum === key ? 'active' : ''}`}
-                onClick={() => setActiveCurriculum(key)}
-              >
-                {CURRICULUM_DETAILS[key].icon} {key}
-              </button>
-            ))}
-          </div>
-
-          {/* Interactive Card */}
-          <div className="curriculum-card fade-in">
-            <div className="curr-header">
-              <span className="curr-badge">{CURRICULUM_DETAILS[activeCurriculum].badge}</span>
-              <h3>{CURRICULUM_DETAILS[activeCurriculum].title}</h3>
-            </div>
-            <p className="curr-desc">{CURRICULUM_DETAILS[activeCurriculum].description}</p>
-            
-            <div className="specs-grid">
-              {CURRICULUM_DETAILS[activeCurriculum].specs.map((spec, i) => (
-                <div key={i} className="spec-item">
-                  <strong>{spec.label}</strong>
-                  <span>{spec.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── PORTAL WORKSPACES (SHOWCASE FEATURE 2) ── */}
-      <section id="portals" className="portals-section">
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
-            <div className="badge-pill">Contextual Workspaces</div>
-            <h2 className="section-title">Tailored experiences for <br /><span className="text-gradient">every institutional role</span></h2>
-            <p className="section-subtitle">Different dashboards tailored to give administrators, teachers, parents, and students the exact tools they need.</p>
-          </div>
-
-          <div className="portals-layout">
-            {/* Left selector */}
-            <div className="portal-menu">
-              {Object.keys(PERSONA_DETAILS).map((key) => (
-                <button
-                  key={key}
-                  className={`portal-menu-item ${activePersona === key ? 'active' : ''}`}
-                  onClick={() => setActivePersona(key)}
-                  style={{ '--accent-color': PERSONA_DETAILS[key].color }}
-                >
-                  <span className="pmi-icon">{PERSONA_DETAILS[key].icon}</span>
-                  <div>
-                    <span className="pmi-title">{PERSONA_DETAILS[key].title}</span>
-                    <span className="pmi-badge">{PERSONA_DETAILS[key].badge}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Right Display */}
-            <div className="portal-display" style={{ borderLeftColor: PERSONA_DETAILS[activePersona].color }}>
-              <div className="pd-header">
-                <span className="pd-icon" style={{ background: `${PERSONA_DETAILS[activePersona].color}1A`, color: PERSONA_DETAILS[activePersona].color }}>
-                  {PERSONA_DETAILS[activePersona].icon}
-                </span>
-                <h3>{PERSONA_DETAILS[activePersona].title} Workspace</h3>
-              </div>
-              <p className="pd-desc">{PERSONA_DETAILS[activePersona].desc}</p>
-              
-              <ul className="pd-bullets">
-                {PERSONA_DETAILS[activePersona].bullets.map((bullet, idx) => (
-                  <li key={idx} style={{ '--accent-color': PERSONA_DETAILS[activePersona].color }}>{bullet}</li>
-                ))}
-              </ul>
-
-              <div className="pd-actions">
-                <Link href={activePersona === 'admin' ? '/demo/staff' : activePersona === 'teacher' ? '/demo/teacher' : activePersona === 'parent' ? '/demo/parent' : '/login'} className="btn btn-primary" style={{ background: PERSONA_DETAILS[activePersona].color }}>
-                  Launch {PERSONA_DETAILS[activePersona].title} Demo
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── SEARCHABLE & FILTERABLE FEATURE bluePRINT (THE DEEP DIVE) ── */}
       <section id="features" className="blueprint-section">
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 50 }}>
@@ -288,5 +119,4 @@ export default function Page() {
       <LandingFooter />
     </div>
   );
-
 }

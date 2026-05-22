@@ -2,8 +2,8 @@
 import '@/styles/landing.css';
 import LandingNavbar from '@/components/landing/LandingNavbar';
 import LandingFooter from '@/components/landing/LandingFooter';
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 const PERSONA_DETAILS = {
   admin: {
@@ -65,7 +65,6 @@ const PERSONA_DETAILS = {
 
 
 export default function Page() {
-
   const [activePersona, setActivePersona] = useState('admin');
   
   useEffect(() => {
@@ -77,121 +76,6 @@ export default function Page() {
   return (
     <div className="landing-wrap">
       <LandingNavbar />
-      <section className="hero">
-        <div className="hero-mesh"></div>
-        
-        <div className="container hero-content fade-in-up">
-          <div className="badge-pill pulse-glow">Complete School Management Platform</div>
-          <h1 className="hero-title">
-            Run the school.<br/>See the <span className="text-gradient">whole picture.</span>
-          </h1>
-          <p className="hero-subtitle">
-            EduVantage simplifies admissions, fee collections, academics, payroll, and messaging. Manage your entire school efficiently with an intuitive, all-in-one system.
-          </p>
-          
-          <div className="hero-actions">
-            <Link href="/saas/signup" className="btn btn-xl btn-primary btn-glow">Get Started</Link>
-            <Link href="/demo" className="btn btn-xl btn-outline glass-btn">Explore Live Demo</Link>
-          </div>
-
-          {/* Floating UI Grid */}
-          <div className="experience-grid desktop-only">
-             <div className="exp-card teacher-exp fade-in-up" style={{ animationDelay: '0.2s' }}>
-                <div className="exp-icon">👩‍🏫</div>
-                <div className="exp-info">
-                   <strong>Teacher Workspace</strong>
-                   <span>Markbooks · Attendance</span>
-                </div>
-             </div>
-             <div className="exp-card parent-exp fade-in-up" style={{ animationDelay: '0.4s' }}>
-                <div className="exp-icon">👨‍👩‍👧</div>
-                <div className="exp-info">
-                   <strong>Parent Portal</strong>
-                   <span>Live Ledger · M-Pesa STK</span>
-                </div>
-             </div>
-             <div className="exp-card staff-exp fade-in-up" style={{ animationDelay: '0.6s' }}>
-                <div className="exp-icon">🏢</div>
-                <div className="exp-info">
-                   <strong>Finance Suite</strong>
-                   <span>Deductions Payroll · Collections</span>
-                </div>
-             </div>
-          </div>
-
-          <div className="hero-mockup">
-            <div className="mockup-frame">
-              <img src="/eduvantage-hero-new.png" alt="Dashboard Mockup" className="mockup-img" />
-              
-              {/* Floating Glass Cards Removed for simplicity */}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── STATS STRIP (HONEST FIGURES) ── */}
-      <section className="stats-strip">
-        <div className="container stats-box">
-          <div className="stat-item">
-            <strong>{stats.schools > 0 ? `${stats.schools}+` : 'Multi-School'}</strong>
-            <span>Active Institutional Tenants</span>
-          </div>
-          <div className="stat-sep"></div>
-          <div className="stat-item">
-            <strong>{stats.learners > 0 ? `${(stats.learners / 1000).toFixed(1)}k+` : 'Direct Bulk'}</strong>
-            <span>Active Student Records</span>
-          </div>
-          <div className="stat-sep"></div>
-          <div className="stat-item">
-            <strong>100%</strong>
-            <span>Secure & Private</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── DYNAMIC CURRICULUM ADAPTER (SHOWCASE FEATURE 1) ── */}
-      <section id="curriculum" className="curriculum-section">
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
-            <div className="badge-pill">Unified Grading Matrix</div>
-            <h2 className="section-title">The Curriculum-Aware<br /><span className="text-gradient">Grading Engine</span></h2>
-            <p className="section-subtitle">No more rigid setups. Scale grades, rubrics, and certificates per student or level with a single engine built for global education systems.</p>
-          </div>
-
-          {/* Tab Selector */}
-          <div className="tabs-container">
-            {Object.keys(CURRICULUM_DETAILS).map((key) => (
-              <button
-                key={key}
-                className={`tab-btn ${activeCurriculum === key ? 'active' : ''}`}
-                onClick={() => setActiveCurriculum(key)}
-              >
-                {CURRICULUM_DETAILS[key].icon} {key}
-              </button>
-            ))}
-          </div>
-
-          {/* Interactive Card */}
-          <div className="curriculum-card fade-in">
-            <div className="curr-header">
-              <span className="curr-badge">{CURRICULUM_DETAILS[activeCurriculum].badge}</span>
-              <h3>{CURRICULUM_DETAILS[activeCurriculum].title}</h3>
-            </div>
-            <p className="curr-desc">{CURRICULUM_DETAILS[activeCurriculum].description}</p>
-            
-            <div className="specs-grid">
-              {CURRICULUM_DETAILS[activeCurriculum].specs.map((spec, i) => (
-                <div key={i} className="spec-item">
-                  <strong>{spec.label}</strong>
-                  <span>{spec.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── PORTAL WORKSPACES (SHOWCASE FEATURE 2) ── */}
       <section id="portals" className="portals-section">
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 50 }}>
@@ -247,5 +131,4 @@ export default function Page() {
       <LandingFooter />
     </div>
   );
-
 }
