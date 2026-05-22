@@ -87,20 +87,14 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
       <Link href="/dashboard" className="tb-brand" style={{ cursor: 'pointer', textDecoration: 'none' }}>
         <div 
           className="tb-crest" 
-          style={(user.role === 'super-admin' && !impersonateId) ? {
-            width: 40, height: 40, background: '#4F46E5', borderRadius: 12, 
-            display: 'flex', alignItems: 'center', justifyContent: 'center', 
-            boxShadow: '0 10px 20px rgba(79, 70, 229, 0.2)', padding: 0
-          } : {}}
+          style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
         >
           <img 
             src={(user.role === 'super-admin' && !impersonateId) ? '/ev-brand-v3.png' : (profile.logo && profile.logo !== '/ev-brand-v3.png' ? profile.logo : '/ev-brand-v3.png')} 
-            alt="Logo"
+            alt="EduVantage Logo"
             fetchpriority="high"
             loading="eager"
-            style={(user.role === 'super-admin' && !impersonateId) ? {
-              width: 24, height: 24, objectFit: 'contain', filter: 'brightness(0) invert(1)'
-            } : { width: 36, height: 36, objectFit: 'cover', borderRadius: '50%' }} 
+            style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: '50%' }} 
           />
         </div>
         <div>

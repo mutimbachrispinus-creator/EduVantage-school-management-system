@@ -12,8 +12,8 @@ export default function DefaultPrivacy() {
       <nav style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '18px 0', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-            <div style={{ width: 38, height: 38, background: `linear-gradient(135deg, ${PRIMARY}, #8B5CF6)`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px rgba(79,70,229,0.3)' }}>
-              <img src="/ev-brand-v3.png" alt="EduVantage" style={{ width: 20, height: 20, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+            <div style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/ev-brand-v3.png" alt="EduVantage" style={{ width: 38, height: 38, objectFit: 'contain', borderRadius: '50%' }} />
             </div>
             <span style={{ fontSize: 22, fontWeight: 800, color: DARK, fontFamily: 'var(--font-sora, sans-serif)', letterSpacing: '-0.02em' }}>EduVantage</span>
           </Link>
