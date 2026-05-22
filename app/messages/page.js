@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { today } from '@/lib/cbe';
-import { getCachedUser, getCachedDBMulti, fetchWithRetry } from '@/lib/client-cache';
+import { getCachedUser, getCachedDBMulti, fetchWithRetry, updateLocalDBCache } from '@/lib/client-cache';
 import { Search, Send, User, Users, CheckCircle, Inbox, Smartphone } from 'lucide-react';
 
 export default function MessagesPage() {
@@ -64,8 +64,9 @@ export default function MessagesPage() {
 
   const openThread = async (m) => {
     setActiveThread(m);
-    if (!m.read.includes(user.username)) {
-      const updatedMsg = { ...m, read: [...m.read, user.username] };
+    const readArray = Array.isArray(m.read) ? m.read : [];
+    if (!readArray.includes(user.username)) {
+      const updatedMsg = { ...m, read: [...readArray, user.username] };
       setSaving(true);
       try {
         await fetchWithRetry('/api/db', {
@@ -73,7 +74,11 @@ export default function MessagesPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ requests: [{ type: 'upsertMessage', message: updatedMsg }] })
         });
-        setAllMessages(prev => prev.map(msg => msg.id === m.id ? updatedMsg : msg));
+        setAllMessages(prev => {
+          const newMsgs = prev.map(msg => msg.id === m.id ? updatedMsg : msg);
+          updateLocalDBCache('paav6_msgs', newMsgs); // Update cache so Navbar badge clears
+          return newMsgs;
+        });
         setActiveThread(updatedMsg);
       } catch (e) { console.error(e); }
       finally { setSaving(false); }
@@ -96,7 +101,11 @@ export default function MessagesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests: [{ type: 'upsertMessage', message: updatedMsg }] })
       });
-      setAllMessages(prev => prev.map(msg => msg.id === activeThread.id ? updatedMsg : msg));
+      setAllMessages(prev => {
+        const newMsgs = prev.map(msg => msg.id === activeThread.id ? updatedMsg : msg);
+        updateLocalDBCache('paav6_msgs', newMsgs);
+        return newMsgs;
+      });
       setActiveThread(updatedMsg);
       setReplyText('');
     } catch (e) {
@@ -142,7 +151,11 @@ export default function MessagesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests: [{ type: 'upsertMessage', message: newMsg }] })
       });
-      setAllMessages(prev => [newMsg, ...prev]);
+      setAllMessages(prev => {
+        const newMsgs = [newMsg, ...prev];
+        updateLocalDBCache('paav6_msgs', newMsgs);
+        return newMsgs;
+      });
       setSentSuccess(true);
       setTimeout(() => {
         setShowCompose(false);
