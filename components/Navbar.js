@@ -94,7 +94,7 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
             alt="EduVantage Logo"
             fetchpriority="high"
             loading="eager"
-            style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: '50%' }} 
+            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '50%', overflow: 'hidden', background: '#0F172A' }} 
           />
         </div>
         <div>

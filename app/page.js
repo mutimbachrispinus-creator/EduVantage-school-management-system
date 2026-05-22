@@ -766,17 +766,13 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* ── FLOATING ACTION BUTTONS (WhatsApp + ChatBot) ── */}
-      <div style={{
-        position: 'fixed',
-        bottom: '24px',
-        right: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-        gap: '12px',
-        zIndex: 9999,
-      }}>
+      {/* ── FLOATING: ChatBot (sits above WhatsApp, independently positioned) ── */}
+      <div style={{ position: 'fixed', bottom: '92px', right: '24px', zIndex: 9999 }}>
+        <ChatBot />
+      </div>
+
+      {/* ── FLOATING: WhatsApp Button (always anchored at bottom-right) ── */}
+      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9998 }}>
         {/* WhatsApp Button */}
         <a
           href="https://wa.me/254718782531?text=Hi%20EduVantage%2C%20I%27d%20like%20to%20learn%20more%20about%20the%20platform."
@@ -844,8 +840,6 @@ export default function LandingPage() {
           </span>
         </a>
 
-        {/* ChatBot */}
-        <ChatBot />
       </div>
 
       <style jsx>{`
@@ -966,18 +960,19 @@ export default function LandingPage() {
         .logo-icon { 
           width: 42px; 
           height: 42px; 
-          background: linear-gradient(135deg, ${PRIMARY}, ${VIBRANT}); 
-          border-radius: 12px; 
+          border-radius: 50%; 
+          overflow: hidden;
           display: flex; 
           align-items: center; 
           justify-content: center; 
-          box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3); 
+          background: #0F172A;
+          flex-shrink: 0;
         }
         .logo-icon img { 
-          width: 24px; 
-          height: 24px; 
-          object-fit: contain; 
-          filter: brightness(0) invert(1); 
+          width: 100%; 
+          height: 100%; 
+          object-fit: cover; 
+          display: block;
         }
         .logo-text { 
           font-size: 24px; 
