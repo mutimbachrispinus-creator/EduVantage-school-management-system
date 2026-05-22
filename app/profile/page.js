@@ -579,16 +579,24 @@ export default function ProfilePage() {
       'Admission No', 'Full Name', 'Grade', 'Stream', 'Gender', 'Date of Birth',
       'Parent/Guardian', 'Phone', 'Father', 'Mother', 'Address', 'Medical', 'Blood Group', 'Transport', 'Parent Email'
     ];
-    const sample = [
+    
+    const validRows = bulkRows.filter(r => r.adm && r.name);
+    
+    // If there are existing learners in this grade, export their actual data. Otherwise, provide a template.
+    const exportData = validRows.length > 0 ? validRows.map(r => [
+      `"${r.adm || ''}"`, `"${r.name || ''}"`, `"${r.grade || bulkGrade}"`, `"${r.stream || ''}"`, `"${r.gender || ''}"`, `"${r.dob || ''}"`,
+      `"${r.parent || ''}"`, `"${r.phone || ''}"`, `"${r.father || ''}"`, `"${r.mother || ''}"`, `"${r.address || ''}"`, `"${r.medical || ''}"`, `"${r.blood || ''}"`, `"${r.transport || ''}"`, `"${r.parentEmail || ''}"`
+    ]) : [
       ['1001', 'JOHN DOE', bulkGrade || ALL_GRADES[0] || 'GRADE 1', 'North', 'Male', '2016-05-20', 'PETER DOE', '0700111222', 'PETER DOE', 'JANE DOE', 'Nairobi West', 'None', 'O+', 'Bus', 'parents@example.com'],
       ['1002', 'MARY AMANI', bulkGrade || ALL_GRADES[0] || 'GRADE 1', 'South', 'Female', '2017-02-14', 'SARAH AMANI', '0722333444', 'JAMES AMANI', 'SARAH AMANI', 'Mombasa', 'Asthma', 'A-', 'Walk', 'sarah@example.com']
     ];
-    const csvContent = headers.join(',') + '\n' + sample.map(r => r.join(',')).join('\n') + '\n';
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    
+    const csvContent = headers.join(',') + '\n' + exportData.map(r => r.join(',')).join('\n') + '\n';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `eduvantage-bulk-enroll-${(bulkGrade || 'template').toLowerCase().replace(/\s+/g, '-')}.csv`;
+    a.download = `eduvantage-export-${(bulkGrade || 'learners').toLowerCase().replace(/\s+/g, '-')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -1134,7 +1142,7 @@ export default function ProfilePage() {
                   📁 Upload CSV
                   <input type="file" accept=".csv,text/csv" onChange={handleBulkCsvUpload} style={{ display:'none' }} />
                 </label>
-                <button className="btn btn-ghost btn-sm" onClick={downloadBulkTemplate}>📥 Template</button>
+                <button className="btn btn-ghost btn-sm" onClick={downloadBulkTemplate}>📥 Export / Template</button>
                 <button className="btn btn-gold btn-sm" onClick={() => setBulkRows([...bulkRows, { ...createEmptyBulkRow(), grade: bulkGrade }])}>➕ Add Row</button>
               </div>
             )}
