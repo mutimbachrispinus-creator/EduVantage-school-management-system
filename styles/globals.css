@@ -509,10 +509,11 @@ tr:hover td{background:#F8FAFF}
   .auth-right{padding:20px 16px}
 }
 @media print{
-  /* Hide ALL portal chrome — navbar, sidebar, announcements, bottom nav, modals */
+  /* Hide ALL portal chrome — navbar, sidebar, announcements, bottom nav, modals, tabs, action buttons */
   #topbar, .no-print, .no-print-bg,
   nav, .announcement-bar-live, .mobile-bottom-nav,
-  .inactivity-banner, .modal-overlay { display:none!important; visibility:hidden!important; }
+  .inactivity-banner, .modal-overlay,
+  .tabs, .tab-btn, .page-hdr-acts, .panel-footer { display:none!important; visibility:hidden!important; }
 
   body { background:#fff!important; margin:0!important; padding:0!important; height: auto !important; overflow: visible !important; }
   html { height: auto !important; overflow: visible !important; }
@@ -520,22 +521,37 @@ tr:hover td{background:#F8FAFF}
 
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-  /* Default portrait */
+  /* Portrait for report cards, landscape for wide mark tables */
   @page { size: A4 portrait; margin: 10mm 12mm; }
+  @page landscape { size: A4 landscape; margin: 8mm 10mm; }
 
   .rc-a4 { box-shadow:none!important; border:none!important; margin:0!important; width:100%!important; padding:0!important; page-break-after:always; }
 
-  /* Ensure all content is rendered for print — disable performance optimizations */
-  .page, .page.on, .print-container, .rc-page, .rc-batch {
+  /* CRITICAL: Remove ALL performance optimizations that block print rendering */
+  * {
+    content-visibility: visible !important;
+    contain: none !important;
+    will-change: auto !important;
+    transform: none !important;
+    backface-visibility: visible !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Force ALL page containers to be visible and block-level for print */
+  .page, .page.on, .print-container, .rc-page, .rc-batch, .animate-in {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
-    content-visibility: visible !important;
-    contain: none !important;
-    transform: none !important;
-    backface-visibility: visible !important;
     padding-bottom: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
   }
+
+  /* Tables — always show in full for print */
+  .tbl-wrap { overflow: visible !important; }
+  table { min-width: 0 !important; font-size: 10px !important; }
+  th, td { padding: 5px 7px !important; }
 
   .merit-list-container { max-height:none!important; overflow:visible!important; }
   .rc-page { page-break-after:always; width:100%; min-height:270mm; box-sizing:border-box; padding:12mm; border:none!important; box-shadow:none!important; }
@@ -544,6 +560,11 @@ tr:hover td{background:#F8FAFF}
   .templates-print-area { width:210mm; margin:0 auto; }
   .page { padding:0!important; }
   .panel { box-shadow:none!important; border:1px solid #e5e7eb!important; }
+
+  /* Print header shown only in print */
+  .print-header { display:block!important; text-align:center; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid #333; }
+  .print-header h2 { font-size:16px; font-weight:900; margin:0 0 4px; }
+  .print-header p { font-size:11px; color:#555; margin:0; }
 }
 .merit-list-container{
   max-height:600px;

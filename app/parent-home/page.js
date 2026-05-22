@@ -344,6 +344,20 @@ export default function ParentHome() {
           <div style={{fontSize:10,opacity:.7,marginBottom:2}}>Fee Balance</div>
           <div style={{fontSize:20,fontWeight:900,color:bal<=0?'#86EFAC':'#FCA5A5'}}>{fmtK(bal)}</div>
           <div style={{fontSize:9,opacity:.7}}>{bal<=0?'✅ Cleared':'⚠ Outstanding'}</div>
+          {bal > 0 && (
+            <button
+              onClick={() => setTab('fees')}
+              style={{
+                marginTop: 8, padding: '7px 16px', borderRadius: 20,
+                background: 'linear-gradient(135deg, #059669, #047857)',
+                border: 'none', color: '#fff', fontWeight: 900, fontSize: 12,
+                cursor: 'pointer', boxShadow: '0 4px 14px rgba(5,150,105,0.4)',
+                display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
+              }}
+            >
+              💳 Pay Now
+            </button>
+          )}
         </div>
       </div>
 

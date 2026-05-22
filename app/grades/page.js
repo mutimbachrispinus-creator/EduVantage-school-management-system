@@ -40,6 +40,7 @@ export default function GradesPage() {
   const [manualSaving, setManualSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [alert,    setAlert]    = useState({ msg: '', type: '' });
+  const [teacherAssigns, setTeacherAssigns] = useState({});
 
   const [grade,  setGrade]  = usePersistedState('paav_grades_grade',  '');
   const [stream, setStream] = usePersistedState('paav_grades_stream', '');
@@ -76,7 +77,8 @@ export default function GradesPage() {
           'paav_marks_locked',
           'paav7_streams',
           'paav8_grad',
-          'paav8_subj'
+          'paav8_subj',
+          'paav_teacher_assignments'
         ])
       ]);
 
@@ -109,6 +111,7 @@ export default function GradesPage() {
       setStreams( db.paav7_streams  || []);
       setGradCfg( db.paav8_grad     || null);
       setSubjCfg( db.paav8_subj     || {});
+      setTeacherAssigns(db.paav_teacher_assignments || {});
     } catch (e) {
       console.error('Grades load error:', e);
     } finally {
@@ -157,7 +160,25 @@ export default function GradesPage() {
   const classLearners = learners.filter(l => l.grade === grade && (!stream || (l.stream || 'Default') === stream))
     .sort((a, b) => a.name.localeCompare(b.name));
   const gradeStreams = streams.filter(s => s.grade === grade);
-  const subjects      = (subjCfg[grade] !== undefined) ? subjCfg[grade] : (DEFAULT_SUBJECTS[grade] || []);
+  const allSubjects = (subjCfg[grade] !== undefined) ? subjCfg[grade] : (DEFAULT_SUBJECTS[grade] || []);
+
+  // For teachers: filter to only their assigned subjects for this grade
+  const isTeacher = user && !['admin', 'super-admin'].includes(user.role);
+  const subjects = isTeacher
+    ? allSubjects.filter(s => teacherAssigns[`${grade}|${s}`] === user.id)
+    : allSubjects;
+
+  // Build teacher's full assignment summary across all grades
+  const teacherAssignmentSummary = isTeacher
+    ? Object.entries(teacherAssigns)
+        .filter(([, tid]) => tid === user?.id)
+        .map(([key]) => {
+          const [g, s] = key.split('|');
+          return { grade: g, subject: s };
+        })
+        .sort((a, b) => a.grade.localeCompare(b.grade))
+    : [];
+
   const getLockKey = (subj) => `${term}:${grade}:${assess}:${subj}`;
   const isSubjLocked = (subj) => !!locked[getLockKey(subj)] || !!locked[`${term}:${grade}:${assess}`];
   const isLocked      = !!locked[`${term}:${grade}:${assess}`];
@@ -506,6 +527,37 @@ export default function GradesPage() {
       {alert.msg && (
         <div className={`alert show alert-${alert.type}`} style={{ display: 'flex', marginBottom: 14 }}>
           {alert.msg}
+        </div>
+      )}
+
+      {/* ── Teacher Assignment Banner ── */}
+      {isTeacher && (
+        <div style={{
+          marginBottom: 14, borderRadius: 12, overflow: 'hidden',
+          border: '1.5px solid', borderColor: teacherAssignmentSummary.length > 0 ? '#BFDBFE' : '#FECACA',
+          background: teacherAssignmentSummary.length > 0 ? '#EFF6FF' : '#FEF2F2'
+        }}>
+          <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ fontWeight: 800, fontSize: 12, color: teacherAssignmentSummary.length > 0 ? '#1D4ED8' : '#B91C1C' }}>
+              {teacherAssignmentSummary.length > 0 ? '📋 Your Subject Assignments' : '⚠️ No Subjects Assigned Yet'}
+            </div>
+            {teacherAssignmentSummary.length > 0 ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {teacherAssignmentSummary.map(({ grade: g, subject: s }) => (
+                  <span key={`${g}|${s}`} style={{
+                    padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                    background: '#DBEAFE', color: '#1E40AF', border: '1px solid #BFDBFE'
+                  }}>
+                    {g} · {s}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span style={{ fontSize: 12, color: '#991B1B' }}>
+                Ask your administrator to assign you subjects via Settings → Subject Assignments.
+              </span>
+            )}
+          </div>
         </div>
       )}
 
