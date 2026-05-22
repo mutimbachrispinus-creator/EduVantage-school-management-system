@@ -121,7 +121,7 @@ export default function ChatBot() {
       )}
 
       <style jsx>{`
-        .chatbot-root { position: fixed; bottom: 30px; right: 30px; z-index: 2000; }
+        .chatbot-root { position: relative; z-index: 2000; }
         
         .chat-trigger { 
           display: flex; align-items: center; gap: 12px; padding: 14px 28px;
@@ -183,13 +183,13 @@ export default function ChatBot() {
         .send-btn:hover { transform: scale(1.1) rotate(-10deg); background: #3730A3; }
 
         @media (max-width: 450px) {
-          .chatbot-root { bottom: 15px; right: 15px; }
           .chat-window { 
+            position: fixed;
             width: calc(100vw - 30px); 
             height: calc(100vh - 100px); 
             max-height: 600px;
-            bottom: 0; 
-            right: 0; 
+            bottom: 15px; 
+            right: 15px; 
             border-radius: 20px; 
           }
           .chat-trigger { padding: 12px 20px; font-size: 13px; }
