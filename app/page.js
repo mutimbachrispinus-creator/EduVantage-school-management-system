@@ -766,13 +766,8 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* ── FLOATING: ChatBot (sits above WhatsApp, independently positioned) ── */}
+      {/* ── FLOATING: WhatsApp Button (sits above EduBot) ── */}
       <div style={{ position: 'fixed', bottom: '92px', right: '24px', zIndex: 9999 }}>
-        <ChatBot />
-      </div>
-
-      {/* ── FLOATING: WhatsApp Button (always anchored at bottom-right) ── */}
-      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9998 }}>
         {/* WhatsApp Button */}
         <a
           href="https://wa.me/254718782531?text=Hi%20EduVantage%2C%20I%27d%20like%20to%20learn%20more%20about%20the%20platform."
@@ -840,6 +835,11 @@ export default function LandingPage() {
           </span>
         </a>
 
+      </div>
+
+      {/* ── FLOATING: EduBot ChatBot (anchored at bottom-right) ── */}
+      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9998 }}>
+        <ChatBot />
       </div>
 
       <style jsx>{`
