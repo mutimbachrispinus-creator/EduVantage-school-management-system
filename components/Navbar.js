@@ -87,16 +87,31 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
       <Link href="/dashboard" className="tb-brand" style={{ cursor: 'pointer', textDecoration: 'none' }}>
         <div 
           className="tb-crest" 
-          style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+          style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, position: 'relative' }}
         >
           <img 
             src={(user.role === 'super-admin' && !impersonateId) ? '/eduvantage-logo.png' : (profile.logo && profile.logo !== '/eduvantage-logo.png' ? profile.logo : '/eduvantage-logo.png')} 
             alt="EduVantage Logo"
             fetchpriority="high"
             loading="eager"
-            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '50%', overflow: 'hidden', background: '#0F172A' }} 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover', 
+              borderRadius: '50%', 
+              background: '#fff',
+              border: '2px solid #FCD34D',
+              boxShadow: '0 0 12px rgba(252, 211, 77, 0.6), 0 0 24px rgba(255, 255, 255, 0.3)',
+              animation: 'pulseGlow 2.5s infinite alternate'
+            }} 
           />
         </div>
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes pulseGlow {
+            0% { box-shadow: 0 0 8px rgba(252, 211, 77, 0.4), 0 0 16px rgba(255, 255, 255, 0.2); transform: scale(1); }
+            100% { box-shadow: 0 0 16px rgba(252, 211, 77, 0.8), 0 0 32px rgba(255, 255, 255, 0.5); transform: scale(1.03); }
+          }
+        `}} />
         <div>
           <div className="tb-sname" style={(user.role === 'super-admin' && !impersonateId) ? {
             fontFamily: 'var(--font-sora), sans-serif', fontSize: 18, fontWeight: 800, color: '#F8FAFC'

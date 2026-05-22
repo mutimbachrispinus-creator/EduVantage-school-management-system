@@ -163,22 +163,13 @@ const ALL_FEATURES_BLUEPRINT = [
   { id: 'alerts', category: 'comms', icon: '🔔', title: 'Context-Aware Push Notifications', desc: 'Real-time notifications for duties, pending approvals, new messages, and calendar events.', detail: 'Fires in-app notifications to teachers for scheduled duties, alerts admins to pending staff requests, and shows real-time unread badges via the background sync engine.' },
   { id: 'delivery', category: 'comms', icon: '📲', title: 'SMS Delivery Observability', desc: 'Webhook logs tracking carrier delivery receipts to confirm every parent notification was delivered.', detail: 'Dedicated delivery webhook endpoint consumes callback statuses from carriers. Admins view delivery logs confirming whether each SMS reached the parent handset.' },
 
-  // System & Infrastructure
-  { id: 'tenant', category: 'infrastructure', icon: '🛡️', title: 'Multi-Tenant Database Isolation', desc: 'Absolute database separation, custom school branding, and zero cross-tenant data bleed.', detail: 'Unique tenant IDs enforce full data isolation. Each school has isolated database tables, unique branding assets, custom color themes, and separate domain routing.' },
-  { id: 'csv', category: 'infrastructure', icon: '📥', title: 'Smart Bulk CSV Onboarding', desc: 'Advanced CSV parser with fuzzy name-matching imports hundreds of learner records in seconds.', detail: 'Eliminates manual entry. Validates columns, flags duplicates, merges matching records across ADM changes using fuzzy name logic, and populates all database registries automatically.' },
-  { id: 'edge', category: 'infrastructure', icon: '🌐', title: 'Cloudflare Edge Architecture', desc: 'Globally distributed on Cloudflare Pages and D1/Turso Edge databases for ultra-low latency.', detail: "Application bundle optimized within Cloudflare's 3MB Edge Worker limit for global ultra-low latency, even in remote geographic areas with unstable connectivity." },
-  { id: 'anti-fraud', category: 'infrastructure', icon: '🔐', title: 'Anti-Fraud QR Registry Checks', desc: 'Encrypted QR codes on all receipts and report cards verify authenticity against live database records.', detail: 'Every report card and fee receipt includes a unique encrypted QR code. Scanning routes to /api/verify which confirms the document maps to an active, unmodified database record.' },
-  { id: 'audit-log', category: 'infrastructure', icon: '📜', title: 'Global Immutable Audit Trail', desc: 'Timestamped logs of every admin action across all tenants for compliance and forensic review.', detail: 'Sensitive actions (logins, record edits, payments, role changes, deletions) are logged to an immutable global_audit table with timestamps, user IDs, and tenant context. Super-admins can filter and export full logs.' },
-  { id: 'sync', category: 'infrastructure', icon: '🔄', title: 'Background Sync Engine', desc: 'Automatic client-server synchronization with conflict resolution and offline mutation queuing.', detail: 'Custom sync engine polls for data changes and pushes pending offline mutations using exponential backoff and event-driven cache invalidation to keep all sessions in sync without page reloads.' },
-  { id: 'pwa', category: 'infrastructure', icon: '📱', title: 'PWA Mobile-First Portals', desc: 'Installable Progressive Web App with offline service worker caching for low-connectivity zones.', detail: 'Installable as a mobile app on parent and teacher phones. Service worker caching stores dashboards and grade data, enabling partial offline access during network lags common in rural Kenya.' },
-  { id: 'diagnostics', category: 'infrastructure', icon: '🛠️', title: 'Self-Healing Repair Utilities', desc: 'Super-admin backstage tools for database repair, cache restoration, and health diagnostics.', detail: 'Super-admin interfaces trigger database table checks, repair orphaned records, restore cache states, force schema migrations, and run health diagnostics without service downtime.' },
-  { id: 'saas', category: 'infrastructure', icon: '🏢', title: 'SaaS Super-Admin Control Panel', desc: 'Centralized panel for onboarding schools, managing subscriptions, and monitoring all tenants.', detail: 'Super-admins create school tenants, configure subscription plans (per-student pricing, flat-rate, feature gates), view global metrics, impersonate school admins for support, and access cross-tenant audit logs.' },
+  // System & Infrastructure removed for marketing clarity
 ];
 
 const TRUST_POINTS = [
-  { label: 'Comprehensive Workflows', value: 'Admissions, fees, grading, attendance, reports, SMS, finance and parent portal workflows.' },
-  { label: 'Seamless Integrations', value: 'Built-in support for SMS, email, and major payment providers to streamline operations.' },
-  { label: 'Cloud-Native Architecture', value: 'Optimized for high performance and reliability on the Cloudflare Edge network.' },
+  { label: 'Comprehensive Workflows', value: 'Manage admissions, fees, grading, attendance, and reports in one place.' },
+  { label: 'Seamless Communication', value: 'Built-in support for SMS and email to keep parents informed.' },
+  { label: 'Secure and Reliable', value: 'Fast, dependable, and easy to use on any device.' },
 ];
 
 export default function LandingPage() {
@@ -264,12 +255,12 @@ export default function LandingPage() {
         <div className="hero-mesh"></div>
         
         <div className="container hero-content fade-in-up">
-          <div className="badge-pill pulse-glow">Next-Gen Integrated School ERP, Finance & Academics</div>
+          <div className="badge-pill pulse-glow">Complete School Management Platform</div>
           <h1 className="hero-title">
             Run the school.<br/>See the <span className="text-gradient">whole picture.</span>
           </h1>
           <p className="hero-subtitle">
-            EduVantage brings admissions, fee collections, academics, payroll, internal messaging, Africa's Talking SMS, and multi-channel payment callbacks into one tenant-isolated platform. Optimize school management with built-in tools.
+            EduVantage simplifies admissions, fee collections, academics, payroll, and messaging. Manage your entire school efficiently with an intuitive, all-in-one system.
           </p>
           
           <div className="hero-actions">
@@ -306,21 +297,7 @@ export default function LandingPage() {
             <div className="mockup-frame">
               <img src="/eduvantage-hero-new.png" alt="Dashboard Mockup" className="mockup-img" />
               
-              {/* Floating Glass Cards */}
-              <div className="floating-card card-1 glass-card">
-                <div className="icon-wrap" style={{ color: VIBRANT }}>🏦</div>
-                <div>
-                  <div className="card-val">Daraja Active</div>
-                  <div className="card-lab">M-Pesa Ledger Callbacks</div>
-                </div>
-              </div>
-              <div className="floating-card card-2 glass-card">
-                <div className="icon-wrap" style={{ color: ACCENT }}>🔐</div>
-                <div>
-                  <div className="card-val">Isolated SaaS</div>
-                  <div className="card-lab">D1 Edge Data Separation</div>
-                </div>
-              </div>
+              {/* Floating Glass Cards Removed for simplicity */}
             </div>
           </div>
         </div>
@@ -340,8 +317,8 @@ export default function LandingPage() {
           </div>
           <div className="stat-sep"></div>
           <div className="stat-item">
-            <strong>99.9% Uptime</strong>
-            <span>Cloudflare Edge Network</span>
+            <strong>100%</strong>
+            <span>Secure & Private</span>
           </div>
         </div>
       </section>
