@@ -99,7 +99,7 @@ class ErrorBoundary extends React.Component {
 }
 
 /* Pages that should NOT show the navbar */
-const NO_NAV_PATHS = ['/', '/login', '/fees/pay', '/saas/signup', '/api', '/privacy', '/terms'];
+const NO_NAV_PATHS = ['/', '/login', '/fees/pay', '/saas/signup', '/api', '/privacy', '/terms', '/curricula', '/workspaces', '/features', '/compare', '/pricing'];
 
 /* Inactivity config */
 const IDLE_WARNING_MS  = 7 * 60 * 1000;   // warn after 7 min

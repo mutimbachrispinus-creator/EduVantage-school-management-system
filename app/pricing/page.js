@@ -1,75 +1,34 @@
 'use client';
 import '@/styles/landing.css';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import LandingNavbar from '@/components/landing/LandingNavbar';
 import LandingFooter from '@/components/landing/LandingFooter';
+import { useState, useEffect } from 'react';
+import PriceCard from '@/components/landing/PriceCard';
 
-import ChatBot from '@/components/ChatBot';
 
-// Colors mapped to dynamic CSS variables, falling back to sleek modern theme palettes
-const PRIMARY = 'var(--lp-primary, #4F46E5)'; // Indigo
-const ACCENT  = 'var(--lp-accent,  #10B981)'; // Emerald
-const DARK    = 'var(--lp-dark,    #0F172A)'; // Deep Slate
-const SLATE   = 'var(--lp-slate,   #64748B)'; // Muted Slate
-const VIBRANT = 'var(--lp-vibrant, #8B5CF6)'; // Purple
-const AMBER   = '#F59E0B';
 
-// Detailed Curriculum Mapping configuration
+export default function Page() {
 
-// Detailed User Persona experience configurations
-
-// Extremely detailed Features Blueprint for the Search and Filtering system
-
-const TRUST_POINTS = [
-  { label: 'Comprehensive Workflows', value: 'Manage admissions, fees, grading, attendance, and reports in one place.' },
-  { label: 'Seamless Communication', value: 'Built-in support for SMS and email to keep parents informed.' },
-  { label: 'Secure and Reliable', value: 'Fast, dependable, and easy to use on any device.' },
-];
-
-export default function LandingPage() {
-  const [scrolled, setScrolled] = useState(false);
-  const [stats, setStats] = useState({ schools: 0, learners: 0 });
   const [plans, setPlans] = useState([]);
-
-  // Interactive UI states
-          const [expandedFaq, setExpandedFaq] = useState(null);
-
+  
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Sync landing page CSS vars with platform theme
     const style = document.documentElement.style;
     const primary = style.getPropertyValue('--primary').trim() || '#4F46E5';
-    const secondary = style.getPropertyValue('--secondary').trim() || '#10B981';
     if (primary) style.setProperty('--lp-primary', primary);
-    if (secondary) style.setProperty('--lp-accent', secondary);
 
     async function loadStats() {
       try {
         const res = await fetch('/api/saas/config?tenant=platform-master', { cache: 'no-store' });
         const data = await res.json();
-        if (data.stats) setStats(data.stats);
         if (data.plans) setPlans(data.plans);
       } catch (e) {}
     }
     loadStats();
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Filter features based on active category and text query
-  
-  const toggleFaq = (index) => {
-    setExpandedFaq(expandedFaq === index ? null : index);
-  };
 
   return (
     <div className="landing-wrap">
-      {/* ── STICKY NAV ── */}
       <LandingNavbar />
-
-      {/* ── HERO ── */}
       <section className="hero">
         <div className="hero-mesh"></div>
         
@@ -143,13 +102,160 @@ export default function LandingPage() {
       </section>
 
       {/* ── DYNAMIC CURRICULUM ADAPTER (SHOWCASE FEATURE 1) ── */}
-      
+      <section id="curriculum" className="curriculum-section">
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 50 }}>
+            <div className="badge-pill">Unified Grading Matrix</div>
+            <h2 className="section-title">The Curriculum-Aware<br /><span className="text-gradient">Grading Engine</span></h2>
+            <p className="section-subtitle">No more rigid setups. Scale grades, rubrics, and certificates per student or level with a single engine built for global education systems.</p>
+          </div>
+
+          {/* Tab Selector */}
+          <div className="tabs-container">
+            {Object.keys(CURRICULUM_DETAILS).map((key) => (
+              <button
+                key={key}
+                className={`tab-btn ${activeCurriculum === key ? 'active' : ''}`}
+                onClick={() => setActiveCurriculum(key)}
+              >
+                {CURRICULUM_DETAILS[key].icon} {key}
+              </button>
+            ))}
+          </div>
+
+          {/* Interactive Card */}
+          <div className="curriculum-card fade-in">
+            <div className="curr-header">
+              <span className="curr-badge">{CURRICULUM_DETAILS[activeCurriculum].badge}</span>
+              <h3>{CURRICULUM_DETAILS[activeCurriculum].title}</h3>
+            </div>
+            <p className="curr-desc">{CURRICULUM_DETAILS[activeCurriculum].description}</p>
+            
+            <div className="specs-grid">
+              {CURRICULUM_DETAILS[activeCurriculum].specs.map((spec, i) => (
+                <div key={i} className="spec-item">
+                  <strong>{spec.label}</strong>
+                  <span>{spec.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── PORTAL WORKSPACES (SHOWCASE FEATURE 2) ── */}
-      
+      <section id="portals" className="portals-section">
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 50 }}>
+            <div className="badge-pill">Contextual Workspaces</div>
+            <h2 className="section-title">Tailored experiences for <br /><span className="text-gradient">every institutional role</span></h2>
+            <p className="section-subtitle">Different dashboards tailored to give administrators, teachers, parents, and students the exact tools they need.</p>
+          </div>
+
+          <div className="portals-layout">
+            {/* Left selector */}
+            <div className="portal-menu">
+              {Object.keys(PERSONA_DETAILS).map((key) => (
+                <button
+                  key={key}
+                  className={`portal-menu-item ${activePersona === key ? 'active' : ''}`}
+                  onClick={() => setActivePersona(key)}
+                  style={{ '--accent-color': PERSONA_DETAILS[key].color }}
+                >
+                  <span className="pmi-icon">{PERSONA_DETAILS[key].icon}</span>
+                  <div>
+                    <span className="pmi-title">{PERSONA_DETAILS[key].title}</span>
+                    <span className="pmi-badge">{PERSONA_DETAILS[key].badge}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Right Display */}
+            <div className="portal-display" style={{ borderLeftColor: PERSONA_DETAILS[activePersona].color }}>
+              <div className="pd-header">
+                <span className="pd-icon" style={{ background: `${PERSONA_DETAILS[activePersona].color}1A`, color: PERSONA_DETAILS[activePersona].color }}>
+                  {PERSONA_DETAILS[activePersona].icon}
+                </span>
+                <h3>{PERSONA_DETAILS[activePersona].title} Workspace</h3>
+              </div>
+              <p className="pd-desc">{PERSONA_DETAILS[activePersona].desc}</p>
+              
+              <ul className="pd-bullets">
+                {PERSONA_DETAILS[activePersona].bullets.map((bullet, idx) => (
+                  <li key={idx} style={{ '--accent-color': PERSONA_DETAILS[activePersona].color }}>{bullet}</li>
+                ))}
+              </ul>
+
+              <div className="pd-actions">
+                <Link href={activePersona === 'admin' ? '/demo/staff' : activePersona === 'teacher' ? '/demo/teacher' : activePersona === 'parent' ? '/demo/parent' : '/login'} className="btn btn-primary" style={{ background: PERSONA_DETAILS[activePersona].color }}>
+                  Launch {PERSONA_DETAILS[activePersona].title} Demo
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── SEARCHABLE & FILTERABLE FEATURE bluePRINT (THE DEEP DIVE) ── */}
-      
+      <section id="features" className="blueprint-section">
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 50 }}>
+            <div className="badge-pill">Comprehensive Feature Index</div>
+            <h2 className="section-title">The Complete System<br /><span className="text-gradient">Feature Catalog</span></h2>
+            <p className="section-subtitle">Filter or search through our deep technical and operational integrations to see exactly how EduVantage runs your school.</p>
+          </div>
+
+          {/* Search bar and Filters */}
+          <div className="search-filter-wrap">
+            <div className="search-box">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Search features (e.g. M-Pesa, CSV, CBC, payroll, logs...)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="clear-search" onClick={() => setSearchQuery('')}>✕</button>
+              )}
+            </div>
+
+            <div className="filters-row">
+              <button className={`filter-btn ${featureFilter === 'all' ? 'active' : ''}`} onClick={() => setFeatureFilter('all')}>All Features</button>
+              <button className={`filter-btn ${featureFilter === 'finance' ? 'active' : ''}`} onClick={() => setFeatureFilter('finance')}>💳 Finance & Payments</button>
+              <button className={`filter-btn ${featureFilter === 'academics' ? 'active' : ''}`} onClick={() => setFeatureFilter('academics')}>📈 Academics & Grading</button>
+              <button className={`filter-btn ${featureFilter === 'comms' ? 'active' : ''}`} onClick={() => setFeatureFilter('comms')}>💬 Communications</button>
+              <button className={`filter-btn ${featureFilter === 'infrastructure' ? 'active' : ''}`} onClick={() => setFeatureFilter('infrastructure')}>🛡️ System & Cloud</button>
+            </div>
+          </div>
+
+          {/* Dynamic Grid */}
+          {filteredFeatures.length > 0 ? (
+            <div className="blueprint-grid">
+              {filteredFeatures.map((feat) => (
+                <div key={feat.id} className="blueprint-card">
+                  <div className="bc-header">
+                    <span className="bc-icon">{feat.icon}</span>
+                    <span className="bc-category-badge">{feat.category.toUpperCase()}</span>
+                  </div>
+                  <h4 className="bc-title">{feat.title}</h4>
+                  <p className="bc-desc">{feat.desc}</p>
+                  
+
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-results">
+              <span>📭</span>
+              <h4>No features match your criteria</h4>
+              <p>Try clearing your search query or switching category filters.</p>
+              <button className="btn btn-outline" onClick={() => { setSearchQuery(''); setFeatureFilter('all'); }}>Reset Search & Filters</button>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* ── SECURITY & SYSTEM INTEGRITY TECH PLOT ── */}
       <section className="security-blueprint-section">
@@ -243,7 +349,36 @@ export default function LandingPage() {
       </section>
 
       {/* ── COMPARISON SECTION (Why Us?) ── */}
-      
+      <section id="compare" className="compare-section">
+        <div className="container">
+          <div className="comparison-box">
+             <div className="comp-hdr">
+                <h3>EduVantage vs. The Alternatives</h3>
+                <p>A grounded comparison against spreadsheet-heavy and disconnected school systems.</p>
+             </div>
+             <div className="tbl-wrap">
+                <table className="comp-table">
+                  <thead>
+                    <tr>
+                      <th>Feature & Capability</th>
+                      <th className="bad">Fragmented Legacy Systems</th>
+                      <th className="good">EduVantage Platform</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                     <tr><td><strong>Payment Collection</strong></td><td>Manual receipt books or separate payment portals</td><td className="hl">M-Pesa and Pesapal flows inside the school ledger</td></tr>
+                     <tr><td><strong>Revenue Visibility</strong></td><td>End-of-month manual reconciliation</td><td className="hl">Collection, balance and arrears dashboards</td></tr>
+                     <tr><td><strong>Settlements</strong></td><td>Tracked outside the school system</td><td className="hl">Settlement queues visible to platform admins</td></tr>
+                     <tr><td><strong>Registry Control</strong></td><td>Documents can drift from learner records</td><td className="hl">Receipts and reports generated from stored records</td></tr>
+                     <tr><td><strong>Grading Intelligence</strong></td><td>Static, hardcoded rules</td><td className="hl">Curriculum-Aware (CBC/IB/Cambridge/Montessori/TVET)</td></tr>
+                     <tr><td><strong>Parent Experience</strong></td><td>Delayed SMS only</td><td className="hl">Live Portal + M-Pesa STK Push + Auto-Receipts</td></tr>
+
+                  </tbody>
+                </table>
+             </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── INTERACTIVE FAQ SECTION ── */}
       <section className="faq-section">
@@ -288,20 +423,56 @@ export default function LandingPage() {
       </section>
 
       {/* ── PRICING SECTION ── */}
-      
+      <section id="pricing" className="pricing-section">
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 50 }}>
+            <div className="badge-pill" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>Transparent Pricing</div>
+            <h2 style={{ fontSize: 52, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>Choose a <span className="text-gradient">school-ready plan</span></h2>
+          </div>
 
-      {/* ── FOOTER ── */}
+          <div className="pricing-grid">
+            {plans.length > 0 ? (
+              plans.map((p, idx) => (
+                <PriceCard 
+                  key={p.id}
+                  name={p.name} 
+                  price={p.price} 
+                  desc={p.billingModel === 'per-learner' ? 'Billed per student.' : 'Flat rate per school.'}
+                  billingModel={p.billingModel}
+                  cycle={p.cycle}
+                  featured={idx === 1}
+                  features={p.features || ['Full Access', 'Dashboard', 'Support']}
+                />
+              ))
+            ) : (
+              <>
+                <PriceCard 
+                  name="1 Term Free" 
+                  price={0} 
+                  desc="Try the core workflows for one term and experience the full power of the platform."
+                  features={['Full Platform Access', 'Bulk CSV Learner Uploads', 'M-Pesa Test Integration', 'CBC / Montessori / IB / British Support', 'Standard Support']}
+                />
+                <PriceCard 
+                  name="Basic" 
+                  price="150" 
+                  desc="Perfect for growing primary schools needing essential digital tools."
+                  features={['Everything in Free', 'Academic Analytics', 'M-Pesa Reconciliation', 'SMS Integration', 'Email Support']}
+                />
+                <PriceCard 
+                  name="Premium" 
+                  price="300" 
+                  featured={true}
+                  desc="Comprehensive control for top-tier institutions looking to automate."
+                  features={['Everything in Basic', 'Bulk Payroll Engine', 'Advanced Data Analytics', 'Priority 24/7 Support', 'Custom Branding']}
+                />
+              </>
+            )}
+          </div>
+          <p style={{ textAlign: 'center', marginTop: 40, opacity: 0.6, fontSize: 14, color: '#fff' }}>* Prices in KES per student per term. Annual discounts available.</p>
+        </div>
+      </section>
       <LandingFooter />
-
-      
-
-      {/* ── FLOATING: EduBot ChatBot (bottom-left corner) ── */}
-      <div style={{ position: 'fixed', bottom: '24px', left: '24px', zIndex: 9998 }}>
-        <ChatBot />
-      </div>
-
-      
     </div>
   );
-}
 
+}
