@@ -61,7 +61,7 @@ export async function GET(request) {
       name: 'EduVantage School Management System', 
       email: 'portal@eduvantage.app', 
       phone: '+254 792 656 579', 
-      logo: '/ev-brand-v3.png',
+      logo: '/eduvantage-logo.png',
       tagline: 'Global Education SaaS Network'
     };
     

@@ -13,7 +13,7 @@ export default function PrintHeader() {
     <div className="print-header no-print-hide">
       <div className="ph-content">
         <div className="ph-logo-container">
-          <img src={profile.logo || "/ev-brand-v3.png"} alt="School Logo" className="ph-logo" />
+          <img src={profile.logo || "/eduvantage-logo.png"} alt="School Logo" className="ph-logo" />
         </div>
         <div className="ph-details">
           <h1 className="ph-name">{profile.name || 'SCHOOL PORTAL'}</h1>

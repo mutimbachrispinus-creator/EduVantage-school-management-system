@@ -90,7 +90,7 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
           style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
         >
           <img 
-            src={(user.role === 'super-admin' && !impersonateId) ? '/ev-brand-v3.png' : (profile.logo && profile.logo !== '/ev-brand-v3.png' ? profile.logo : '/ev-brand-v3.png')} 
+            src={(user.role === 'super-admin' && !impersonateId) ? '/eduvantage-logo.png' : (profile.logo && profile.logo !== '/eduvantage-logo.png' ? profile.logo : '/eduvantage-logo.png')} 
             alt="EduVantage Logo"
             fetchpriority="high"
             loading="eager"

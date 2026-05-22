@@ -9,8 +9,8 @@ export const metadata = {
   title:       'EduVantage School Management System',
   description: 'The future of school management — Multi-tenant SaaS with CBC & M-Pesa.',
   icons: { 
-    icon: '/ev-brand-v3.png',
-    apple: '/ev-brand-v3.png',
+    icon: '/eduvantage-logo.png',
+    apple: '/eduvantage-logo.png',
   },
   manifest: '/manifest.json',
 };

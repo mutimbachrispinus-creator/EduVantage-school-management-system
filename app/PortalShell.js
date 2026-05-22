@@ -187,7 +187,7 @@ export default function PortalShell({ children }) {
     return { primary: '#1E40AF', secondary: '#D4AF37', accent: '#0F172A' };
   });
   const [profile, setProfile] = useState(() => {
-    const fallback = { name: 'EduVantage School Management System', tagline: 'Global Education SaaS Network', logo: '/ev-brand-v3.png' };
+    const fallback = { name: 'EduVantage School Management System', tagline: 'Global Education SaaS Network', logo: '/eduvantage-logo.png' };
     if (typeof window === 'undefined') return fallback;
     
     if (window.__INITIAL_BRANDING__?.profile) return window.__INITIAL_BRANDING__.profile;
@@ -290,7 +290,7 @@ export default function PortalShell({ children }) {
       // Use platform branding on public pages unless a tenant is specified
       const isPublic = pathname === '/' || pathname === '/login' || pathname === '/saas/signup' || pathname === '/privacy' || pathname === '/terms' || pathname.startsWith('/demo');
       if (isPublic && !tenantParam && !impersonateId) {
-        setProfile({ name: 'EduVantage School Management System', tagline: 'Global Education SaaS Network', logo: '/ev-brand-v3.png' });
+        setProfile({ name: 'EduVantage School Management System', tagline: 'Global Education SaaS Network', logo: '/eduvantage-logo.png' });
         setTheme({ primary: '#1E40AF', secondary: '#D4AF37', accent: '#0F172A' });
       } else {
         const configRes = await fetch(`/api/saas/config?tenant=${brandingTenant}&_t=${Date.now()}`);

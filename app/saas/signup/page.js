@@ -167,7 +167,7 @@ export default function SignupPage() {
       <div className="su-left">
         <div>
           <div className="su-brand">
-            <img src="/ev-brand-v3.png" alt="EduVantage"/>
+            <img src="/eduvantage-logo.png" alt="EduVantage"/>
             <div><div className="su-brand-name">EduVantage</div><div className="su-brand-tag">School Management Platform</div></div>
           </div>
           <div className="su-hero">

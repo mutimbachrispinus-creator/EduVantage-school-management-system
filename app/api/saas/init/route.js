@@ -50,7 +50,7 @@ export async function GET(request) {
       // 4. Ensure EduVantage Gitombo Branding
       {
         sql: "INSERT INTO kv (key, tenant_id, value, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT DO UPDATE SET value=excluded.value",
-        args: ['paav_school_profile', 'paav-gitombo', JSON.stringify({ name: 'Gitombo School', motto: 'Quality Education for Every Child', phone: '0700000000', email: 'portal@eduvantage.app', logo: '/ev-brand-v3.png' }), now]
+        args: ['paav_school_profile', 'paav-gitombo', JSON.stringify({ name: 'Gitombo School', motto: 'Quality Education for Every Child', phone: '0700000000', email: 'portal@eduvantage.app', logo: '/eduvantage-logo.png' }), now]
       },
       {
         sql: "INSERT INTO kv (key, tenant_id, value, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT DO UPDATE SET value=excluded.value",

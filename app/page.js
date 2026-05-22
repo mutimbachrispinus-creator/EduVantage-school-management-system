@@ -236,7 +236,7 @@ export default function LandingPage() {
         <div className="container nav-box">
           <Link href="/" className="logo-group">
             <div className="logo-icon">
-              <img src="/ev-brand-v3.png" alt="E" />
+              <img src="/eduvantage-logo.png" alt="E" />
             </div>
             <span className="logo-text">EduVantage</span>
           </Link>
@@ -742,7 +742,7 @@ export default function LandingPage() {
           <div className="footer-info">
             <Link href="/" className="logo-group">
               <div className="logo-icon">
-                <img src="/ev-brand-v3.png" alt="Logo" />
+                <img src="/eduvantage-logo.png" alt="Logo" />
               </div>
               <span className="logo-text">EduVantage</span>
             </Link>

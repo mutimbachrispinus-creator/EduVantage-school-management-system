@@ -13,7 +13,7 @@ export default function DefaultPrivacy() {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <div style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/ev-brand-v3.png" alt="EduVantage" style={{ width: 38, height: 38, objectFit: 'contain', borderRadius: '50%' }} />
+              <img src="/eduvantage-logo.png" alt="EduVantage" style={{ width: 38, height: 38, objectFit: 'contain', borderRadius: '50%' }} />
             </div>
             <span style={{ fontSize: 22, fontWeight: 800, color: DARK, fontFamily: 'var(--font-sora, sans-serif)', letterSpacing: '-0.02em' }}>EduVantage</span>
           </Link>
