@@ -31,6 +31,14 @@ async function authenticate() {
   return null;
 }
 
+function hasRole(auth, roles) {
+  return roles.includes(auth.role);
+}
+
+function isTeachingRole(auth) {
+  return ['admin', 'super-admin', 'teacher', 'jss_teacher', 'senior_teacher'].includes(auth.role);
+}
+
 export async function POST(request) {
   try {
     const auth = await authenticate();
@@ -246,24 +254,30 @@ async function handleRequest(req, auth, impTenant = null) {
     }
 
     case 'updateMark': {
+      if (!isTeachingRole(auth)) return { type: req.type, error: 'Unauthorized' };
       const { kvUpdateMark } = await import('@/lib/db');
       await kvUpdateMark(req.gsa, req.adm, req.score, tenantId);
       return { type: req.type, ok: true };
     }
 
     case 'updateMarksBulk': {
+      if (!isTeachingRole(auth)) return { type: req.type, error: 'Unauthorized' };
       const { kvUpdateMarksBulk } = await import('@/lib/db');
       await kvUpdateMarksBulk(req.marks, tenantId);
       return { type: req.type, ok: true };
     }
 
     case 'updateAttendanceBulk': {
+      if (!isTeachingRole(auth)) return { type: req.type, error: 'Unauthorized' };
       const { kvUpdateAttendanceBulk } = await import('@/lib/db');
       await kvUpdateAttendanceBulk(req.attMap, tenantId);
       return { type: req.type, ok: true };
     }
 
     case 'upsertMessage': {
+      if (!hasRole(auth, ['admin', 'super-admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff'])) {
+        return { type: req.type, error: 'Unauthorized' };
+      }
       const { kvUpsertMessage } = await import('@/lib/db');
       await kvUpsertMessage(req.message, tenantId);
       return { type: req.type, ok: true };
@@ -276,12 +290,16 @@ async function handleRequest(req, auth, impTenant = null) {
     }
 
     case 'upsertDuty': {
+      if (!hasRole(auth, ['admin', 'super-admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff'])) {
+        return { type: req.type, error: 'Unauthorized' };
+      }
       const { kvUpsertDuty } = await import('@/lib/db');
       await kvUpsertDuty(req.duty, tenantId);
       return { type: req.type, ok: true };
     }
 
     case 'deleteDuty': {
+      if (!hasRole(auth, ['admin', 'super-admin'])) return { type: req.type, error: 'Unauthorized' };
       const { kvDeleteDuty } = await import('@/lib/db');
       await kvDeleteDuty(req.id, tenantId);
       return { type: req.type, ok: true };

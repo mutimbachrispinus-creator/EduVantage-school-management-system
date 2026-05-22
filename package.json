@@ -13,14 +13,13 @@
     "preview": "wrangler pages dev .vercel/output/static"
   },
   "dependencies": {
-    "@ducanh2912/next-pwa": "^10.2.9",
     "@libsql/client": "^0.14.0",
     "@react-email/render": "^2.0.8",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "jose": "^5.4.0",
     "lucide-react": "^1.14.0",
-    "next": "15.5.2",
+    "next": "15.5.18",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.8.1",
@@ -33,9 +32,12 @@
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.31.10",
     "eslint": "8.57.0",
-    "eslint-config-next": "15.5.2",
-    "postcss": "^8.4.38",
+    "eslint-config-next": "15.5.18",
+    "postcss": "8.5.10",
     "tailwindcss": "^3.4.4",
     "wrangler": "^3.114.0"
+  },
+  "overrides": {
+    "postcss": "8.5.10"
   }
 }
