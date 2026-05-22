@@ -926,21 +926,29 @@ export default function LandingPage() {
           text-decoration: none; 
         }
         .logo-icon { 
-          width: 42px; 
-          height: 42px; 
+          width: 48px; 
+          height: 48px; 
           border-radius: 50%; 
-          overflow: hidden;
           display: flex; 
           align-items: center; 
           justify-content: center; 
-          background: #0F172A;
+          background: #fff;
           flex-shrink: 0;
+          border: 2px solid #FCD34D;
+          box-shadow: 0 0 12px rgba(252, 211, 77, 0.6), 0 0 24px rgba(255, 255, 255, 0.3);
+          animation: pulseGlowLanding 2.5s infinite alternate;
+          position: relative;
+        }
+        @keyframes pulseGlowLanding {
+          0% { box-shadow: 0 0 8px rgba(252, 211, 77, 0.4), 0 0 16px rgba(255, 255, 255, 0.2); transform: scale(1); }
+          100% { box-shadow: 0 0 16px rgba(252, 211, 77, 0.8), 0 0 32px rgba(255, 255, 255, 0.5); transform: scale(1.05); }
         }
         .logo-icon img { 
           width: 100%; 
           height: 100%; 
           object-fit: cover; 
           display: block;
+          border-radius: 50%;
         }
         .logo-text { 
           font-size: 24px; 
