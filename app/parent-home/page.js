@@ -285,7 +285,7 @@ export default function ParentHome() {
   const unr = messages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).filter(m=>!(m.read||[]).includes(user.username)).length;
 
   const TABS = [
-    { id:'child',    label:'👦 Profile',      icon:'👦' },
+    { id:'child',    label:'🏠 Home',         icon:'🏠' },
     { id:'perf',     label:'📊 Academic',     icon:'📊' },
     { id:'fees',     label:'💰 Finance',      icon:'💰' },
     { id:'payments', label:'🧾 Receipts',     icon:'🧾' },
@@ -407,7 +407,7 @@ export default function ParentHome() {
           {/* Child info card */}
           <div className="panel" style={{gridColumn:'1/-1',border:`1.5px solid ${MB}`}}>
             <div className="panel-hdr" style={{background:`linear-gradient(135deg,${M},${M2})`,color:'#fff'}}>
-              <h3 style={{color:'#fff'}}>👦 {child?.name} — Profile</h3>
+              <h3 style={{color:'#fff'}}>🏠 {child?.name} — Home Dashboard</h3>
             </div>
             <div className="panel-body">
               <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:20}}>
