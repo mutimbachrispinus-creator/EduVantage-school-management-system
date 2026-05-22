@@ -138,6 +138,7 @@ export default function ChatBot() {
           display: flex; flex-direction: column; overflow: hidden;
           box-shadow: 0 40px 100px rgba(15, 23, 42, 0.2); border: 1px solid rgba(0,0,0,0.08);
           animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+          position: absolute; bottom: calc(100% + 16px); left: 0;
         }
         @keyframes slideUp { from { opacity: 0; transform: translateY(40px) scale(0.95); } }
 
@@ -188,8 +189,9 @@ export default function ChatBot() {
             width: calc(100vw - 30px); 
             height: calc(100vh - 100px); 
             max-height: 600px;
-            bottom: 15px; 
-            right: 15px; 
+            bottom: 90px;
+            left: 15px; 
+            right: auto;
             border-radius: 20px; 
           }
           .chat-trigger { padding: 12px 20px; font-size: 13px; }
