@@ -464,10 +464,7 @@ export default function LandingPage() {
                   <h4 className="bc-title">{feat.title}</h4>
                   <p className="bc-desc">{feat.desc}</p>
                   
-                  <div className="bc-expand-details">
-                    <h5>Technical Blueprint:</h5>
-                    <p>{feat.detail}</p>
-                  </div>
+
                 </div>
               ))}
             </div>
@@ -489,20 +486,20 @@ export default function LandingPage() {
             <div className="badge-pill">Operational Integrity</div>
             <h2 className="section-title">Built for absolute reliability, security, and scalability.</h2>
             <p className="section-subtitle left" style={{ marginBottom: 30 }}>
-              EduVantage uses advanced relational database isolation and Cloudflare edge deployments to satisfy the security audit criteria of top-tier learning institutions.
+              EduVantage uses industry-standard security practices and modern infrastructure to keep your data completely safe and private.
             </p>
             <div className="tech-checks">
               <div className="tech-check-item">
                 <strong>🔐 Cryptographic Anti-Fraud QR Verification</strong>
-                <span>Every report card and fees receipt generated prints with a cryptographically secure, unique QR code. Scanning verifies transaction details or grades directly from the database to stop forgery.</span>
+                <span>Every report card and fees receipt generated prints with a cryptographically secure, unique QR code. Scanning verifies transaction details or grades directly to stop forgery.</span>
               </div>
               <div className="tech-check-item" style={{ marginTop: 24 }}>
-                <strong>🚀 Tenant Data Isolation</strong>
-                <span>Data safety is enforced at the core SQL parser level. Dynamic tenant scopes isolate queries to ensure zero school data leaks, matching strict data protection laws.</span>
+                <strong>🚀 Complete Data Privacy</strong>
+                <span>Data safety is our priority. Your school's information is completely private and isolated, matching strict global data protection laws.</span>
               </div>
               <div className="tech-check-item" style={{ marginTop: 24 }}>
-                <strong>⚡ Edge Network Orchestration</strong>
-                <span>Runs inside Cloudflare Pages Edge worker runtime, providing ultra-low latencies globally. Uses client-side sync caching systems so teachers can work seamlessly even during network lags.</span>
+                <strong>⚡ Lightning Fast Performance</strong>
+                <span>Designed to load instantly anywhere in the world. Built-in offline capabilities ensure teachers can work seamlessly even during network lags.</span>
               </div>
             </div>
           </div>
@@ -515,19 +512,7 @@ export default function LandingPage() {
               </div>
             ))}
             
-            {/* Visual tech stack card */}
-            <div className="tech-stack-card">
-              <h4>System Architecture Blueprint</h4>
-              <div className="ts-layers">
-                <div className="ts-layer"><span>Frontend View</span><strong>Next.js / React (Edge Optimized)</strong></div>
-                <div className="ts-arrow">↓</div>
-                <div className="ts-layer"><span>Secure Middleware</span><strong>Dynamic Multi-Tenant Token Validator</strong></div>
-                <div className="ts-arrow">↓</div>
-                <div className="ts-layer"><span>Database Layer</span><strong>Relational SQL Isolation Engine</strong></div>
-                <div className="ts-arrow">↓</div>
-                <div className="ts-layer"><span>Infrastructure Host</span><strong>Cloudflare Pages Edge Runtime</strong></div>
-              </div>
-            </div>
+
           </div>
         </div>
       </section>
@@ -609,7 +594,7 @@ export default function LandingPage() {
                      <tr><td><strong>Registry Control</strong></td><td>Documents can drift from learner records</td><td className="hl">Receipts and reports generated from stored records</td></tr>
                      <tr><td><strong>Grading Intelligence</strong></td><td>Static, hardcoded rules</td><td className="hl">Curriculum-Aware (CBC/IB/Cambridge/Montessori/TVET)</td></tr>
                      <tr><td><strong>Parent Experience</strong></td><td>Delayed SMS only</td><td className="hl">Live Portal + M-Pesa STK Push + Auto-Receipts</td></tr>
-                     <tr><td><strong>Infrastructure</strong></td><td>Multiple disconnected logins</td><td className="hl">One unified multi-tenant app</td></tr>
+
                   </tbody>
                 </table>
              </div>
@@ -623,7 +608,7 @@ export default function LandingPage() {
           <div style={{ textAlign: 'center', marginBottom: 50 }}>
             <div className="badge-pill">Common Clarifications</div>
             <h2 className="section-title">Frequently Asked Questions</h2>
-            <p className="section-subtitle">Deep dive technical details on integration capabilities, school data ownership, and database architecture.</p>
+            <p className="section-subtitle">Learn more about our features, capabilities, and how the platform works for your school.</p>
           </div>
 
           <div className="faq-wrapper">
@@ -643,10 +628,6 @@ export default function LandingPage() {
               {
                 q: "How are granular payroll deductions managed for staff?",
                 a: "Unlike basic systems that group deductions into a single bulk value, EduVantage includes an advanced multi-line payroll engine. It computes statutory obligations (Kenya PAYE, NSSF, SHIF/NHIF) according to dynamic tax brackets, and allows admins to append multiple distinct custom line items (e.g., Harambee Sacco Savings, Emergency Salary Advance, Asset Purchase Loan). These are explicitly listed on individual staff payslips to maintain granular transparency."
-              },
-              {
-                q: "How is school data protected in a multi-tenant cloud setup?",
-                a: "Data security is enforced at the core database level. Every query is scoped using a strict tenant ID validation layer, ensuring zero cross-tenant data bleed. The platform runs on the globally distributed Cloudflare Pages network with edge database redundancy (D1/Turso SQL nodes), providing near-zero latency, military-grade SSL encryption, automated background backups, and complete multi-tenant isolation."
               }
             ].map((faq, i) => (
               <div key={i} className={`faq-item ${expandedFaq === i ? 'expanded' : ''}`} onClick={() => toggleFaq(i)}>
