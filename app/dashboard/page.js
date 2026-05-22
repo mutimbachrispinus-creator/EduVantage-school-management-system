@@ -40,6 +40,7 @@ function DashboardContent() {
       // 1. Get user first to determine tenant context
       const u = await getCachedUser();
       if (!u) { router.push('/login'); return; }
+      if (u.role === 'parent') { router.push('/parent-home'); return; }
       setUser(u);
 
       const tid = u.tenant_id || u.tenantId;
