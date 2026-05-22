@@ -101,7 +101,7 @@ export default function AnalyticsPage() {
       setGradCfg(db.paav8_grad || null);
       setStaff(db.paav6_staff || []);
     }
-    if (activeTab === 'performance' || activeTab === 'staff' || activeTab === 'outreach') loadPerformance();
+    if (activeTab === 'performance' || activeTab === 'staff' || activeTab === 'outreach' || activeTab === 'pathways') loadPerformance();
   }, [activeTab, profile]);
 
 
@@ -392,13 +392,13 @@ export default function AnalyticsPage() {
           staff={staff} learners={learners} marks={marks} 
           pTerm={pTerm} pAssess={pAssess} subjCfg={subjCfg}
         />
-      ) : (
+      ) : activeTab === 'outreach' ? (
         <OutreachTab 
           learners={learners} marks={marks} grade={grade} 
           term={term.replace('TERM ', 'T')} assess={pAssess} stats={stats} 
           schoolName={profile?.name}
         />
-      )}
+      ) : null}
     </div>
   );
 }
