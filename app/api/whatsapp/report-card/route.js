@@ -2,22 +2,28 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { sendSMS, getResultNotificationMessage } from '@/lib/sms-client';
 import { kvGet } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { findLearner, getTenantId } from '@/lib/learner-lookup';
 import { DEFAULT_SUBJECTS, gInfo, maxPts } from '@/lib/cbe';
 
 export async function POST(req) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+    const tid = getTenantId(session);
+
     const { adm, term } = await req.json();
 
     if (!adm || !term) return NextResponse.json({ error: 'ADM and Term required' }, { status: 400 });
 
     const [learners, marks, gradCfg, savedCreds] = await Promise.all([
-      kvGet('paav6_learners'),
-      kvGet('paav6_marks'),
-      kvGet('paav8_grad'),
-      kvGet('paav_at_creds')
+      kvGet('paav6_learners', [], tid),
+      kvGet('paav6_marks', {}, tid),
+      kvGet('paav8_grad', null, tid),
+      kvGet('paav_at_creds', {}, 'platform-master')
     ]);
 
-    const learner = (learners || []).find(l => l.adm === adm);
+    const learner = findLearner(learners, adm);
     if (!learner) return NextResponse.json({ error: 'Learner not found' }, { status: 404 });
     if (!learner.phone) {
       return NextResponse.json({ error: 'Parent phone number not set' }, { status: 400 });
@@ -34,7 +40,7 @@ export async function POST(req) {
         .map(a => {
           const k1 = `${term}:${learner.grade}|${subj}|${a}`;
           const k0 = `${learner.grade}|${subj}|${a}`;
-          return marks[k1]?.[adm] ?? marks[k0]?.[adm];
+          return marks[k1]?.[learner.adm] ?? marks[k0]?.[learner.adm];
         })
         .filter(s => s !== undefined && s !== null);
 

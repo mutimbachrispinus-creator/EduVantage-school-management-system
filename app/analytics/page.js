@@ -160,6 +160,7 @@ export default function AnalyticsPage() {
                 {currAssessments.map(a => <option key={a.key} value={a.key}>{a.label.replace(/\p{Emoji}/gu, '').trim()}</option>)}
               </select>
               <input value={pQuery} onChange={e => setPQuery(e.target.value)} placeholder="Search learner..." style={{ borderRadius: 8, border: '1.5px solid var(--border)', padding: '8px 12px', minWidth: 180 }} />
+              <button className="btn btn-primary btn-sm" onClick={() => setActiveTab('outreach')}>Parent Outreach</button>
             </div>
           </div>
           {/* Performance UI ... */}
@@ -397,16 +398,20 @@ export default function AnalyticsPage() {
           learners={learners} marks={marks} grade={grade} 
           term={term.replace('TERM ', 'T')} assess={pAssess} stats={stats} 
           schoolName={profile?.name}
+          grades={grades}
         />
       ) : null}
     </div>
   );
 }
 
-function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName }) {
+function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, grades }) {
   const [sending, setSending] = useState(false);
   const [sentCount, setSentCount] = useState(0);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [scope, setScope] = useState('grade');
+  const [learnerQuery, setLearnerQuery] = useState('');
+  const [selectedAdm, setSelectedAdm] = useState('');
 
   const gradeLearners = React.useMemo(() => {
     return learners.filter(l => l.grade === grade).sort((a,b) => (a.name||'').localeCompare(b.name||''));
@@ -425,6 +430,30 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName }
     });
   }, [gradeLearners, marks, term, grade]);
 
+  const searchableLearners = React.useMemo(() => {
+    const q = learnerQuery.trim().toLowerCase();
+    return learners
+      .filter(l => !q || String(l.name || '').toLowerCase().includes(q) || String(l.adm || '').toLowerCase().includes(q))
+      .sort((a,b) => (a.name||'').localeCompare(b.name||''))
+      .slice(0, 25);
+  }, [learners, learnerQuery]);
+
+  const selectedLearner = React.useMemo(() => {
+    return learners.find(l => String(l.adm) === String(selectedAdm)) || null;
+  }, [learners, selectedAdm]);
+
+  const scopedLearners = React.useMemo(() => {
+    if (scope === 'school') return learners.filter(l => l.phone);
+    if (scope === 'learner') return selectedLearner ? [selectedLearner] : [];
+    return gradeLearners;
+  }, [scope, learners, selectedLearner, gradeLearners]);
+
+  const scopeLabel = scope === 'school'
+    ? `${schoolName || 'the school'}`
+    : scope === 'learner'
+      ? (selectedLearner?.name || 'one learner')
+      : grade;
+
   const outreachItems = [
     {
       id: 'results',
@@ -434,7 +463,7 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName }
       icon: <Award className="text-blue-600" />,
       color: '#2563eb',
       bg: '#eff6ff',
-      count: gradeLearners.length
+      count: scopedLearners.length
     },
     {
       id: 'risk',
@@ -445,7 +474,7 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName }
       icon: <AlertCircle className="text-red-600" />,
       color: '#dc2626',
       bg: '#fef2f2',
-      count: atRiskLearners.length
+      count: scope === 'grade' ? atRiskLearners.length : scopedLearners.length
     },
     {
       id: 'fees',
@@ -455,15 +484,15 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName }
       icon: <ShieldAlert className="text-amber-600" />,
       color: '#d97706',
       bg: '#fffbeb',
-      count: gradeLearners.length // Typically all get a reminder if they have balance
+      count: scopedLearners.length
     }
   ];
 
   async function handleSend(item) {
-    const targets = item.id === 'risk' ? atRiskLearners : gradeLearners;
+    const targets = item.id === 'risk' && scope === 'grade' ? atRiskLearners : scopedLearners;
     if (!targets.length) { alert('No recipients found.'); return; }
     
-    if (!confirm(`Are you sure you want to send ${item.title} to ${targets.length} parents of ${grade}?`)) return;
+    if (!confirm(`Are you sure you want to send ${item.title} to ${targets.length} parent(s) for ${scopeLabel}?`)) return;
     
     setSending(true);
     setProgress({ current: 0, total: targets.length });
@@ -488,6 +517,8 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName }
         const data = await res.json();
         if (data.ok) {
           successful += data.results.filter(r => r.success).length;
+        } else {
+          alert(data.error || 'Failed to send this SMS batch.');
         }
         setProgress(p => ({ ...p, current: Math.min(p.total, i + BATCH_SIZE) }));
       }
@@ -505,6 +536,57 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName }
 
   return (
     <div className="space-y-6">
+      <div className="panel">
+        <div className="panel-body p-6">
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ fontWeight: 900, fontSize: 18 }}>Parent Outreach Scope</h3>
+              <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Choose whether this send targets one learner, the selected grade, or the whole school.</p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, background: 'var(--slate-50)', padding: 4, borderRadius: 12 }}>
+              {[
+                ['learner', 'One Learner'],
+                ['grade', 'Grade'],
+                ['school', 'School']
+              ].map(([key, label]) => (
+                <button
+                  key={key}
+                  className={`btn btn-sm ${scope === key ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setScope(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {scope === 'learner' && (
+            <div style={{ marginTop: 18, display: 'grid', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Search size={16} />
+                <input
+                  value={learnerQuery}
+                  onChange={e => setLearnerQuery(e.target.value)}
+                  placeholder="Search learner by name or admission number..."
+                  style={{ flex: 1, borderRadius: 8, border: '1.5px solid var(--border)', padding: '10px 12px' }}
+                />
+              </div>
+              <select value={selectedAdm} onChange={e => setSelectedAdm(e.target.value)} style={{ borderRadius: 8 }}>
+                <option value="">Select learner</option>
+                {searchableLearners.map(l => (
+                  <option key={l.adm} value={l.adm}>{l.name} · {l.adm} · {l.grade}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {scope !== 'learner' && (
+            <div style={{ marginTop: 14, color: 'var(--muted)', fontSize: 13, fontWeight: 700 }}>
+              Targeting {scope === 'school' ? `${scopedLearners.length} learners across ${grades?.length || 'all'} grades` : `${scopedLearners.length} learners in ${grade}`}.
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {outreachItems.map(item => (
@@ -514,7 +596,9 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName }
                 {item.icon}
               </div>
               <h4 style={{ fontWeight: 900, fontSize: 16, marginBottom: 8 }}>{item.title}</h4>
-              <p style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.5, minHeight: 60 }}>{item.desc}</p>
+              <p style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.5, minHeight: 60 }}>
+                {scope === 'grade' ? item.desc : `${item.title} for ${scopeLabel}.`}
+              </p>
               <button 
                 className="btn btn-sm w-full mt-6" 
                 style={{ background: item.color, color: '#fff', border: 'none' }} 

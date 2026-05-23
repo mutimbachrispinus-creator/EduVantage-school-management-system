@@ -19,6 +19,7 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { kvGet, kvSet } from '@/lib/db';
+import { findLearner, getTenantId } from '@/lib/learner-lookup';
 import {
   sendSMS, sendBulkSMS, sendCredentialsSMS, sendFeeReminderSMS,
   smsLogEntry, normaliseKenyanNumber,
@@ -86,7 +87,7 @@ export async function POST(request) {
     case 'credentials': {
       if (!['admin', 'super-admin'].includes(session.role)) return err('Only admins can send credentials', 403);
       const { userId } = body;
-      const tid = session.tenantId || session.tenant_id;
+      const tid = getTenantId(session);
       const staff = (await kvGet('paav6_staff', [], tid)) || [];
       const user  = staff.find(s => s.id === userId);
       if (!user) return err(`User ${userId} not found`);
@@ -107,10 +108,10 @@ export async function POST(request) {
         return err('Only admins and staff can send fee reminders', 403);
       }
       const { admNo } = body;
-      const tid = session.tenantId || session.tenant_id;
+      const tid = getTenantId(session);
       const learners  = (await kvGet('paav6_learners', [], tid)) || [];
       const feeCfg    = (await kvGet('paav6_feecfg', {}, tid))   || {};
-      const learner   = learners.find(l => String(l.adm) === String(admNo));
+      const learner   = findLearner(learners, admNo);
       if (!learner) return err(`Learner ${admNo} not found`);
 
       const cfg       = feeCfg[learner.grade] || {};
@@ -176,11 +177,12 @@ export async function POST(request) {
   /* ── Persist SMS log ── */
   if (logEntry) {
     try {
-      const smsLog = (await kvGet('paav7_sms')) || [];
+      const tid = getTenantId(session);
+      const smsLog = (await kvGet('paav7_sms', [], tid)) || [];
       smsLog.unshift(logEntry);
       // Keep last 500 entries
       if (smsLog.length > 500) smsLog.splice(500);
-      await kvSet('paav7_sms', smsLog);
+      await kvSet('paav7_sms', smsLog, tid);
     } catch (e) {
       console.error('[api/sms] log error:', e);
     }
@@ -195,6 +197,7 @@ export async function GET(request) {
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
   if (!['admin', 'super-admin'].includes(session.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const smsLog = (await kvGet('paav7_sms')) || [];
+  const tid = getTenantId(session);
+  const smsLog = (await kvGet('paav7_sms', [], tid)) || [];
   return NextResponse.json({ ok: true, log: smsLog });
 }

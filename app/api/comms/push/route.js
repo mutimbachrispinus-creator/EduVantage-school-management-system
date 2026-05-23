@@ -2,10 +2,11 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { kvGet, execute, query } from '@/lib/db';
+import { kvGet, kvSet } from '@/lib/db';
 import { sendSMS, sendFeeReminderSMS, getResultNotificationMessage } from '@/lib/sms-client';
 import { sendEmail, getReportCardTemplate, getFeeBalanceTemplate } from '@/lib/mail';
 import { calcLearnerReportData, DEFAULT_SUBJECTS } from '@/lib/cbe';
+import { findLearner, getTenantId } from '@/lib/learner-lookup';
 
 export async function POST(request) {
   const session = await getSession();
@@ -14,17 +15,18 @@ export async function POST(request) {
   }
 
   const { type, channel, targets, term } = await request.json();
+  const tid = getTenantId(session);
 
   if (!targets || !targets.length) {
     return NextResponse.json({ ok: false, error: 'No targets specified' });
   }
 
   const [learners, marks, feecfg, paybill, weights, savedCreds] = await Promise.all([
-    kvGet('paav6_learners'),
-    kvGet('paav6_marks'),
-    kvGet('paav6_feecfg'),
-    kvGet('paav_paybill_accounts'),
-    kvGet('paav_grading_weights'),
+    kvGet('paav6_learners', [], tid),
+    kvGet('paav6_marks', {}, tid),
+    kvGet('paav6_feecfg', {}, tid),
+    kvGet('paav_paybill_accounts', [], tid),
+    kvGet('paav_grading_weights', null, tid),
     kvGet('paav_at_creds', {}, 'platform-master') // Centralized SMS control
   ]);
 
@@ -37,8 +39,11 @@ export async function POST(request) {
   const results = [];
 
   for (const target of targets) {
-    const learner = learners.find(l => String(l.adm) === String(target.adm));
-    if (!learner) continue;
+    const learner = findLearner(learners, target.adm);
+    if (!learner) {
+      results.push({ adm: target.adm, channel: channel || 'sms', success: false, error: 'Learner not found' });
+      continue;
+    }
 
     const parentPhone = learner.phone;
     const parentEmail = learner.parentEmail;
@@ -51,7 +56,7 @@ export async function POST(request) {
       const balance = annual + arrears - paid;
       const currentTermBal = Math.max(0, annual - paid);
 
-      const pb = paybill?.[0]?.value || '4091000';
+      const pb = paybill?.[0]?.shortcode || paybill?.[0]?.value || '';
 
       if (channel === 'sms' || channel === 'both') {
         if (parentPhone) {
@@ -64,7 +69,7 @@ export async function POST(request) {
           }, creds);
           results.push({ adm: learner.adm, channel: 'sms', ...res });
           // Log to DB
-          await logComms({ to: parentPhone, message: `Fee Balance: KSH ${balance}`, type: 'fee_reminder', status: res.success ? 'sent' : 'failed', sentBy: session.username });
+          await logComms({ to: parentPhone, message: `Fee Balance: KSH ${balance}`, type: 'fee_reminder', status: res.success ? 'sent' : 'failed', sentBy: session.username || session.name }, tid);
         }
       }
 
@@ -91,7 +96,7 @@ export async function POST(request) {
     if (type === 'report') {
       if (!term) continue;
       
-      const subjCfg = await kvGet('paav_teacher_assignments') || {};
+      const subjCfg = await kvGet('paav_teacher_assignments', {}, tid) || {};
       const gradeSubjects = (subjCfg[learner.grade] && subjCfg[learner.grade].length > 0)
         ? subjCfg[learner.grade].map(s => s.subject)
         : (DEFAULT_SUBJECTS[learner.grade] || []);
@@ -111,7 +116,7 @@ export async function POST(request) {
           const message = getResultNotificationMessage(learner.name, term.replace('T', ''), totalPts, maxPts);
           const res = await sendSMS({ to: parentPhone, message, ...creds });
           results.push({ adm: learner.adm, channel: 'sms', ...res });
-          await logComms({ to: parentPhone, message, type: 'report_card', status: res.success ? 'sent' : 'failed', sentBy: session.username });
+          await logComms({ to: parentPhone, message, type: 'report_card', status: res.success ? 'sent' : 'failed', sentBy: session.username || session.name }, tid);
         }
       }
 
@@ -145,7 +150,7 @@ export async function POST(request) {
           const message = getAbsenteeismAlertMessage(learner.name, pct, absences);
           const res = await sendSMS({ to: parentPhone, message, ...creds });
           results.push({ adm: learner.adm, channel: 'sms', ...res });
-          await logComms({ to: parentPhone, message, type: 'attendance_alert', status: res.success ? 'sent' : 'failed', sentBy: session.username });
+          await logComms({ to: parentPhone, message, type: 'attendance_alert', status: res.success ? 'sent' : 'failed', sentBy: session.username || session.name }, tid);
         }
       }
     }
@@ -154,17 +159,15 @@ export async function POST(request) {
   return NextResponse.json({ ok: true, results });
 }
 
-async function logComms(entry) {
+async function logComms(entry, tenantId) {
   try {
-    const logs = await kvGet('paav7_sms') || [];
+    const logs = await kvGet('paav7_sms', [], tenantId) || [];
     logs.unshift({
       ...entry,
       id: 's' + Date.now() + Math.random().toString(36).substr(2, 5),
       date: new Date().toISOString()
     });
-    await execute(`INSERT INTO kv (key, value, updated_at) VALUES (?, ?, strftime('%s','now'))
-                   ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, 
-                   ['paav7_sms', JSON.stringify(logs.slice(0, 500))]);
+    await kvSet('paav7_sms', logs.slice(0, 500), tenantId);
   } catch (e) {
     console.error('Failed to log comms:', e);
   }
