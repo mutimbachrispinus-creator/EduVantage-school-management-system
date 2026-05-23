@@ -579,30 +579,29 @@ async function handleRequestOtp(body, request) {
   // Log the OTP request
   await logAction({ id: user.id, tenantId: user.tenant_id, username: username.toLowerCase(), name: user.name, role: 'none' }, 'OTP Request', `OTP requested for password reset by ${username}`);
 
-  // QUEUING: Send SMS in the background so the user gets an instant "Success" response
-  const { backgroundTask } = await import('@/lib/background-tasks');
-  backgroundTask(request, async () => {
-    try {
-      const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
-      const atCreds = (await kvGet('paav_at_creds', null, user.tenant_id)) || (await kvGet('paav_at_creds', null, 'platform-master'));
-      
-      const res = await sendSMS({
-        to: normalizePhone(user.phone),
-        message: `EduVantage Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
-        ...(atCreds || {})
-      });
-      if (res.success) {
-        console.log(`[Background] OTP SMS sent successfully to ${user.phone}`);
-      } else {
-        console.error(`[Background] OTP SMS failed for ${user.phone}: ${res.error}`);
-      }
-    } catch (smsErr) {
-      console.error('[Background OTP Error]:', smsErr.message);
+  // Send SMS synchronously to catch and return errors
+  try {
+    const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
+    const atCreds = (await kvGet('paav_at_creds', null, user.tenant_id)) || (await kvGet('paav_at_creds', null, 'platform-master'));
+    
+    const res = await sendSMS({
+      to: normalizePhone(user.phone),
+      message: `EduVantage Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
+      ...(atCreds || {})
+    });
+    
+    if (!res.success || res.sentCount === 0) {
+      const errorMsg = res.error || (res.failed && res.failed[0] ? res.failed[0].status : 'Unknown delivery error');
+      console.error(`[OTP Error] SMS failed for ${user.phone}: ${errorMsg}`);
+      return err(`SMS Delivery Failed: ${errorMsg}`);
     }
-  });
+  } catch (smsErr) {
+    console.error('[OTP Exception]:', smsErr.message);
+    return err(`SMS Exception: ${smsErr.message}`);
+  }
 
-  // Return INSTANT success
-  return ok({ message: `OTP is being sent to your phone ending in ${user.phone.slice(-3)}`, sent: true });
+  // Return success
+  return ok({ message: `OTP sent to your phone ending in ${user.phone.slice(-3)}`, sent: true });
 }
 
 async function handleVerifyOtpReset({ username, otp, newPassword }, request) {
@@ -641,27 +640,26 @@ async function handleRequestRegOtp({ phone }, request) {
   // Store OTP in global platform-master KV with 10 min expiry
   await kvSet(`reg_otp_pending_${cleanPhone}`, { otp, expires: Date.now() + 10 * 60 * 1000 }, 'platform-master');
 
-  const { backgroundTask } = await import('@/lib/background-tasks');
-  backgroundTask(request, async () => {
-    try {
-      const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
-      const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
-      const res = await sendSMS({
-        to: normalizePhone(phone),
-        message: `EduVantage Verification\nYour registration code is: ${otp}.\nDo not share this code.`,
-        ...(atCreds || {})
-      });
-      if (res.success) {
-        console.log(`[Background] Reg OTP SMS sent successfully to ${phone}`);
-      } else {
-        console.error(`[Background] Reg OTP SMS failed for ${phone}: ${res.error}`);
-      }
-    } catch (e) {
-      console.error('[Background Reg OTP Error]:', e.message);
+  try {
+    const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
+    const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
+    const res = await sendSMS({
+      to: normalizePhone(phone),
+      message: `EduVantage Verification\nYour registration code is: ${otp}.\nDo not share this code.`,
+      ...(atCreds || {})
+    });
+    
+    if (!res.success || res.sentCount === 0) {
+      const errorMsg = res.error || (res.failed && res.failed[0] ? res.failed[0].status : 'Unknown delivery error');
+      console.error(`[Reg OTP Error] SMS failed for ${phone}: ${errorMsg}`);
+      return err(`SMS Delivery Failed: ${errorMsg}`);
     }
-  });
+  } catch (e) {
+    console.error('[Reg OTP Exception]:', e.message);
+    return err(`SMS Exception: ${e.message}`);
+  }
 
-  return ok({ message: 'Verification code is being sent' });
+  return ok({ message: 'Verification code sent successfully' });
 }
 
 async function handleVerifyRegOtp({ phone, otp }) {
