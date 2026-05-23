@@ -23,6 +23,7 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
   const router   = useRouter();
   const pathname = usePathname();
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
 
   const { impersonateId, setUser, labels } = useProfile() || {};
   const activeRoles = [user?.role || 'member'];
@@ -143,27 +144,39 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
 
 
       {/* ── Nav tabs ── */}
-      <div className="nav-container">
-        <button className="nav-scroll-btn no-print desktop-only" onClick={() => document.getElementById('tb-nav-inner').scrollBy({left:-200, behavior:'smooth'})}>‹</button>
-        <nav className="tb-nav" id="tb-nav-inner">
-          {nav.map(n => {
-            const b = getBadge(n.key);
-            return (
-              <Link
-                key={n.key}
-                href={n.key === 'classes' ? '/classes' : `/${n.key}`}
-                className={`tb-nbtn${isActive(n.key) ? ' on' : ''}`}
-                style={{ textDecoration: 'none', position: 'relative' }}
-                onClick={() => setShowMobileNav(false)}
-                onMouseEnter={() => n.prefetch && prefetchKeys(n.prefetch)}
-              >
-                {n.icon} {translateLabel(n)}
-                {b > 0 && <span className="nav-badge">{b > 9 ? '9+' : b}</span>}
-              </Link>
-            );
-          })}
-        </nav>
-        <button className="nav-scroll-btn no-print desktop-only" onClick={() => document.getElementById('tb-nav-inner').scrollBy({left:200, behavior:'smooth'})}>›</button>
+      <div className="nav-wrapper" style={{ display: 'flex', alignItems: 'center', flex: 1, overflow: 'hidden' }}>
+        <button 
+          onClick={() => setIsNavCollapsed(!isNavCollapsed)}
+          className="btn btn-ghost btn-sm desktop-only"
+          style={{ marginRight: 8, padding: '6px 12px', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', flexShrink: 0, fontWeight: 700, fontSize: 13 }}
+          title={isNavCollapsed ? "Expand Navigation" : "Collapse Navigation"}
+        >
+          {isNavCollapsed ? '☰ Menu' : '✖'}
+        </button>
+        {!isNavCollapsed && (
+          <div className="nav-container">
+            <button className="nav-scroll-btn no-print desktop-only" onClick={() => document.getElementById('tb-nav-inner').scrollBy({left:-200, behavior:'smooth'})}>‹</button>
+            <nav className="tb-nav" id="tb-nav-inner">
+              {nav.map(n => {
+                const b = getBadge(n.key);
+                return (
+                  <Link
+                    key={n.key}
+                    href={n.key === 'classes' ? '/classes' : `/${n.key}`}
+                    className={`tb-nbtn${isActive(n.key) ? ' on' : ''}`}
+                    style={{ textDecoration: 'none', position: 'relative' }}
+                    onClick={() => setShowMobileNav(false)}
+                    onMouseEnter={() => n.prefetch && prefetchKeys(n.prefetch)}
+                  >
+                    {n.icon} {translateLabel(n)}
+                    {b > 0 && <span className="nav-badge">{b > 9 ? '9+' : b}</span>}
+                  </Link>
+                );
+              })}
+            </nav>
+            <button className="nav-scroll-btn no-print desktop-only" onClick={() => document.getElementById('tb-nav-inner').scrollBy({left:200, behavior:'smooth'})}>›</button>
+          </div>
+        )}
       </div>
 
 

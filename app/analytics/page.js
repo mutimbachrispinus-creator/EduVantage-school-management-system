@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 900, color: '#1e293b' }}>Insights Analysis Failed</h3>
                 <p style={{ color: '#64748b', maxWidth: 420, margin: '8px auto 0', fontSize: 14 }}>
-                  {error.includes('Unexpected') ? 'The server encountered an error processing academic data for this grade. This is often caused by incomplete mark records or curriculum configuration mismatches.' : error}
+                  {/unexpected/i.test(error) ? 'The server encountered an error processing academic data for this grade. This is often caused by an intermittent timeout. Please retry.' : error}
                 </p>
               </div>
               <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>

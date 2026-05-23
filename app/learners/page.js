@@ -244,6 +244,9 @@ export default function LearnersPage() {
                                 method:'POST', headers:{'Content-Type':'application/json'},
                                 body: JSON.stringify({ requests:[{ type:'deleteLearner', adm: l.adm }] })
                               });
+                              const { invalidateDB } = await import('@/lib/client-cache');
+                              invalidateDB('paav6_learners');
+                              window.dispatchEvent(new CustomEvent('paav:sync', { detail: { changed: ['paav6_learners'] } }));
                               load();
                             }}>
                             🗑️

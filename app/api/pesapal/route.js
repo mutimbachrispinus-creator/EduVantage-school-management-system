@@ -94,6 +94,7 @@ async function handleInitiate(request) {
     await kvSet(`pesapal_pending_${orderRes.order_tracking_id}`, {
       type,
       payload,
+      amount: parseFloat(amount),
       merchantRef,
       createdAt: Date.now()
     }, 'platform-master');
@@ -173,7 +174,7 @@ async function finalizeRegistration(orderTrackingId) {
   const pending = await kvGet(`pesapal_pending_${orderTrackingId}`, null, 'platform-master');
   if (!pending) return { message: 'Already processed or not found' };
 
-  const { payload, type } = pending;
+  const { payload, type, amount } = pending;
   
   if (type === 'subscription') {
     const tenantId = payload.tenantId;
@@ -184,17 +185,38 @@ async function finalizeRegistration(orderTrackingId) {
     const planData = (gConf.plans || []).find(p => p.id === planId);
     const cycle = planData?.cycle || 'termly';
     
+    const countRes = await query('SELECT COUNT(*) as total FROM learners WHERE tenant_id = ?', [tenantId]);
+    const studentCount = countRes[0]?.total || 0;
+    
     const subRows = await query('SELECT expires_at FROM subscriptions WHERE tenant_id = ?', [tenantId]);
     const currentExpiry = subRows[0]?.expires_at ? new Date(subRows[0].expires_at) : null;
     const expiresAt = currentExpiry && currentExpiry > new Date() ? currentExpiry : new Date();
     if (cycle === 'annually' || cycle === 'annual') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     else expiresAt.setMonth(expiresAt.getMonth() + 4);
+    
+    const limit = planData?.billingModel === 'per-learner' ? Math.max(studentCount, 1) : 99999;
 
     await execute(`
-      INSERT INTO subscriptions (tenant_id, plan, status, expires_at, updated_at)
-      VALUES (?, ?, 'active', ?, strftime('%s','now'))
-      ON CONFLICT(tenant_id) DO UPDATE SET status = 'active', expires_at = excluded.expires_at, plan = excluded.plan
-    `, [tenantId, planId, expiresAt.toISOString()]);
+      INSERT INTO subscriptions (tenant_id, plan, status, expires_at, learner_limit, billing_model, cycle, amount, updated_at)
+      VALUES (?, ?, 'active', ?, ?, ?, ?, ?, strftime('%s','now'))
+      ON CONFLICT(tenant_id) DO UPDATE SET 
+        status = 'active', 
+        expires_at = excluded.expires_at, 
+        plan = excluded.plan,
+        learner_limit = excluded.learner_limit,
+        billing_model = excluded.billing_model,
+        cycle = excluded.cycle,
+        amount = excluded.amount,
+        updated_at = excluded.updated_at
+    `, [
+      tenantId, 
+      planId, 
+      expiresAt.toISOString(),
+      limit,
+      planData?.billingModel || 'per-learner',
+      cycle,
+      amount || 0
+    ]);
 
     await kvSet(`pesapal_pending_${orderTrackingId}`, null, 'platform-master');
     return { message: 'Subscription updated successfully', loginUrl: '/billing' };
@@ -231,7 +253,7 @@ async function finalizeRegistration(orderTrackingId) {
     500, 
     'per-learner', 
     'annually', 
-    payload.amount || 0
+    amount || payload.amount || 0
   ]);
 
   const now = Math.floor(Date.now() / 1000);

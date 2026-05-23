@@ -152,9 +152,54 @@ export async function POST(req) {
             const logs = await query('SELECT id, payload FROM nexed_mpesa_logs WHERE id = ?', [`billing_${checkoutRequestId}`]);
             if (logs.length > 0) {
               const meta = JSON.parse(logs[0].payload);
-              await query(`UPDATE nexed_school_billing SET status = 'paid', mpesa_ref = ?, paid_at = ? WHERE id = ?`,
-                [result.mpesaCode, new Date().toISOString(), meta.billId]);
-              console.log(`[M-Pesa Callback] Institutional Bill ${meta.billId} paid.`);
+              
+              if (meta.type === 'subscription') {
+                const tenantId = meta.tenantId;
+                const planId = meta.planId;
+                
+                const gConf = await kvGet('paav_global_config', {}, 'platform-master');
+                const planData = (gConf.plans || []).find(p => p.id === planId) || {};
+                const cycle = planData.cycle || 'termly';
+                
+                const countRes = await query('SELECT COUNT(*) as total FROM learners WHERE tenant_id = ?', [tenantId]);
+                const studentCount = countRes[0]?.total || 0;
+                
+                const subRows = await query('SELECT expires_at FROM subscriptions WHERE tenant_id = ?', [tenantId]);
+                const currentExpiry = subRows[0]?.expires_at ? new Date(subRows[0].expires_at) : null;
+                const expiresAt = currentExpiry && currentExpiry > new Date() ? currentExpiry : new Date();
+                if (cycle === 'annually' || cycle === 'annual') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+                else expiresAt.setMonth(expiresAt.getMonth() + 4);
+                
+                const limit = planData.billingModel === 'per-learner' ? Math.max(studentCount, 1) : 99999;
+                
+                await execute(`
+                  INSERT INTO subscriptions (tenant_id, plan, status, expires_at, learner_limit, billing_model, cycle, amount, updated_at)
+                  VALUES (?, ?, 'active', ?, ?, ?, ?, ?, strftime('%s','now'))
+                  ON CONFLICT(tenant_id) DO UPDATE SET 
+                    status = 'active', 
+                    expires_at = excluded.expires_at, 
+                    plan = excluded.plan,
+                    learner_limit = excluded.learner_limit,
+                    billing_model = excluded.billing_model,
+                    cycle = excluded.cycle,
+                    amount = excluded.amount,
+                    updated_at = excluded.updated_at
+                `, [
+                  tenantId, 
+                  planId, 
+                  expiresAt.toISOString(), 
+                  limit, 
+                  planData.billingModel || 'per-learner', 
+                  cycle, 
+                  result.amount
+                ]);
+                console.log(`[M-Pesa Callback] Subscription activated for ${tenantId}`);
+                
+              } else if (meta.billId) {
+                await query(`UPDATE nexed_school_billing SET status = 'paid', mpesa_ref = ?, paid_at = ? WHERE id = ?`,
+                  [result.mpesaCode, new Date().toISOString(), meta.billId]);
+                console.log(`[M-Pesa Callback] Institutional Bill ${meta.billId} paid.`);
+              }
             }
           } catch (e) { console.error('[M-Pesa Callback] Billing lookup error:', e); }
         }
