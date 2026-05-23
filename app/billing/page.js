@@ -117,10 +117,10 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId })
           </div>
         )}
 
-        {payments.length > 0 && (
+        {payments.filter(p => p.type?.toLowerCase() !== 'pesapal').length > 0 && (
           <>
             <div style={{ textAlign:'center', margin:'4px 0 12px', fontSize:11, color:'#94A3B8', fontWeight:800 }}>OR USE MANUAL CHANNELS</div>
-            {payments.map((p, i) => (
+            {payments.filter(p => p.type?.toLowerCase() !== 'pesapal').map((p, i) => (
               <div key={i} style={{ padding:16, border:'1.5px solid #4F46E515', borderRadius:16, background:'#fff', marginBottom:10 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
                   <span style={{ fontSize:12, fontWeight:800, color:'#4F46E5' }}>{p.type.toUpperCase()} • {p.name}</span>
