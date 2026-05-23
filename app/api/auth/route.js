@@ -570,9 +570,7 @@ async function handleRequestOtp(body, request) {
     return err('No phone number linked to this account. Contact admin.');
   }
 
-  const cleanUserPhone = (user.phone || '').replace(/\D/g, '');
-  const isTest = cleanUserPhone.endsWith('792656579') || cleanUserPhone.endsWith('105256881');
-  const otp = isTest ? '123456' : Math.floor(100000 + Math.random() * 899999).toString();
+  const otp = Math.floor(100000 + Math.random() * 899999).toString();
   
   // Store OTP in global platform-master KV with 10 min expiry, including the user's real tenant_id and ID
   const otpData = { otp, expires: Date.now() + 10 * 60 * 1000, tenantId: user.tenant_id, userId: user.id };
@@ -580,10 +578,6 @@ async function handleRequestOtp(body, request) {
   
   // Log the OTP request
   await logAction({ id: user.id, tenantId: user.tenant_id, username: username.toLowerCase(), name: user.name, role: 'none' }, 'OTP Request', `OTP requested for password reset by ${username}`);
-
-  if (isTest) {
-    return ok({ message: 'Developer Test Mode: Use OTP 123456', sent: true });
-  }
 
   // Send SMS synchronously to catch and return errors
   try {
@@ -642,14 +636,9 @@ async function handleRequestRegOtp({ phone }, request) {
   const cleanPhone = phone.replace(/\D/g, '');
   if (cleanPhone.length < 9) return err('Invalid phone number');
 
-  const isTest = cleanPhone.endsWith('792656579') || cleanPhone.endsWith('105256881');
-  const otp = isTest ? '123456' : Math.floor(100000 + Math.random() * 899999).toString();
+  const otp = Math.floor(100000 + Math.random() * 899999).toString();
   // Store OTP in global platform-master KV with 10 min expiry
   await kvSet(`reg_otp_pending_${cleanPhone}`, { otp, expires: Date.now() + 10 * 60 * 1000 }, 'platform-master');
-
-  if (isTest) {
-    return ok({ message: 'Developer Test Mode: Use OTP 123456' });
-  }
 
   try {
     const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
