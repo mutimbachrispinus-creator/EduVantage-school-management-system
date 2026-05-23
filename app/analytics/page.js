@@ -33,7 +33,7 @@ export default function AnalyticsPage() {
   const [staff, setStaff] = useState([]);
 
   const grades = getAllGrades(profile?.curriculum || 'CBC');
-  const curr = getCurriculum(profile?.curriculum || 'CBC');
+  const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
   const currTerms = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const currAssessments = curr.ASSESSMENT_TYPES || [{ key: 'op1', label: '📝 Opener' }, { key: 'mt1', label: '📖 Mid-Term' }, { key: 'et1', label: '📋 End-Term' }];
   const currLabels = curr.LABELS || { grade: 'Grade', subject: 'Subject', learner: 'Learner', learners: 'Learners', assessment: 'Assessment' };
@@ -622,6 +622,14 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
   const selectedLearner = React.useMemo(() => {
     return learners.find(l => String(l.adm) === String(selectedAdm)) || null;
   }, [learners, selectedAdm]);
+
+  React.useEffect(() => {
+    if (scope === 'learner' && learnerQuery.trim() && searchableLearners.length === 1) {
+      if (selectedAdm !== searchableLearners[0].adm) {
+        setSelectedAdm(searchableLearners[0].adm);
+      }
+    }
+  }, [scope, learnerQuery, searchableLearners, selectedAdm]);
 
   const scopedLearners = React.useMemo(() => {
     if (scope === 'school') return learners.filter(l => l.phone);

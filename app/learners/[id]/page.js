@@ -77,7 +77,7 @@ export default function LearnerProfilePage() {
   );
   if (!learner) return null;
 
-  const curr = getCurriculum(profile?.curriculum || 'CBC');
+  const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const { gInfo, maxPts, DEFAULT_SUBJECTS } = curr;
 

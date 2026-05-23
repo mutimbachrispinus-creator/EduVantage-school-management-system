@@ -46,7 +46,7 @@ export default function ClassesPage() {
 
   if (loading) return <div className="page on"><div className="skeleton" style={{ height: 200, borderRadius: 12 }} /></div>;
 
-  const curr = getCurriculum(schoolProfile?.curriculum || 'CBC');
+  const curr = getCurriculum(schoolProfile?.curriculum || 'CBC', schoolProfile?.levels);
   const groups = (curr.CATEGORIES || []).filter(cat => {
     if (!schoolProfile?.levels) return true;
     return schoolProfile.levels[cat.levelKey] !== false;

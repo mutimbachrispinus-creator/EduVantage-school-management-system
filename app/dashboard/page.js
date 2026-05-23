@@ -27,7 +27,7 @@ function DashboardContent() {
   const [themePrimary, setThemePrimary] = useState('#1E293B');
 
   const { profile: school } = useProfile() || {};
-  const curr = getCurriculum(school?.curriculum || 'CBC');
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const ALL_GRADES = curr.ALL_GRADES || [];
   const GRADE_GROUPS = curr.CATEGORIES || [];
   const LABELS = curr.LABELS || { grade: 'Grade', grades: 'Grades', subject: 'Subject', subjects: 'Subjects' };

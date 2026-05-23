@@ -48,7 +48,7 @@ export default function GradesPage() {
   const [assess, setAssess] = usePersistedState('paav_grades_assess', 'mt1');
   const [selectedSubj, setSelectedSubj] = usePersistedState('paav_grades_subject', '');
 
-  const curr = getCurriculum(school?.curriculum || 'CBC');
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const ALL_GRADES = getAllGrades(school?.curriculum || 'CBC', school);
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const { DEFAULT_SUBJECTS, gInfo, maxPts, LABELS } = curr;

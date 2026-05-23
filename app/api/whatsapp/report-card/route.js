@@ -16,12 +16,15 @@ export async function POST(req) {
 
     if (!adm || !term) return NextResponse.json({ error: 'ADM and Term required' }, { status: 400 });
 
-    const [learners, marks, gradCfg, savedCreds] = await Promise.all([
+    const [learners, marks, gradCfg, savedCreds, profile] = await Promise.all([
       kvGet('paav6_learners', [], tid),
       kvGet('paav6_marks', {}, tid),
       kvGet('paav8_grad', null, tid),
-      kvGet('paav_at_creds', {}, 'platform-master')
+      kvGet('paav_at_creds', {}, 'platform-master'),
+      kvGet('paav_school_profile', null, tid)
     ]);
+
+    const schoolName = profile?.name || '';
 
     const learner = findLearner(learners, adm);
     if (!learner) return NextResponse.json({ error: 'Learner not found' }, { status: 404 });
@@ -53,7 +56,7 @@ export async function POST(req) {
     });
 
     const mPts = maxPts(learner.grade, subjects);
-    const message = getResultNotificationMessage(learner.name, term.replace('T',''), totalPts, mPts);
+    const message = getResultNotificationMessage(learner.name, term.replace('T',''), totalPts, mPts, schoolName);
 
     const creds = {
       username: savedCreds?.username || process.env.AT_USERNAME || 'sandbox',

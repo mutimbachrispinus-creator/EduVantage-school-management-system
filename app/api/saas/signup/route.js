@@ -8,7 +8,7 @@ import { execute, query, batch } from '@/lib/db';
  */
 export async function POST(request) {
   try {
-    const { schoolName, adminName, adminUsername, adminPassword, phone, email, curriculum, plan, estimatedStudents } = await request.json();
+    const { schoolName, adminName, adminUsername, adminPassword, phone, email, curriculum, plan, estimatedStudents, levels } = await request.json();
     const selectedPlan = plan || 'trial';
 
     if (!schoolName || !adminName || !adminUsername || !adminPassword || !phone) {
@@ -62,7 +62,8 @@ export async function POST(request) {
       email: email || '',
       logo: '',
       motto: 'Quality Education',
-      curriculum: curriculum || 'CBC'
+      curriculum: curriculum || 'CBC',
+      levels: typeof levels === 'object' && !Array.isArray(levels) ? levels : {}
     });
 
     const defaultTheme = JSON.stringify({

@@ -31,7 +31,7 @@ export default function ReportCardPage() {
   const [term,    setTerm]    = useState('T1');
   const [loading, setLoading] = useState(true);
 
-  const curr = getCurriculum(school?.curriculum || 'CBC');
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const { DEFAULT_SUBJECTS, gInfo, maxPts, getScale, getGradeColors } = curr;
   const isJSSGrade = curr.isJSSGrade || curr.isSecondary || (() => false);

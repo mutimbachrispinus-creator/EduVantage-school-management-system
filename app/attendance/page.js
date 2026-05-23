@@ -65,7 +65,7 @@ function monthOf(dateStr) { return dateStr.slice(0,7); }
 export default function AttendancePage() {
   const router = useRouter();
   const { playSuccessSound, profile } = useProfile();
-  const curr = getCurriculum(profile?.curriculum || 'CBC');
+  const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
   const LABELS = getLabels(profile?.curriculum || 'CBC');
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const [user,         setUser]         = useState(null);

@@ -43,7 +43,7 @@ export default function PayPage() {
   const [payMsg,  setPayMsg]  = useState('');
   const [success, setSuccess] = useState(false);
   
-  const curr = getCurriculum(profile?.curriculum || 'CBC');
+  const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
   const TERMS = curr.TERMS?.map(t => ({ key: t.id, label: t.name, col: t.id.toLowerCase() })) || [
     { key: 'T1', label: 'Term 1', col: 't1' },
     { key: 'T2', label: 'Term 2', col: 't2' },

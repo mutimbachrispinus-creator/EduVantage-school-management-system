@@ -22,14 +22,17 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: 'No targets specified' });
     }
 
-    const [learners, marks, feecfg, paybill, weights, savedCreds] = await Promise.all([
+    const [learners, marks, feecfg, paybill, weights, savedCreds, profile] = await Promise.all([
       kvGet('paav6_learners', [], tid),
       kvGet('paav6_marks', {}, tid),
       kvGet('paav6_feecfg', {}, tid),
       kvGet('paav_paybill_accounts', [], tid),
       kvGet('paav_grading_weights', null, tid),
-      kvGet('paav_at_creds', {}, 'platform-master') // Centralized SMS control
+      kvGet('paav_at_creds', {}, 'platform-master'), // Centralized SMS control
+      kvGet('paav_school_profile', null, tid)
     ]);
+
+    const schoolName = profile?.name || '';
 
     const creds = {
       username: savedCreds?.username || process.env.AT_USERNAME || 'sandbox',
@@ -66,7 +69,8 @@ export async function POST(request) {
             learnerName: learner.name,
             balance,
             paybill: pb,
-            admNo: learner.adm
+            admNo: learner.adm,
+            schoolName
           }, creds);
           results.push({ adm: learner.adm, channel: 'sms', ...res });
           // Log to DB
@@ -124,7 +128,7 @@ export async function POST(request) {
 
       if (channel === 'sms' || channel === 'both') {
         if (parentPhone) {
-          const message = getResultNotificationMessage(learner.name, term.replace('T', ''), totalPts, maxPts);
+          const message = getResultNotificationMessage(learner.name, term.replace('T', ''), totalPts, maxPts, schoolName);
           const res = await sendSMS({ to: parentPhone, message, ...creds });
           results.push({ adm: learner.adm, channel: 'sms', ...res });
           const recipient = res.recipients?.[0] || null;

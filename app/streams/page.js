@@ -13,7 +13,7 @@ export default function StreamsPage() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const { profile: school } = useProfile();
-  const curr = getCurriculum(school?.curriculum || 'CBC');
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const ALL_GRADES = (curr.ALL_GRADES || []).filter(g => isLevelEnabled(g, school, school?.curriculum || 'CBC'));
   const [newStream, setNewStream] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');

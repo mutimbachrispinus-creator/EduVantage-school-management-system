@@ -141,7 +141,7 @@ export default function TimetablePage() {
   }
 
   // Build slots for a grade
-  const curr = getCurriculum(school?.curriculum || 'CBC');
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const gradeKey = getGradeKey(selGrade, curr);
   
   // MERGE hardcoded CFG with school-specific customCfg

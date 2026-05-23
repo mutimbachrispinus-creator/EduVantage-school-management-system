@@ -8,7 +8,7 @@ import { useProfile } from '@/app/PortalShell';
 export default function LibraryPage() {
   const router = useRouter();
   const { profile: school } = useProfile();
-  const curr = getCurriculum(school?.curriculum);
+  const curr = getCurriculum(school?.curriculum, school?.levels);
   const { ALL_GRADES, DEFAULT_SUBJECTS } = curr;
 
   const [user, setUser] = useState(null);

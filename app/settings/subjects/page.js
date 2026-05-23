@@ -25,7 +25,7 @@ function SubjectsContent() {
   const load = useCallback(async () => {
     try {
       const profile = readSchoolProfile() || {};
-      const c = getCurriculum(profile.curriculum || 'CBC');
+      const c = getCurriculum(profile.curriculum || 'CBC', profile.levels);
       setCurr(c);
       setSelectedGrade(prev => prev || c.ALL_GRADES[0]);
 

@@ -24,7 +24,7 @@ export default function LearnersPage() {
   const router = useRouter();
   const [user,     setUser]     = useState(null);
   const { profile: school } = useProfile();
-  const curr = getCurriculum(school.curriculum);
+  const curr = getCurriculum(school.curriculum, school.levels);
   const { ALL_GRADES, LABELS } = curr;
   const [learners, setLearners] = useState([]);
   const [feeCfg,   setFeeCfg]   = useState({});

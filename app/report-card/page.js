@@ -49,7 +49,7 @@ function ReportCardContent() {
 
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Generating report card…</div>;
 
-  const curr = getCurriculum(school?.curriculum || 'CBC');
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const labels = getLabels(school?.curriculum || 'CBC');
   const { gInfo, maxPts, DEFAULT_SUBJECTS } = curr;
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];

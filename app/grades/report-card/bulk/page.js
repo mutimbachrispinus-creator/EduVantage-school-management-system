@@ -28,7 +28,7 @@ function BulkReportCardContent() {
   const school = useSchoolProfile();
   const [loading, setLoading] = useState(true);
 
-  const curr = getCurriculum(school?.curriculum || 'CBC');
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const { DEFAULT_SUBJECTS, gInfo, maxPts, JSS_SCALE, PRIMARY_SCALE } = curr;
   const isJSSGrade = curr.isJSSGrade || curr.isSecondary || (() => false);
 

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import '@/styles/signup.css';
+import { getCurriculum } from '@/lib/curriculum';
 
 const CURRICULA = [
   { id:'CBC',  icon:'🇰🇪', name:'CBC',        desc:'Kenya Competency Based' },
@@ -37,7 +38,7 @@ export default function SignupPage() {
   const [form, setForm] = useState({
     schoolName:'', schoolType:'Primary', county:'Nairobi', schoolEmail:'',
     adminName:'', adminUsername:'', adminPassword:'', phone:'', email:'',
-    curriculum:'CBC', plan:'trial', estimatedStudents:100,
+    curriculum:'CBC', plan:'trial', estimatedStudents:100, levels:{}
   });
 
   const F = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -327,14 +328,32 @@ export default function SignupPage() {
                 <label className="su-label">Select Curriculum *</label>
                 <div className="su-curr-grid">
                   {CURRICULA.map(c=>(
-                    <div key={c.id} className={`su-curr-card ${form.curriculum===c.id?'sel':''}`} onClick={()=>F('curriculum',c.id)}>
+                    <div key={c.id} className={`su-curr-card ${form.curriculum===c.id?'sel':''}`} onClick={()=>setForm(f=>({...f, curriculum: c.id, levels: {}}))}>
                       <div className="icon">{c.icon}</div>
                       <div className="name">{c.name}</div>
                       <div className="desc">{c.desc}</div>
                     </div>
                   ))}
                 </div>
-                <label className="su-label" style={{marginTop:8}}>Select Plan *</label>
+                <div style={{ marginTop: 16 }}>
+                  <label className="su-label">School Levels (Optional)</label>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Select the specific levels your school offers. Leave all unchecked to support all levels.</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    {getCurriculum(form.curriculum).CATEGORIES?.map(cat => {
+                      const key = cat.levelKey || cat.title.toLowerCase().replace(/ /g,'_');
+                      const isOn = form.levels?.[key] !== false;
+                      return (
+                        <label key={cat.title} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: isOn ? '#EFF6FF' : '#F1F5F9', borderColor: isOn ? '#2563EB' : 'var(--border)' }}>
+                          <input type="checkbox" checked={isOn} onChange={e => {
+                            F('levels', { ...(form.levels || {}), [key]: e.target.checked });
+                          }} />
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isOn ? '#1E3A8A' : '#64748B' }}>{cat.title}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <label className="su-label" style={{marginTop:16}}>Select Plan *</label>
                 <div className="su-plan-grid">
                   {plans.slice(0,4).map((p,i)=>(
                     <div key={p.id} className={`su-plan-card ${form.plan===p.id?'sel':''}`} onClick={()=>F('plan',p.id)}>

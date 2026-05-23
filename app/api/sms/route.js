@@ -129,12 +129,16 @@ export async function POST(request) {
       const accounts  = (await kvGet('paav_paybill_accounts', [], tid)) || [];
       const paybill   = accounts[0]?.shortcode || (await kvGet('paav_paybill', '', tid)) || '';
 
+      const profile   = await kvGet('paav_school_profile', null, tid);
+      const schoolName = profile?.name || '';
+
       result = await sendFeeReminderSMS({
         parentPhone: learner.phone,
         learnerName: learner.name,
         balance,
         paybill,
         admNo: learner.adm,
+        schoolName,
       }, creds);
 
       logEntry = smsLogEntry({

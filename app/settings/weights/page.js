@@ -12,7 +12,7 @@ const SLATE = '#64748B';
 export default function WeightsSettingsPage() {
   const router = useRouter();
   const school = useSchoolProfile();
-  const curr = useMemo(() => getCurriculum(school?.curriculum || 'CBC'), [school?.curriculum]);
+  const curr = useMemo(() => getCurriculum(school?.curriculum || 'CBC', school?.levels), [school?.curriculum]);
   const assessments = useMemo(() => curr.ASSESSMENT_TYPES || [], [curr]);
   
   const [user, setUser] = useState(null);

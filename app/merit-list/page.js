@@ -51,7 +51,7 @@ export default function MeritListPage() {
   const localProfile = useSchoolProfile();
   const school = ctxProfile && Object.keys(ctxProfile).length > 0 ? ctxProfile : localProfile;
 
-  const curr = getCurriculum(school?.curriculum || 'CBC');
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const LABELS = getLabels(school?.curriculum || 'CBC');
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const ALL_GRADES = (curr.ALL_GRADES || []).filter(g => isLevelEnabled(g, school, school?.curriculum));
