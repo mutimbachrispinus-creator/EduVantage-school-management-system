@@ -509,7 +509,7 @@ export default function SuperAdminPage() {
             <div className="panel">
               <div className="panel-hdr"><h3>📱 SMS Gateway (Africa&apos;s Talking)</h3></div>
               <div className="panel-body">
-                <div className="field"><label>API Key</label><input type="password" value={globalConfig.smsGateway.apiKey} onChange={e => setGlobalConfig({...globalConfig, smsGateway: {...globalConfig.smsGateway, apiKey: e.target.value}})} /></div>
+                <div className="field"><label>API Key</label><input type="password" name="at_api_key_random" autoComplete="new-password" value={globalConfig.smsGateway.apiKey} onChange={e => setGlobalConfig({...globalConfig, smsGateway: {...globalConfig.smsGateway, apiKey: e.target.value}})} /></div>
                 <div className="field-row">
                   <div className="field"><label>Username</label><input value={globalConfig.smsGateway.username} onChange={e => setGlobalConfig({...globalConfig, smsGateway: {...globalConfig.smsGateway, username: e.target.value}})} /></div>
                   <div className="field"><label>Sender ID</label><input value={globalConfig.smsGateway.senderId} onChange={e => setGlobalConfig({...globalConfig, smsGateway: {...globalConfig.smsGateway, senderId: e.target.value}})} /></div>

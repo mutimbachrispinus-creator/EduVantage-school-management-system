@@ -84,6 +84,8 @@ export default function SMSSettingsPage() {
               <label>API Key</label>
               <input 
                 type="password"
+                name="at_api_key_random"
+                autoComplete="new-password"
                 value={form.apiKey} 
                 onChange={e => setForm({...form, apiKey: e.target.value})}
                 placeholder="Enter your AT API Key"

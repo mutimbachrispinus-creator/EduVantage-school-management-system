@@ -586,12 +586,16 @@ async function handleRequestOtp(body, request) {
       const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
       const atCreds = (await kvGet('paav_at_creds', null, user.tenant_id)) || (await kvGet('paav_at_creds', null, 'platform-master'));
       
-      await sendSMS({
+      const res = await sendSMS({
         to: normalizePhone(user.phone),
         message: `EduVantage Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
         ...(atCreds || {})
       });
-      console.log(`[Background] OTP SMS sent successfully to ${user.phone}`);
+      if (res.success) {
+        console.log(`[Background] OTP SMS sent successfully to ${user.phone}`);
+      } else {
+        console.error(`[Background] OTP SMS failed for ${user.phone}: ${res.error}`);
+      }
     } catch (smsErr) {
       console.error('[Background OTP Error]:', smsErr.message);
     }
@@ -642,11 +646,16 @@ async function handleRequestRegOtp({ phone }, request) {
     try {
       const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
       const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
-      await sendSMS({
+      const res = await sendSMS({
         to: normalizePhone(phone),
         message: `EduVantage Verification\nYour registration code is: ${otp}.\nDo not share this code.`,
         ...(atCreds || {})
       });
+      if (res.success) {
+        console.log(`[Background] Reg OTP SMS sent successfully to ${phone}`);
+      } else {
+        console.error(`[Background] Reg OTP SMS failed for ${phone}: ${res.error}`);
+      }
     } catch (e) {
       console.error('[Background Reg OTP Error]:', e.message);
     }
