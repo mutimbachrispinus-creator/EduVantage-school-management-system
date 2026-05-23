@@ -4,10 +4,9 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LineChart, Line } from '@/components/DynamicCharts';
 import { TrendingUp, Users, BookOpen, AlertCircle, Loader2, ShieldAlert, Target, Award, Activity, ClipboardList, Gauge, Search } from 'lucide-react';
-import { getAcademicStats } from '@/lib/actions/analytics';
-import { buildMeritList, getAllGrades, getDefaultSubjects } from '@/lib/cbe';
+import { buildMeritList, getAllGrades, getDefaultSubjects, getCurriculum, gInfo, getDistributionBuckets } from '@/lib/cbe';
 import { useSchoolProfile } from '@/lib/school-profile';
-import { getCurriculum } from '@/lib/curriculum';
+import { fetchWithRetry, getCachedDBMulti } from '@/lib/client-cache';
 
 const COLORS = ['#8B1A1A', '#2563EB', '#059669', '#D97706', '#7C3AED', '#DB2777'];
 
@@ -64,22 +63,35 @@ export default function AnalyticsPage() {
 
       startTransition(async () => {
         try {
-          const res = await getAcademicStats({ 
-            tenantId: profile.tenantId, 
-            grade, 
+          const params = new URLSearchParams({
+            grade,
             term,
             curriculum: profile.curriculum || 'CBC'
           });
+          const response = await fetchWithRetry(`/api/analytics/academic?${params.toString()}`, { timeout: 20000 }, 1);
+          const res = response ? await response.json() : { success: false, error: 'Request cancelled' };
           clearTimeout(timeout);
           if (res.success) {
             setStats(res.data);
             setError(null);
           } else {
-            setError(res.error || 'Failed to calculate insights');
+            const fallback = await buildCachedAcademicStats({ grade, term, curriculum: profile.curriculum || 'CBC' });
+            if (fallback) {
+              setStats(fallback);
+              setError(null);
+            } else {
+              setError(res.error || 'Failed to calculate insights');
+            }
           }
         } catch (e) {
           clearTimeout(timeout);
-          setError(e.message || 'An unexpected error occurred');
+          const fallback = await buildCachedAcademicStats({ grade, term, curriculum: profile.curriculum || 'CBC' });
+          if (fallback) {
+            setStats(fallback);
+            setError(null);
+          } else {
+            setError(e.message || 'An unexpected error occurred');
+          }
         }
       });
       return () => clearTimeout(timeout);
@@ -93,7 +105,6 @@ export default function AnalyticsPage() {
   useEffect(() => {
     async function loadPerformance() {
       if (!profile?.tenantId) return;
-      const { getCachedDBMulti } = await import('@/lib/client-cache');
       const db = await getCachedDBMulti(['paav6_learners', 'paav6_marks', 'paav8_subj', 'paav8_grad', 'paav6_staff']);
       setLearners(db.paav6_learners || []);
       setMarks(db.paav6_marks || {});
@@ -403,6 +414,176 @@ export default function AnalyticsPage() {
       ) : null}
     </div>
   );
+}
+
+async function buildCachedAcademicStats({ grade, term, curriculum }) {
+  try {
+    const db = await getCachedDBMulti(['paav6_learners', 'paav6_marks', 'paav8_subj']);
+    const learners = (db.paav6_learners || []).filter(l => l?.grade === grade);
+    const marks = db.paav6_marks || {};
+    const curr = getCurriculum(curriculum || 'CBC');
+    const labels = curr.LABELS || {
+      grade: 'Grade', grades: 'Grades',
+      subject: 'Subject', subjects: 'Subjects',
+      learner: 'Learner', learners: 'Learners',
+      assessment: 'Assessment', assessments: 'Assessments'
+    };
+
+    const prefixes = buildTermPrefixes(term, grade, curr);
+    const rows = [];
+    Object.entries(marks).forEach(([key, scores]) => {
+      if (!prefixes.some(p => key.startsWith(p))) return;
+      Object.entries(scores || {}).forEach(([adm, score]) => {
+        const n = Number(score);
+        if (Number.isFinite(n)) rows.push({ key, adm, score: n });
+      });
+    });
+
+    if (!learners.length) return emptyStats({ labels, curriculum, studentCount: 0 });
+    if (!rows.length) return emptyStats({ labels, curriculum, studentCount: learners.length });
+
+    const learnerMap = new Map(learners.map(l => [String(l.adm), l]));
+    const subjectMap = {};
+    const assessmentMap = {};
+    const learnerTotals = {};
+
+    rows.forEach(row => {
+      const parts = row.key.split('|');
+      const subject = parts[1] || 'Unknown';
+      const assess = parts[2] || 'assessment';
+      subjectMap[subject] = subjectMap[subject] || { total: 0, count: 0 };
+      assessmentMap[assess] = assessmentMap[assess] || { total: 0, count: 0 };
+      learnerTotals[row.adm] = learnerTotals[row.adm] || { total: 0, count: 0 };
+      subjectMap[subject].total += row.score;
+      subjectMap[subject].count++;
+      assessmentMap[assess].total += row.score;
+      assessmentMap[assess].count++;
+      learnerTotals[row.adm].total += row.score;
+      learnerTotals[row.adm].count++;
+    });
+
+    const subjectMastery = Object.entries(subjectMap).map(([name, data]) => {
+      const average = Number((data.total / data.count).toFixed(2));
+      const info = gInfo(average, grade, null, curriculum);
+      return { name, average, entries: data.count, level: info?.lv || '-', color: info?.c || '#64748B' };
+    }).sort((a, b) => b.average - a.average);
+
+    const assessLabelMap = (curr.ASSESSMENT_TYPES || []).reduce((acc, a) => {
+      acc[a.key] = a.label.replace(/\p{Emoji}/gu, '').trim();
+      return acc;
+    }, {});
+    const assessmentComparison = Object.entries(assessmentMap).map(([key, data]) => ({
+      name: assessLabelMap[key] || key,
+      rawKey: key,
+      average: Number((data.total / data.count).toFixed(2)),
+      entries: data.count
+    })).sort((a, b) => a.rawKey.localeCompare(b.rawKey));
+
+    const learnerAverages = Object.entries(learnerTotals).map(([adm, data]) => ({
+      adm,
+      average: data.count ? data.total / data.count : 0,
+      entries: data.count
+    }));
+    const classAverage = learnerAverages.length
+      ? Number((learnerAverages.reduce((sum, l) => sum + l.average, 0) / learnerAverages.length).toFixed(2))
+      : 0;
+
+    const levelMap = { ...getDistributionBuckets(grade, curriculum) };
+    learnerAverages.forEach(l => {
+      const lv = gInfo(l.average, grade, null, curriculum)?.lv || '-';
+      levelMap[lv] = (levelMap[lv] || 0) + 1;
+    });
+    const gradeColors = curr.getGradeColors ? curr.getGradeColors() : {};
+    const levelDistribution = Object.entries(levelMap).map(([name, count]) => ({
+      name, count, color: gradeColors[name] || '#64748B'
+    }));
+
+    const genderStats = { Boys: { total: 0, count: 0 }, Girls: { total: 0, count: 0 } };
+    const streamMap = {};
+    rows.forEach(row => {
+      const student = learnerMap.get(String(row.adm));
+      if (!student) return;
+      const sex = String(student.sex || student.gender || '').toLowerCase().startsWith('f') ? 'Girls' : 'Boys';
+      genderStats[sex].total += row.score;
+      genderStats[sex].count++;
+      if (student.stream) {
+        streamMap[student.stream] = streamMap[student.stream] || { total: 0, count: 0 };
+        streamMap[student.stream].total += row.score;
+        streamMap[student.stream].count++;
+      }
+    });
+
+    const genderComparison = Object.entries(genderStats).map(([name, data]) => ({
+      name,
+      average: data.count ? Number((data.total / data.count).toFixed(2)) : 0,
+      entries: data.count
+    }));
+    const streamComparison = Object.entries(streamMap).map(([name, data]) => ({
+      name,
+      average: Number((data.total / data.count).toFixed(2)),
+      entries: data.count
+    }));
+    const expectedSubjects = db.paav8_subj?.[grade]?.length || getDefaultSubjects(grade, curriculum).length || Object.keys(subjectMap).length || 1;
+    const expectedEntries = Math.max(1, learners.length * expectedSubjects);
+
+    return {
+      subjectMastery,
+      genderComparison,
+      streamComparison,
+      assessmentComparison,
+      levelDistribution,
+      studentCount: learners.length,
+      enteredLearners: learnerAverages.length,
+      totalEntries: rows.length,
+      completionRate: Number(((rows.length / expectedEntries) * 100).toFixed(1)),
+      classAverage,
+      riskCount: learnerAverages.filter(l => l.average < 40).length,
+      excellenceCount: learnerAverages.filter(l => l.average >= 80).length,
+      labels,
+      curriculum
+    };
+  } catch (e) {
+    console.error('Cached analytics fallback failed:', e);
+    return null;
+  }
+}
+
+function buildTermPrefixes(term, grade, curr) {
+  const aliases = new Set([term]);
+  const numMatch = String(term || '').match(/(\d+)/);
+  if (numMatch) {
+    aliases.add(`T${numMatch[1]}`);
+    aliases.add(`TERM ${numMatch[1]}`);
+  }
+  const terms = curr.TERMS || [];
+  const matched = terms.find(t => t.id === term || t.name === term);
+  if (matched) {
+    const idx = terms.indexOf(matched) + 1;
+    aliases.add(matched.id);
+    aliases.add(matched.name);
+    aliases.add(`T${idx}`);
+    aliases.add(`TERM ${idx}`);
+  }
+  return [...aliases].filter(Boolean).map(t => `${t}:${grade}|`);
+}
+
+function emptyStats({ labels, curriculum, studentCount }) {
+  return {
+    subjectMastery: [],
+    genderComparison: [],
+    streamComparison: [],
+    assessmentComparison: [],
+    levelDistribution: [],
+    studentCount,
+    enteredLearners: 0,
+    totalEntries: 0,
+    completionRate: 0,
+    classAverage: 0,
+    riskCount: 0,
+    excellenceCount: 0,
+    labels,
+    curriculum
+  };
 }
 
 function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, grades }) {
