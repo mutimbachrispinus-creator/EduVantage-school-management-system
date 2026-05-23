@@ -591,7 +591,9 @@ async function handleRequestOtp(body, request) {
     });
     
     if (!res.success || res.sentCount === 0) {
-      const errorMsg = res.error || (res.failed && res.failed[0] ? res.failed[0].status : 'Unknown delivery error');
+      const maskedCreds = { ...atCreds, apiKey: atCreds?.apiKey ? '***' : 'missing' };
+      const debugInfo = JSON.stringify({ res, creds: maskedCreds });
+      const errorMsg = res.error || (res.failed && res.failed[0] ? res.failed[0].status : `Debug: ${debugInfo}`);
       console.error(`[OTP Error] SMS failed for ${user.phone}: ${errorMsg}`);
       return err(`SMS Delivery Failed: ${errorMsg}`);
     }
