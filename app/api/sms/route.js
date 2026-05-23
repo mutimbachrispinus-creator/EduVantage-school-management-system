@@ -60,8 +60,11 @@ export async function POST(request) {
       result = await sendSMS({ to, message, ...creds });
       logEntry = smsLogEntry({
         to, message, type: 'manual',
-        status: result.success ? 'sent' : 'failed',
+        status: result.success ? 'submitted' : 'failed',
         sentBy: session.name,
+        atMessageId: result.messageIds?.[0],
+        providerStatus: result.recipients?.[0]?.status,
+        providerStatusCode: result.recipients?.[0]?.statusCode,
       });
       break;
     }
@@ -77,8 +80,10 @@ export async function POST(request) {
       logEntry = smsLogEntry({
         to: `${phones.length} recipients`,
         message, type: 'bulk',
-        status: result.success ? 'sent' : 'failed',
+        status: result.success ? 'submitted' : 'failed',
         sentBy: session.name,
+        providerStatus: result.success ? 'Submitted' : 'Failed',
+        providerStatusCode: result.totalFailed ? 'partial-failure' : null,
       });
       break;
     }
@@ -96,8 +101,11 @@ export async function POST(request) {
       logEntry = smsLogEntry({
         to: user.phone, message: `Credentials for ${user.name}`,
         type: 'credentials',
-        status: result.success ? 'sent' : 'failed',
+        status: result.success ? 'submitted' : 'failed',
         sentBy: session.name,
+        atMessageId: result.messageIds?.[0],
+        providerStatus: result.recipients?.[0]?.status,
+        providerStatusCode: result.recipients?.[0]?.statusCode,
       });
       break;
     }
@@ -133,8 +141,11 @@ export async function POST(request) {
         to: learner.phone,
         message: `Fee reminder: ${learner.name}, Balance KSH ${balance}`,
         type: 'fee_reminder',
-        status: result.success ? 'sent' : 'failed',
+        status: result.success ? 'submitted' : 'failed',
         sentBy: session.name,
+        atMessageId: result.messageIds?.[0],
+        providerStatus: result.recipients?.[0]?.status,
+        providerStatusCode: result.recipients?.[0]?.statusCode,
       });
       break;
     }
@@ -164,7 +175,7 @@ export async function POST(request) {
         to: `${alerts.length} parents`,
         message: 'Bulk Absenteeism Alert',
         type: 'event',
-        status: result.success ? 'sent' : 'failed',
+        status: result.success ? 'submitted' : 'failed',
         sentBy: session.name,
       });
       break;
@@ -183,6 +194,11 @@ export async function POST(request) {
       // Keep last 500 entries
       if (smsLog.length > 500) smsLog.splice(500);
       await kvSet('paav7_sms', smsLog, tid);
+      if (logEntry.atMessageId) {
+        const index = (await kvGet('paav_sms_message_index', {}, 'platform-master')) || {};
+        index[logEntry.atMessageId] = { tenantId: tid, logId: logEntry.id, updatedAt: new Date().toISOString() };
+        await kvSet('paav_sms_message_index', index, 'platform-master');
+      }
     } catch (e) {
       console.error('[api/sms] log error:', e);
     }

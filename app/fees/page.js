@@ -697,7 +697,7 @@ function ModalOverlay({ title, onClose, children }) {
 
 function SMSReminderButton({ adm, balance, phone }) {
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [sendState, setSendState] = useState('');
 
   async function send() {
     if (balance <= 0) return;
@@ -713,13 +713,18 @@ function SMSReminderButton({ adm, balance, phone }) {
       });
       const data = await res.json();
       if (data.success) {
-        setSent(true);
-        setTimeout(() => setSent(false), 3000);
+        setSendState('submitted');
+        setTimeout(() => setSendState(''), 3000);
       } else {
-        alert(data.error || 'Failed to send SMS');
+        setSendState('failed');
+        alert(data.error || data.result?.failed?.[0]?.error || 'Failed to send SMS');
+        setTimeout(() => setSendState(''), 3000);
       }
     } catch (e) {
       console.error(e);
+      setSendState('failed');
+      alert(e.message || 'Failed to send SMS');
+      setTimeout(() => setSendState(''), 3000);
     } finally {
       setBusy(false);
     }
@@ -734,15 +739,14 @@ function SMSReminderButton({ adm, balance, phone }) {
       disabled={busy}
       style={{ 
         marginLeft: 4, 
-        background: sent ? '#16a34a' : '#1e293b', 
+        background: sendState === 'submitted' ? '#d97706' : sendState === 'failed' ? '#dc2626' : '#1e293b', 
         color: '#fff', 
         border: 'none',
         opacity: busy ? 0.7 : 1
       }}
-      title="Send SMS Reminder"
+      title={sendState === 'submitted' ? 'SMS submitted to provider; waiting for carrier delivery report' : 'Send SMS Reminder'}
     >
-      {busy ? '⏳' : sent ? '✅' : '📱'}
+      {busy ? '⏳' : sendState === 'submitted' ? '…' : sendState === 'failed' ? '!' : '📱'}
     </button>
   );
 }
-

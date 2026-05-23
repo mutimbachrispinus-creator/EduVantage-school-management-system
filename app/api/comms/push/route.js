@@ -9,41 +9,42 @@ import { calcLearnerReportData, DEFAULT_SUBJECTS } from '@/lib/cbe';
 import { findLearner, getTenantId } from '@/lib/learner-lookup';
 
 export async function POST(request) {
-  const session = await getSession();
-  if (!session || !['admin', 'super-admin'].includes(session.role)) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { type, channel, targets, term } = await request.json();
-  const tid = getTenantId(session);
-
-  if (!targets || !targets.length) {
-    return NextResponse.json({ ok: false, error: 'No targets specified' });
-  }
-
-  const [learners, marks, feecfg, paybill, weights, savedCreds] = await Promise.all([
-    kvGet('paav6_learners', [], tid),
-    kvGet('paav6_marks', {}, tid),
-    kvGet('paav6_feecfg', {}, tid),
-    kvGet('paav_paybill_accounts', [], tid),
-    kvGet('paav_grading_weights', null, tid),
-    kvGet('paav_at_creds', {}, 'platform-master') // Centralized SMS control
-  ]);
-
-  const creds = {
-    username: savedCreds?.username || process.env.AT_USERNAME || 'sandbox',
-    apiKey:   savedCreds?.apiKey   || process.env.AT_API_KEY  || '',
-    senderId: savedCreds?.senderId || process.env.AT_SENDER_ID || '',
-  };
-
-  const results = [];
-
-  for (const target of targets) {
-    const learner = findLearner(learners, target.adm);
-    if (!learner) {
-      results.push({ adm: target.adm, channel: channel || 'sms', success: false, error: 'Learner not found' });
-      continue;
+  try {
+    const session = await getSession();
+    if (!session || !['admin', 'super-admin'].includes(session.role)) {
+      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { type, channel, targets, term } = await request.json();
+    const tid = getTenantId(session);
+
+    if (!targets || !targets.length) {
+      return NextResponse.json({ ok: false, error: 'No targets specified' });
+    }
+
+    const [learners, marks, feecfg, paybill, weights, savedCreds] = await Promise.all([
+      kvGet('paav6_learners', [], tid),
+      kvGet('paav6_marks', {}, tid),
+      kvGet('paav6_feecfg', {}, tid),
+      kvGet('paav_paybill_accounts', [], tid),
+      kvGet('paav_grading_weights', null, tid),
+      kvGet('paav_at_creds', {}, 'platform-master') // Centralized SMS control
+    ]);
+
+    const creds = {
+      username: savedCreds?.username || process.env.AT_USERNAME || 'sandbox',
+      apiKey:   savedCreds?.apiKey   || process.env.AT_API_KEY  || '',
+      senderId: savedCreds?.senderId || process.env.AT_SENDER_ID || '',
+    };
+
+    const results = [];
+
+    for (const target of targets) {
+      const learner = findLearner(learners, target.adm);
+      if (!learner) {
+        results.push({ adm: target.adm, channel: channel || 'sms', success: false, error: 'Learner not found' });
+        continue;
+      }
 
     const parentPhone = learner.phone;
     const parentEmail = learner.parentEmail;
@@ -69,7 +70,17 @@ export async function POST(request) {
           }, creds);
           results.push({ adm: learner.adm, channel: 'sms', ...res });
           // Log to DB
-          await logComms({ to: parentPhone, message: `Fee Balance: KSH ${balance}`, type: 'fee_reminder', status: res.success ? 'sent' : 'failed', sentBy: session.username || session.name }, tid);
+          const recipient = res.recipients?.[0] || null;
+          await logComms({
+            to: parentPhone,
+            message: `Fee Balance: KSH ${balance}`,
+            type: 'fee_reminder',
+            status: res.success ? 'submitted' : 'failed',
+            sentBy: session.username || session.name,
+            atMessageId: recipient?.messageId || res.messageIds?.[0] || '',
+            providerStatus: recipient?.status || '',
+            providerStatusCode: recipient?.statusCode || null
+          }, tid);
         }
       }
 
@@ -116,7 +127,17 @@ export async function POST(request) {
           const message = getResultNotificationMessage(learner.name, term.replace('T', ''), totalPts, maxPts);
           const res = await sendSMS({ to: parentPhone, message, ...creds });
           results.push({ adm: learner.adm, channel: 'sms', ...res });
-          await logComms({ to: parentPhone, message, type: 'report_card', status: res.success ? 'sent' : 'failed', sentBy: session.username || session.name }, tid);
+          const recipient = res.recipients?.[0] || null;
+          await logComms({
+            to: parentPhone,
+            message,
+            type: 'report_card',
+            status: res.success ? 'submitted' : 'failed',
+            sentBy: session.username || session.name,
+            atMessageId: recipient?.messageId || res.messageIds?.[0] || '',
+            providerStatus: recipient?.status || '',
+            providerStatusCode: recipient?.statusCode || null
+          }, tid);
         }
       }
 
@@ -150,24 +171,48 @@ export async function POST(request) {
           const message = getAbsenteeismAlertMessage(learner.name, pct, absences);
           const res = await sendSMS({ to: parentPhone, message, ...creds });
           results.push({ adm: learner.adm, channel: 'sms', ...res });
-          await logComms({ to: parentPhone, message, type: 'attendance_alert', status: res.success ? 'sent' : 'failed', sentBy: session.username || session.name }, tid);
+          const recipient = res.recipients?.[0] || null;
+          await logComms({
+            to: parentPhone,
+            message,
+            type: 'attendance_alert',
+            status: res.success ? 'submitted' : 'failed',
+            sentBy: session.username || session.name,
+            atMessageId: recipient?.messageId || res.messageIds?.[0] || '',
+            providerStatus: recipient?.status || '',
+            providerStatusCode: recipient?.statusCode || null
+          }, tid);
         }
       }
     }
   }
 
-  return NextResponse.json({ ok: true, results });
+    return NextResponse.json({ ok: true, results });
+  } catch (error) {
+    console.error('[api/comms/push] failed:', error);
+    return NextResponse.json(
+      { ok: false, error: error.message || 'Failed to send communications' },
+      { status: 500 }
+    );
+  }
 }
 
 async function logComms(entry, tenantId) {
   try {
+    const id = entry.atMessageId || 's' + Date.now() + Math.random().toString(36).substr(2, 5);
     const logs = await kvGet('paav7_sms', [], tenantId) || [];
     logs.unshift({
       ...entry,
-      id: 's' + Date.now() + Math.random().toString(36).substr(2, 5),
+      id,
       date: new Date().toISOString()
     });
     await kvSet('paav7_sms', logs.slice(0, 500), tenantId);
+
+    if (entry.atMessageId) {
+      const index = await kvGet('paav_sms_message_index', {}, 'platform-master') || {};
+      index[entry.atMessageId] = { tenantId, logId: id, updatedAt: new Date().toISOString() };
+      await kvSet('paav_sms_message_index', index, 'platform-master');
+    }
   } catch (e) {
     console.error('Failed to log comms:', e);
   }

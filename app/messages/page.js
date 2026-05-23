@@ -436,10 +436,15 @@ export default function MessagesPage() {
                   <div key={i} style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <strong style={{ fontSize: 13, color: 'var(--navy)' }}>{s.to}</strong>
-                      <span className={`badge ${s.status === 'sent' ? 'bg-green' : 'bg-red'}`} style={{ fontSize: 10 }}>{s.status?.toUpperCase()}</span>
+                      <span className={`badge ${s.deliveryStatus === 'Success' ? 'bg-green' : s.status === 'failed' || ['Failed', 'Rejected'].includes(s.deliveryStatus) ? 'bg-red' : ''}`} style={{ fontSize: 10 }}>
+                        {(s.deliveryStatus || s.status || 'submitted').toUpperCase()}
+                      </span>
                     </div>
                     <div style={{ fontSize: 12, color: '#475569', margin: '6px 0', lineHeight: 1.5 }}>{s.message}</div>
-                    <div style={{ fontSize: 10, color: 'var(--light)', fontWeight: 600 }}>{new Date(s.date).toLocaleString()} · Sent by {s.sentBy}</div>
+                    <div style={{ fontSize: 10, color: 'var(--light)', fontWeight: 600 }}>
+                      {new Date(s.date).toLocaleString()} · Sent by {s.sentBy}
+                      {s.failureReason ? ` · ${s.failureReason}` : ''}
+                    </div>
                   </div>
                 )) : <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>No SMS logs found</div>}
               </div>

@@ -685,7 +685,7 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
 
       for (let i = 0; i < targets.length; i += BATCH_SIZE) {
         const batch = targets.slice(i, i + BATCH_SIZE);
-        const res = await fetch('/api/comms/push', {
+        const res = await fetchWithRetry('/api/comms/push', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -693,9 +693,18 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
             channel: 'sms',
             term: term,
             targets: batch.map(l => ({ adm: l.adm, grade: l.grade }))
-          })
-        });
-        const data = await res.json();
+          }),
+          timeout: 30000
+        }, 1);
+        if (!res) throw new Error('The request was cancelled before the SMS batch completed.');
+        const text = await res.text();
+        let data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          throw new Error(`The server returned an unreadable response (${res.status}).`);
+        }
+        if (!res.ok) throw new Error(data.error || `Failed to send this SMS batch (${res.status}).`);
         if (data.ok) {
           successful += data.results.filter(r => r.success).length;
         } else {
@@ -708,7 +717,7 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
       alert(`Successfully queued ${successful} SMS notifications.`);
     } catch (e) {
       console.error('Outreach error:', e);
-      alert('A communication error occurred.');
+      alert(e.message || 'A communication error occurred.');
     } finally {
       setSending(false);
       setProgress({ current: 0, total: 0 });

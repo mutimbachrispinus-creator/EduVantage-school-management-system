@@ -57,15 +57,17 @@ export async function POST(req) {
     if (deliveryLog.length > 2000) deliveryLog.splice(2000);
     await kvSet(receiptKey, deliveryLog, 'platform-master');
 
-    // 2. Cross-reference: update matching entry in smsLog so the portal UI shows status
+    // 2. Cross-reference: update matching tenant smsLog so the portal UI shows status
     try {
-      const smsLog = (await kvGet('paav7_sms', [], 'platform-master')) || [];
+      const index = (await kvGet('paav_sms_message_index', {}, 'platform-master')) || {};
+      const tenantId = index[messageId]?.tenantId || 'platform-master';
+      const smsLog = (await kvGet('paav7_sms', [], tenantId)) || [];
       const entry = smsLog.find(e => e.id === messageId || e.atMessageId === messageId);
       if (entry) {
         entry.deliveryStatus = status;
         entry.deliveryAt     = new Date().toISOString();
         if (failureReason) entry.failureReason = failureReason;
-        await kvSet('paav7_sms', smsLog, 'platform-master');
+        await kvSet('paav7_sms', smsLog, tenantId);
       }
     } catch (logErr) {
       console.warn('[SMS Delivery] Could not update smsLog cross-reference:', logErr.message);
