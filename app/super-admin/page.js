@@ -379,7 +379,10 @@ export default function SuperAdminPage() {
                           <div style={{ fontSize: 9, color: '#EF4444', fontWeight: 700 }}>⚠️ Discrepancy!</div>
                         )}
                       </td>
-                      <td><span className={`badge ${s.status === 'active' ? 'bg-green' : 'bg-red'}`}>{s.status.toUpperCase()}</span></td>
+                      <td>
+                        <span className={`badge ${s.status === 'active' ? 'bg-green' : 'bg-red'}`}>{s.status.toUpperCase()}</span>
+                        {s.expiresAt && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, whiteSpace: 'nowrap' }}>Expires: {new Date(s.expiresAt).toLocaleDateString()}</div>}
+                      </td>
                       <td style={{ fontWeight: 900, color: EMERALD }}>KES {s.revenue.toLocaleString()}</td>
                       <td style={{ fontWeight: 900, color: M }}>KES {s.expectedPay?.toLocaleString()}</td>
                       <td>
@@ -873,6 +876,21 @@ export default function SuperAdminPage() {
                     <option value="suspended">Suspended</option>
                   </select>
                 </div>
+                <div className="field">
+                  <label>License Expiry</label>
+                  <input type="datetime-local" value={editSchool.expiresAt ? new Date(new Date(editSchool.expiresAt).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''} onChange={e => setEditSchool({...editSchool, expiresAt: e.target.value ? new Date(e.target.value).toISOString() : null})} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 15, background: '#F8FAFC', padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)', alignSelf: 'center', fontWeight: 700, width: '100%' }}>MANUAL ACTIVATION (For Bank/Paybill Payments):</div>
+                <button className="btn btn-sm btn-ghost" style={{ border: '1px solid #CBD5E1', color: '#16A34A', background: '#fff' }} onClick={() => {
+                  const d = new Date(); d.setMonth(d.getMonth() + 4);
+                  setEditSchool({...editSchool, status: 'active', expiresAt: d.toISOString()});
+                }}>+ 1 Term (4 Mo)</button>
+                <button className="btn btn-sm btn-ghost" style={{ border: '1px solid #CBD5E1', color: '#2563EB', background: '#fff' }} onClick={() => {
+                  const d = new Date(); d.setFullYear(d.getFullYear() + 1);
+                  setEditSchool({...editSchool, status: 'active', expiresAt: d.toISOString()});
+                }}>+ 1 Year</button>
               </div>
               <div className="field">
                 <label>Learner Limit (0 = Unlimited)</label>
