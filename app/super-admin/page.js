@@ -876,10 +876,10 @@ export default function SuperAdminPage() {
                     <option value="suspended">Suspended</option>
                   </select>
                 </div>
-                <div className="field">
-                  <label>License Expiry</label>
-                  <input type="datetime-local" value={editSchool.expiresAt ? new Date(new Date(editSchool.expiresAt).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''} onChange={e => setEditSchool({...editSchool, expiresAt: e.target.value ? new Date(e.target.value).toISOString() : null})} />
-                </div>
+              </div>
+              <div className="field">
+                <label>License Expiry</label>
+                <input type="datetime-local" value={editSchool.expiresAt ? new Date(new Date(editSchool.expiresAt).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''} onChange={e => setEditSchool({...editSchool, expiresAt: e.target.value ? new Date(e.target.value).toISOString() : null})} />
               </div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 15, background: '#F8FAFC', padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', flexWrap: 'wrap' }}>
                 <div style={{ fontSize: 11, color: 'var(--muted)', alignSelf: 'center', fontWeight: 700, width: '100%' }}>MANUAL ACTIVATION (For Bank/Paybill Payments):</div>
