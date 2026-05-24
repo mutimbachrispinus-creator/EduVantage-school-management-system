@@ -8,10 +8,10 @@ import { getCachedUser } from '@/lib/client-cache';
 export default function NationalExamsSyncPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const { profile: school } = useProfile();
+  const { profile: school = {} } = useProfile() || {};
   
   // Curriculum Awareness
-  const curr = getCurriculum(school.curriculum, school.levels);
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const { ALL_GRADES, LABELS } = curr;
   
   const [selectedGrade, setSelectedGrade] = useState('');
