@@ -33,11 +33,22 @@ export default function LandingPage() {
   const [plans, setPlans] = useState([]);
 
   // Interactive UI states
-          const [expandedFaq, setExpandedFaq] = useState(null);
+  const [expandedFaq, setExpandedFaq] = useState(null);
+  const [heroImgIdx, setHeroImgIdx] = useState(0);
+
+  const heroImages = [
+    '/eduvantage-hero-new.png',
+    '/eduvantage-hero.png',
+    '/classroom-vibe.png'
+  ];
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll, { passive: true });
+
+    const imgInterval = setInterval(() => {
+      setHeroImgIdx(prev => (prev + 1) % heroImages.length);
+    }, 5000);
 
     // Sync landing page CSS vars with platform theme
     const style = document.documentElement.style;
@@ -55,7 +66,10 @@ export default function LandingPage() {
       } catch (e) {}
     }
     loadStats();
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearInterval(imgInterval);
+    };
   }, []);
 
   // Filter features based on active category and text query
@@ -113,8 +127,21 @@ export default function LandingPage() {
           </div>
 
           <div className="hero-mockup">
-            <div className="mockup-frame">
-              <img src="/eduvantage-hero-new.png" alt="Dashboard Mockup" className="mockup-img" />
+            <div className="mockup-frame" style={{ position: 'relative', overflow: 'hidden' }}>
+              {heroImages.map((src, idx) => (
+                <img 
+                  key={src}
+                  src={src} 
+                  alt={`Dashboard Mockup ${idx + 1}`} 
+                  className="mockup-img"
+                  style={{
+                    transition: 'opacity 1.2s ease-in-out',
+                    opacity: idx === heroImgIdx ? 1 : 0,
+                    position: idx === heroImgIdx ? 'relative' : 'absolute',
+                    top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover'
+                  }}
+                />
+              ))}
               
               {/* Floating Glass Cards Removed for simplicity */}
             </div>
