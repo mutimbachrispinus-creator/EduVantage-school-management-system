@@ -22,9 +22,9 @@ const AMBER   = '#F59E0B';
 // Extremely detailed Features Blueprint for the Search and Filtering system
 
 const TRUST_POINTS = [
-  { label: 'Comprehensive Workflows', value: 'Manage admissions, fees, grading, attendance, and reports in one place.' },
-  { label: 'Seamless Communication', value: 'Built-in support for SMS and email to keep parents informed.' },
-  { label: 'Secure and Reliable', value: 'Fast, dependable, and easy to use on any device.' },
+  { label: 'Comprehensive Workflows', value: 'Manage admissions, fees, grading, attendance, timetabling, and reports in one place.' },
+  { label: 'Seamless Communication', value: 'Built-in support for bulk SMS, real-time in-app messages, and push notifications to keep parents and staff informed.' },
+  { label: 'Secure and Reliable', value: 'Fast, dependable, and accessible on any device with bank-level encryption.' },
 ];
 
 export default function LandingPage() {
@@ -178,27 +178,31 @@ export default function LandingPage() {
       {/* ── SEARCHABLE & FILTERABLE FEATURE bluePRINT (THE DEEP DIVE) ── */}
       
 
-      {/* ── SECURITY & SYSTEM INTEGRITY TECH PLOT ── */}
+      {/* ── KEY FEATURES STRIP ── */}
       <section className="security-blueprint-section">
         <div className="container readiness-grid">
           <div>
-            <div className="badge-pill">Operational Integrity</div>
-            <h2 className="section-title">Built for absolute reliability, security, and scalability.</h2>
+            <div className="badge-pill">Core Capabilities</div>
+            <h2 className="section-title">Built for efficiency, communication, and modern learning.</h2>
             <p className="section-subtitle left" style={{ marginBottom: 30 }}>
-              EduVantage uses industry-standard security practices and modern infrastructure to keep your data completely safe and private.
+              EduVantage combines powerful automation with an intuitive interface to simplify your school's daily operations.
             </p>
             <div className="tech-checks">
               <div className="tech-check-item">
-                <strong>🔐 Cryptographic Anti-Fraud QR Verification</strong>
-                <span>Every report card and fees receipt generated prints with a cryptographically secure, unique QR code. Scanning verifies transaction details or grades directly to stop forgery.</span>
+                <strong>🤖 Smart Timetable Generator</strong>
+                <span>Automatically generate zero-clash, curriculum-aware timetables. The AI strictly respects teacher availability, daily subject limits, and break schedules.</span>
               </div>
               <div className="tech-check-item" style={{ marginTop: 24 }}>
-                <strong>🚀 Complete Data Privacy</strong>
-                <span>Data safety is our priority. Your school's information is completely private and isolated, matching strict global data protection laws.</span>
+                <strong>💬 WhatsApp-Style Messaging & SMS</strong>
+                <span>Keep everyone in the loop with instant in-app messaging, real-time unread badges, notification sounds, and the ability to forward urgent alerts via SMS directly to mobile phones.</span>
               </div>
               <div className="tech-check-item" style={{ marginTop: 24 }}>
-                <strong>⚡ Lightning Fast Performance</strong>
-                <span>Designed to load instantly anywhere in the world. Built-in offline capabilities ensure teachers can work seamlessly even during network lags.</span>
+                <strong>🎓 Dynamic Curriculum Adaptability</strong>
+                <span>Seamlessly switch between multiple educational frameworks (Kenya CBC, British, Cambridge, Montessori, TVET) within the same portal, with automatically adjusted grading scales and report card templates.</span>
+              </div>
+              <div className="tech-check-item" style={{ marginTop: 24 }}>
+                <strong>🔐 Anti-Fraud Document Verification</strong>
+                <span>Every report card and fee receipt generated prints with a secure, unique QR code. Parents and partners can scan these codes to instantly verify authenticity, eliminating forgery.</span>
               </div>
             </div>
           </div>
@@ -210,8 +214,6 @@ export default function LandingPage() {
                 <span>{point.value}</span>
               </div>
             ))}
-            
-
           </div>
         </div>
       </section>
@@ -284,20 +286,20 @@ export default function LandingPage() {
           <div className="faq-wrapper">
             {[
               {
-                q: "How does the Curriculum-Aware Grading Engine support diverse standards simultaneously?",
-                a: "EduVantage employs a modular backend architecture. Administrators define the curriculum standard at the class or school grade level (e.g. Kenya CBC for Grades 1-6, Cambridge IGCSE for Year 9-11, and Technical Units of Competency for TVET classes). The system then dynamically loads the correct calculation formulas, grade boundary tables, score input panels, and printed report card templates. This ensures a multi-curriculum school runs seamlessly within a single portal workspace."
+                q: "How does the platform handle different educational curriculums?",
+                a: "EduVantage is designed to be fully 'curriculum-aware'. Administrators can select the active framework at the class or school level (e.g., Kenya CBC, Cambridge, TVET, or Montessori). The system automatically adjusts subject loads, assessment grading rubrics, and the layout of generated report cards to match the chosen standard."
               },
               {
-                q: "What are the technical requirements for Safaricom M-Pesa fee integration?",
-                a: "EduVantage features a plug-and-play Daraja API bridge. Schools input their Safaricom Paybill/Buygoods number, Consumer Key, Consumer Secret, and Passkey in the finance configuration panel. The application instantly activates STK pushes on parent dashboards. Safaricom sends secure encrypted callbacks to our /api/billing/callback hook, which uses transactional database locks to credit the correct student ledger without manual oversight."
+                q: "Can parents pay school fees directly through the portal?",
+                a: "Yes! The parent portal includes an intuitive mobile-money integration. Parents can initiate seamless fee payments that reflect instantly on their child's digital ledger, automatically generating verified digital receipts without requiring any manual data entry from your finance office."
               },
               {
-                q: "How does the anti-fraud registry validation work?",
-                a: "To block transcript tampering and fake receipts, every report card and payment receipt generated displays an encrypted cryptographic QR code. When scanned by school authorities or banks, this QR code routes to our secure /api/verify registry check. It queries the central isolated SQLite database in real-time, verifying the authenticity of grades or payment amounts directly against official registry records."
+                q: "How does the automated timetabling system prevent conflicts?",
+                a: "Our smart timetabling engine takes your school's constraints—such as teacher availability, maximum consecutive lessons, double-period limits, and break times—and automatically calculates the most optimal, clash-free schedule. If an issue arises, it highlights exactly where manual adjustments are needed."
               },
               {
-                q: "How are granular payroll deductions managed for staff?",
-                a: "Unlike basic systems that group deductions into a single bulk value, EduVantage includes an advanced multi-line payroll engine. It computes statutory obligations (Kenya PAYE, NSSF, SHIF/NHIF) according to dynamic tax brackets, and allows admins to append multiple distinct custom line items (e.g., Harambee Sacco Savings, Emergency Salary Advance, Asset Purchase Loan). These are explicitly listed on individual staff payslips to maintain granular transparency."
+                q: "How do internal messages and SMS alerts work?",
+                a: "The platform features a secure, WhatsApp-style internal inbox with real-time notifications, unread badges, and audio alerts. For critical announcements, administrators and teachers can check a box to instantly blast a copy of the message via SMS directly to the recipients' mobile phones."
               }
             ].map((faq, i) => (
               <div key={i} className={`faq-item ${expandedFaq === i ? 'expanded' : ''}`} onClick={() => toggleFaq(i)}>
