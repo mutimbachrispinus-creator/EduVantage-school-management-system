@@ -8,7 +8,7 @@ import { getCachedUser } from '@/lib/client-cache';
 export default function NationalExamsSyncPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const { profile: school = {} } = useProfile() || {};
+  const { profile: school = {}, impersonateId } = useProfile() || {};
   
   // Curriculum Awareness
   const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
@@ -46,7 +46,7 @@ export default function NationalExamsSyncPage() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-tenant-id': school?.id || 'platform-master'
+          'x-tenant-id': impersonateId || user?.tenant_id || user?.tenantId || 'platform-master'
         },
         body: JSON.stringify({ action: 'preview', grade: selectedGrade })
       });
@@ -73,7 +73,7 @@ export default function NationalExamsSyncPage() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-tenant-id': school?.id || 'platform-master'
+          'x-tenant-id': impersonateId || user?.tenant_id || user?.tenantId || 'platform-master'
         },
         body: JSON.stringify({ action: 'submit', grade: selectedGrade })
       });
