@@ -12,11 +12,11 @@ import { useProfile } from '@/app/PortalShell';
 
 const M = '#8B1A1A', ML = '#FDF2F2';
 const PROFILE_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff', 'parent', 'super-admin'];
-const PEOPLE_DIRECTORY_ROLES = ['admin', 'super-admin'];
+const PEOPLE_DIRECTORY_ROLES = ['admin'];
 const LEARNER_LOOKUP_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher'];
-const MY_LEARNERS_ROLES = ['parent', 'teacher', 'staff', 'admin', 'super-admin', 'jss_teacher', 'senior_teacher'];
-const PREDICTOR_ROLES = ['parent', 'teacher', 'staff', 'admin', 'super-admin', 'jss_teacher', 'senior_teacher'];
-const BULK_ENROLL_ROLES = ['admin', 'super-admin'];
+const MY_LEARNERS_ROLES = ['parent', 'teacher', 'staff', 'admin', 'jss_teacher', 'senior_teacher'];
+const PREDICTOR_ROLES = ['parent', 'teacher', 'staff', 'admin', 'jss_teacher', 'senior_teacher'];
+const BULK_ENROLL_ROLES = ['admin'];
 
 async function safeJson(response, fallback = {}) {
   if (!response) return fallback;
@@ -219,9 +219,15 @@ function detectCsvColumns(rows) {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { profile: school } = useProfile() || {};
+  const { profile: school, impersonateId } = useProfile() || {};
   const ALL_GRADES = useMemo(() => getAllGrades(school?.curriculum || 'CBC', school), [school]);
   const [user, setUser] = useState(null);
+  const activeRoles = useMemo(() => {
+    if (!user) return [];
+    const roles = [user.role || 'member'];
+    if (user.role === 'super-admin' && impersonateId) roles.push('admin');
+    return roles;
+  }, [user, impersonateId]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -708,27 +714,28 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    const canViewPeople = PEOPLE_DIRECTORY_ROLES.includes(user.role);
-    const canBulkEnroll = BULK_ENROLL_ROLES.includes(user.role);
-    const canLookupLearners = LEARNER_LOOKUP_ROLES.includes(user.role);
+    const canViewPeople = activeRoles.some(r => PEOPLE_DIRECTORY_ROLES.includes(r));
+    const canBulkEnroll = activeRoles.some(r => BULK_ENROLL_ROLES.includes(r));
+    const canLookupLearners = activeRoles.some(r => LEARNER_LOOKUP_ROLES.includes(r));
+    const canViewMyLearners = activeRoles.some(r => MY_LEARNERS_ROLES.includes(r));
 
-    if ((tab === 'staff' && !canViewPeople) || (tab === 'bulk' && !canBulkEnroll) || (tab === 'learner' && !canLookupLearners) || (tab === 'my-learners' && !MY_LEARNERS_ROLES.includes(user.role))) {
+    if ((tab === 'staff' && !canViewPeople) || (tab === 'bulk' && !canBulkEnroll) || (tab === 'learner' && !canLookupLearners) || (tab === 'my-learners' && !canViewMyLearners)) {
       setTab('me');
       setSelectedStaff(null);
       setSelectedLearner(null);
     }
-  }, [tab, user]);
+  }, [tab, user, activeRoles]);
 
   if (loading || !user) return <div className="page on"><p style={{ padding: 30 }}>Loading profile…</p></div>;
 
   const TABS = [
     { key: 'me', label: '👤 My Profile' },
     { key: 'pw', label: '🔒 Password' },
-    ...(MY_LEARNERS_ROLES.includes(user?.role) ? [{ key: 'my-learners', label: '👨‍👩‍👧 My Learners' }] : []),
-    ...(PREDICTOR_ROLES.includes(user?.role) ? [{ key: 'predictor', label: '🎯 Predictor' }] : []),
-    ...(PEOPLE_DIRECTORY_ROLES.includes(user?.role) ? [{ key: 'staff', label: '👥 People Directory' }] : []),
-    ...(LEARNER_LOOKUP_ROLES.includes(user?.role) ? [{ key: 'learner', label: '🎓 Learner Lookup' }] : []),
-    ...(BULK_ENROLL_ROLES.includes(user?.role) ? [{ key: 'bulk', label: '📥 Bulk Enroll' }] : []),
+    ...(activeRoles.some(r => MY_LEARNERS_ROLES.includes(r)) ? [{ key: 'my-learners', label: '👨‍👩‍👧 My Learners' }] : []),
+    ...(activeRoles.some(r => PREDICTOR_ROLES.includes(r)) ? [{ key: 'predictor', label: '🎯 Predictor' }] : []),
+    ...(activeRoles.some(r => PEOPLE_DIRECTORY_ROLES.includes(r)) ? [{ key: 'staff', label: '👥 People Directory' }] : []),
+    ...(activeRoles.some(r => LEARNER_LOOKUP_ROLES.includes(r)) ? [{ key: 'learner', label: '🎓 Learner Lookup' }] : []),
+    ...(activeRoles.some(r => BULK_ENROLL_ROLES.includes(r)) ? [{ key: 'bulk', label: '📥 Bulk Enroll' }] : []),
   ];
 
   return (
