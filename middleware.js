@@ -9,9 +9,25 @@ export function middleware(request) {
   // 1. Skip ALL API routes and internal Next.js assets early
   if (
     url.pathname.startsWith('/api') ||
-    url.pathname.startsWith('/_next') ||
-    url.pathname.includes('.')
+    url.pathname.startsWith('/_next')
   ) {
+    return NextResponse.next();
+  }
+
+  // Handle Google Site Verification dynamically from environment
+  if (url.pathname.startsWith('/google') && url.pathname.endsWith('.html')) {
+    const googleVerif = process.env.GOOGLE_SITE_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+    if (googleVerif) {
+      const expected = googleVerif.endsWith('.html') ? googleVerif : `${googleVerif}.html`;
+      if (url.pathname === `/${expected}`) {
+        return new NextResponse(`google-site-verification: ${expected}`, {
+          headers: { 'Content-Type': 'text/html' }
+        });
+      }
+    }
+  }
+
+  if (url.pathname.includes('.')) {
     return NextResponse.next();
   }
 

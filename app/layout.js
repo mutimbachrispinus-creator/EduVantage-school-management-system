@@ -8,6 +8,9 @@ const sora = { variable: 'font-sora' };
 export const metadata = {
   title:       'EduVantage School Management System',
   description: 'The future of school management — Multi-tenant SaaS with CBC & M-Pesa.',
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'google4a94ac500e88f427',
+  },
   icons: { 
     icon: '/eduvantage-logo.png',
     apple: '/eduvantage-logo.png',
