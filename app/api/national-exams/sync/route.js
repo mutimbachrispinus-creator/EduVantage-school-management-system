@@ -118,7 +118,7 @@ export async function POST(req) {
         curriculum: currCtx.name,
         examBody: examSyncData.examBody,
         candidatesFound: learners.length,
-        previewPayload: examSyncData.payload.slice(0, 5) // Return first 5 for preview
+        fullPayload: examSyncData.payload
       });
     }
 

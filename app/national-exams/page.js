@@ -146,18 +146,32 @@ export default function NationalExamsSyncPage() {
                   🚀 Push to {previewData.examBody} API
                 </button>
               </div>
-              <div style={{ padding: 16 }}>
-                <h5 style={{ marginBottom: 10, fontSize: 13 }}>Payload Preview (First 5 records):</h5>
-                <pre style={{ 
-                  background: '#1E293B', 
-                  color: '#E2E8F0', 
-                  padding: 15, 
-                  borderRadius: 6, 
-                  fontSize: 12,
-                  overflowX: 'auto'
-                }}>
-                  {JSON.stringify(previewData.previewPayload, null, 2)}
-                </pre>
+              <div style={{ padding: 16, overflowX: 'auto' }}>
+                <h5 style={{ marginBottom: 10, fontSize: 13 }}>Loaded Candidates ({previewData.candidatesFound}):</h5>
+                {previewData.fullPayload && previewData.fullPayload.length > 0 ? (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, background: '#fff' }}>
+                    <thead>
+                      <tr>
+                        {Object.keys(previewData.fullPayload[0]).filter(k => k !== 'assessments' && k !== 'syllabus_entries').map(key => (
+                          <th key={key} style={{ padding: '8px 12px', textAlign: 'left', background: '#F1F5F9', borderBottom: '2px solid #E2E8F0', textTransform: 'capitalize' }}>
+                            {key.replace(/_/g, ' ')}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewData.fullPayload.map((candidate, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                          {Object.entries(candidate).filter(([k]) => k !== 'assessments' && k !== 'syllabus_entries').map(([k, val]) => (
+                            <td key={k} style={{ padding: '8px 12px' }}>{val || '—'}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p style={{ color: 'var(--muted)', fontSize: 13 }}>No candidates found in this grade.</p>
+                )}
               </div>
             </div>
           )}
