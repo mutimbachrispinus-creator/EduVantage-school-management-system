@@ -44,7 +44,10 @@ export default function NationalExamsSyncPage() {
     try {
       const res = await fetch('/api/national-exams/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': school?.id || 'platform-master'
+        },
         body: JSON.stringify({ action: 'preview', grade: selectedGrade })
       });
       const data = await res.json();
@@ -68,7 +71,10 @@ export default function NationalExamsSyncPage() {
     try {
       const res = await fetch('/api/national-exams/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': school?.id || 'platform-master'
+        },
         body: JSON.stringify({ action: 'submit', grade: selectedGrade })
       });
       const data = await res.json();
