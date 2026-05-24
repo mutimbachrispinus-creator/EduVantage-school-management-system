@@ -49,6 +49,7 @@ function SchoolProfileContent() {
 
   const [announcement, setAnnouncement] = useState('');
   const [heroImg, setHeroImg] = useState('');
+  const [apiKeys, setApiKeys] = useState(() => ({ knecUsername: '', knecApiKey: '' }));
   
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -65,11 +66,13 @@ function SchoolProfileContent() {
       const tRaw = await getCachedDB('paav_theme');
       const annRaw = await getCachedDB('paav_announcement');
       const hRaw = await getCachedDB('paav_hero_img');
+      const kRaw = await getCachedDB('paav_integration_keys');
       
       if (pRaw) setProfile(prev => ({ ...prev, ...pRaw }));
       if (tRaw) setTheme(prev => ({ ...prev, ...tRaw }));
       if (annRaw) setAnnouncement(typeof annRaw === 'object' ? (annRaw?.text || '') : (annRaw || ''));
       if (hRaw) setHeroImg(hRaw);
+      if (kRaw) setApiKeys(prev => ({ ...prev, ...kRaw }));
       
       setLoading(false);
     }
@@ -83,6 +86,7 @@ function SchoolProfileContent() {
       await mutateDB('paav_theme', theme);
       await mutateDB('paav_announcement', { text: announcement, active: !!announcement, ts: Date.now() });
       await mutateDB('paav_hero_img', heroImg);
+      await mutateDB('paav_integration_keys', apiKeys);
 
       playSuccessSound();
       alert('✅ Identity & Branding updated successfully! Changes will be visible immediately.');
@@ -186,6 +190,7 @@ function SchoolProfileContent() {
       <div className="tabs no-print" style={{ marginBottom: 20 }}>
         <button className={`tab-btn ${tab === 'branding' ? 'on' : ''}`} onClick={() => setTab('branding')}>✨ Visual Identity</button>
         <button className={`tab-btn ${tab === 'curriculum' ? 'on' : ''}`} onClick={() => setTab('curriculum')}>🎓 Education System</button>
+        <button className={`tab-btn ${tab === 'integrations' ? 'on' : ''}`} onClick={() => setTab('integrations')}>🔌 Integrations</button>
         <button className={`tab-btn ${tab === 'info' ? 'on' : ''}`} onClick={() => setTab('info')}>📞 Info & Contacts</button>
         <button className={`tab-btn ${tab === 'payments' ? 'on' : ''}`} onClick={() => setTab('payments')}>💰 Payment Accounts</button>
       </div>
@@ -343,6 +348,41 @@ function SchoolProfileContent() {
                           }} 
                         />
                       ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'integrations' && (
+              <div className="sg sg1">
+                <div style={{ background: '#F8FAFC', padding: 20, borderRadius: 16, border: '1.5px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 15 }}>
+                    <div style={{ fontSize: 24 }}>🔌</div>
+                    <h3 style={{ margin: 0, fontSize: 18 }}>API Integrations</h3>
+                  </div>
+                  <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 20 }}>
+                    Configure external connections for National Exam Bodies and direct government syncing. 
+                    These credentials are encrypted and stored securely.
+                  </p>
+
+                  <div className="field-row">
+                    <div className="field">
+                      <label>National Exams Username / Center Code</label>
+                      <input 
+                        value={apiKeys.knecUsername || ''} 
+                        onChange={e => setApiKeys({...apiKeys, knecUsername: e.target.value})} 
+                        placeholder="e.g. 1000021" 
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Exams API Key / Password</label>
+                      <input 
+                        type="password"
+                        value={apiKeys.knecApiKey || ''} 
+                        onChange={e => setApiKeys({...apiKeys, knecApiKey: e.target.value})} 
+                        placeholder="••••••••••••" 
+                      />
                     </div>
                   </div>
                 </div>

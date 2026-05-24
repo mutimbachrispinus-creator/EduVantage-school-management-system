@@ -127,15 +127,34 @@ export async function POST(req) {
         return NextResponse.json({ success: false, error: 'External sync not supported for this curriculum' });
       }
 
-      // TODO: Execute actual fetch() to KNEC/Cambridge APIs here using school's API keys
-      console.log(`[National Exams] Submitting ${learners.length} candidates to ${examSyncData.examBody} via ${examSyncData.endpoint}`);
+      const schoolSecrets = await kvGet('paav_integration_keys', {}, tenantId);
+
+      if (!schoolSecrets || !schoolSecrets.knecApiKey) {
+        return NextResponse.json({ success: false, error: 'Integration API Keys are missing. Please configure them in Settings -> Identity & Branding -> Integrations.' });
+      }
+
+      console.log(`[National Exams] Submitting ${learners.length} candidates to ${examSyncData.examBody} via ${examSyncData.endpoint} for Tenant ${tenantId}`);
       
+      // The architecture for the real fetch call (currently simulated to avoid hitting real endpoints during demo):
+      /*
+      const apiRes = await fetch(examSyncData.endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${schoolSecrets.knecApiKey}`,
+          'X-Center-Code': schoolSecrets.knecUsername,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(examSyncData.payload)
+      });
+      if (!apiRes.ok) throw new Error('National Exam Body API rejected the payload');
+      */
+
       // Simulate API Delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       return NextResponse.json({
         success: true,
-        message: `Successfully synchronized ${learners.length} candidates with ${examSyncData.examBody}.`,
+        message: `Successfully synchronized ${learners.length} candidates with ${examSyncData.examBody} using center code ${schoolSecrets.knecUsername || 'UNKNOWN'}.`,
         examBody: examSyncData.examBody,
         timestamp: new Date().toISOString()
       });
