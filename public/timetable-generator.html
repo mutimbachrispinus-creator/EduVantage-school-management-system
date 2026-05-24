@@ -194,130 +194,175 @@ function generate(seed){
   const cfg=LEVEL_CFG[lvl];
   const globalMax = Math.max(...(cfg.perDay || [8]));
 
-  // Build slot queue: subject repeated by lessons count
-  let pool=[];
-  subjects.forEach(s=>{
-    for(let i=0;i<s.lessons;i++) pool.push({...s,double:false});
-    if(s.dbl&&s.lessons>=2){
-      // Replace 2 single lessons with 1 double
-      const idx=pool.findIndex(x=>x.name===s.name);
-      if(idx>=0){pool.splice(idx,2);pool.push({...s,double:true});}
-    }
-  });
+  let bestGrid=null, bestUnplaced=null, minUnplaced=Infinity;
 
-  // Shuffle
-  if(seed!==undefined) pool=seededShuffle(pool,seed);
-  else pool=pool.sort(()=>Math.random()-.5);
+  for (let attempt=0; attempt<15; attempt++) {
+    // Build slot queue
+    let pool=[];
+    subjects.forEach(s=>{
+      let singles=s.lessons;
+      let doubles=0;
+      if(s.dbl && singles>=2){ doubles=1; singles-=2; }
+      for(let i=0;i<doubles;i++) pool.push({...s,double:true});
+      for(let i=0;i<singles;i++) pool.push({...s,double:false});
+    });
 
-  // Sort: morning-priority first, PPI first
-  pool.sort((a,b)=>{
-    if(a.name==='PPI') return -1;if(b.name==='PPI') return 1;
-    if(a.priority==='morning'&&b.priority!=='morning') return -1;
-    if(b.priority==='morning'&&a.priority!=='morning') return 1;
-    if(a.priority==='afternoon'&&b.priority!=='afternoon') return 1;
-    if(b.priority==='afternoon'&&a.priority!=='afternoon') return -1;
-    return 0;
-  });
+    // Shuffle
+    if(seed!==undefined && attempt===0) pool=seededShuffle(pool,seed);
+    else pool=pool.sort(()=>Math.random()-.5);
 
-  // Grid: days x periods
-  const grid={};
-  DAYS.forEach((d, i) => { 
-    grid[d] = {}; 
-    const dayMax = cfg.perDay[i] || cfg.perDay[0];
-    for(let p=1; p<=dayMax; p++) grid[d][p]=null; 
-  });
+    // Sort: Doubles first, morning priority, PPI first
+    pool.sort((a,b)=>{
+      if(a.name==='PPI') return -1;if(b.name==='PPI') return 1;
+      if(a.double && !b.double) return -1;
+      if(b.double && !a.double) return 1;
+      if(a.priority==='morning'&&b.priority!=='morning') return -1;
+      if(b.priority==='morning'&&a.priority!=='morning') return 1;
+      if(a.priority==='afternoon'&&b.priority!=='afternoon') return 1;
+      if(b.priority==='afternoon'&&a.priority!=='afternoon') return -1;
+      return 0;
+    });
 
-  const teacherBusy={}; // teacher -> Set of "day-period"
-  const usedSlots=[]; // track placed items
+    // Grid: days x periods
+    const grid={};
+    const subjectPerDay={};
+    DAYS.forEach((d, i) => { 
+      grid[d] = {}; subjectPerDay[d] = {};
+      const dayMax = cfg.perDay[i] || cfg.perDay[0] || 8;
+      for(let p=1; p<=dayMax; p++) grid[d][p]=null; 
+    });
 
-  function canPlace(day,period,item){
-    const dayIdx = DAYS.indexOf(day);
-    const dayMax = cfg.perDay[dayIdx] || cfg.perDay[0];
-    if(period>dayMax) return false;
-    if(grid[day][period]!==null) return false;
-    if(item.double&&(period>=dayMax||grid[day][period+1]!==null)) return false;
-    // Teacher clash
-    if(item.teacher){
-      const key=item.teacher;
-      if(!teacherBusy[key]) teacherBusy[key]=new Set();
-      if(teacherBusy[key].has(day+'-'+period)) return false;
-      if(item.double&&teacherBusy[key].has(day+'-'+(period+1))) return false;
-    }
-    // No similar subjects back-to-back
-    const prev=grid[day][period-1];
-    if(prev&&isSimilar(prev.name,item.name)) return false;
-    const next=grid[day][period+1];
-    if(next&&isSimilar(next.name,item.name)) return false;
-    // Science max 2 doubles per week
-    if(item.double&&(item.name.toLowerCase().includes('science'))){
-      let sciDoubles=0;
-      DAYS.forEach(d=>{ for(let p=1;p<=maxPeriods;p++){ const s=grid[d][p]; if(s&&s.name===item.name&&s.double) sciDoubles++; }});
-      if(sciDoubles>=2) return false;
-    }
-    // Morning priority
-    if(item.priority==='morning'&&period>Math.ceil(dayMax/2)) return false;
-    if(item.priority==='afternoon'&&period<=Math.ceil(dayMax/2)) return false;
-    return true;
-  }
+    const teacherBusy={}; // teacher -> Set of "day-period"
 
-  function place(day,period,item){
-    grid[day][period]={...item};
-    if(item.teacher){
-      if(!teacherBusy[item.teacher]) teacherBusy[item.teacher]=new Set();
-      teacherBusy[item.teacher].add(day+'-'+period);
-    }
-    if(item.double){
-      grid[day][period+1]={...item,cont:true};
-      if(item.teacher) teacherBusy[item.teacher].add(day+'-'+(period+1));
-    }
-  }
-
-  // PPI: place in same period across all days (block 1 period on Monday)
-  const ppi=pool.find(x=>x.name==='PPI');
-  if(ppi){
-    for(let p=1;p<=globalMax;p++){
-      if(DAYS.every((d, i)=>(p <= (cfg.perDay[i] || cfg.perDay[0])) && grid[d][p]===null)){
-        DAYS.forEach(d=>place(d,p,ppi));
-        pool=pool.filter(x=>x.name!=='PPI');
-        break;
-      }
-    }
-  }
-
-  // Place remaining
-  let unplaced=[];
-  pool.forEach(item=>{
-    let placed=false;
-    for(const day of DAYS){
+    function canPlace(day,period,item,relaxSpreading=false){
       const dayIdx = DAYS.indexOf(day);
-      const dayMax = cfg.perDay[dayIdx] || cfg.perDay[0];
-      for(let p=1;p<=dayMax;p++){
-        if(canPlace(day,p,item)){place(day,p,item);placed=true;break;}
+      const dayMax = cfg.perDay[dayIdx] || cfg.perDay[0] || 8;
+      if(period>dayMax) return false;
+      if(grid[day][period]!==null) return false;
+      if(item.double&&(period>=dayMax||grid[day][period+1]!==null)) return false;
+      
+      // Spread constraint
+      if(!relaxSpreading && item.name!=='PPI'){
+        const currentCount = subjectPerDay[day][item.name] || 0;
+        if(currentCount >= 1) return false;
       }
-      if(placed) break;
-    }
-    if(!placed) unplaced.push(item);
-  });
 
-  // Relax afternoon constraint for unplaced
-  unplaced=unplaced.filter(item=>{
-    if(item.priority==='afternoon'||item.priority==='morning'){
-      const relaxed={...item,priority:'any'};
-      for(const day of DAYS){
-        const dayIdx = DAYS.indexOf(day);
-        const dayMax = cfg.perDay[dayIdx] || cfg.perDay[0];
-        for(let p=1;p<=dayMax;p++){
-          const orig=item.priority;item.priority='any';
-          if(canPlace(day,p,item)){place(day,p,item);item.priority=orig;return false;}
-          item.priority=orig;
+      // Teacher clash
+      if(item.teacher){
+        const key=item.teacher;
+        if(!teacherBusy[key]) teacherBusy[key]=new Set();
+        if(teacherBusy[key].has(day+'-'+period)) return false;
+        if(item.double&&teacherBusy[key].has(day+'-'+(period+1))) return false;
+      }
+      
+      // No similar subjects back-to-back
+      const prev=grid[day][period-1];
+      if(prev&&isSimilar(prev.name,item.name)) return false;
+      const next=grid[day][period+(item.double?2:1)];
+      if(next&&isSimilar(next.name,item.name)) return false;
+      
+      // Morning priority
+      if(item.priority==='morning'&&period>Math.ceil(dayMax/2)) return false;
+      if(item.priority==='afternoon'&&period<=Math.ceil(dayMax/2)) return false;
+      
+      // Teacher max 3 consecutive
+      if(item.teacher){
+        const key=item.teacher;
+        const isConsecutive = (d,p) => teacherBusy[key]?.has(d+'-'+(p-1)) && teacherBusy[key]?.has(d+'-'+(p-2)) && teacherBusy[key]?.has(d+'-'+(p-3));
+        if(isConsecutive(day,period)) return false;
+        if(item.double && isConsecutive(day,period+1)) return false;
+      }
+      
+      // Break boundaries
+      if(item.double && cfg.breaks){
+        const crossesBreak = cfg.breaks.some(b => b.after === period);
+        if(crossesBreak) return false;
+      }
+
+      return true;
+    }
+
+    function place(day,period,item){
+      grid[day][period]={...item};
+      subjectPerDay[day][item.name] = (subjectPerDay[day][item.name]||0)+1;
+      if(item.teacher){
+        if(!teacherBusy[item.teacher]) teacherBusy[item.teacher]=new Set();
+        teacherBusy[item.teacher].add(day+'-'+period);
+      }
+      if(item.double){
+        grid[day][period+1]={...item,cont:true};
+        if(item.teacher) teacherBusy[item.teacher].add(day+'-'+(period+1));
+      }
+    }
+
+    // PPI: place in same period across all days
+    const ppi=pool.find(x=>x.name==='PPI');
+    if(ppi){
+      for(let p=1;p<=globalMax;p++){
+        if(DAYS.every((d, i)=>(p <= (cfg.perDay[i] || cfg.perDay[0])) && grid[d][p]===null)){
+          DAYS.forEach(d=>place(d,p,ppi));
+          pool=pool.filter(x=>x.name!=='PPI');
+          break;
         }
       }
     }
-    return true;
-  });
 
-  generated={grid,cfg,lvl,unplaced};
-  renderTimetable(grid,cfg,unplaced);
+    // Place remaining
+    let unplaced=[];
+    pool.forEach(item=>{
+      let placed=false;
+      // Pass 1: Strict constraints
+      for(const day of DAYS){
+        const dayIdx = DAYS.indexOf(day);
+        const dayMax = cfg.perDay[dayIdx] || cfg.perDay[0] || 8;
+        const periods = Array.from({length: dayMax}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+        for(let p of periods){
+          if(canPlace(day,p,item,false)){place(day,p,item);placed=true;break;}
+        }
+        if(placed) break;
+      }
+      
+      // Pass 2: Relax spreading
+      if(!placed){
+        for(const day of DAYS){
+          const dayIdx = DAYS.indexOf(day);
+          const dayMax = cfg.perDay[dayIdx] || cfg.perDay[0] || 8;
+          for(let p=1;p<=dayMax;p++){
+            if(canPlace(day,p,item,true)){place(day,p,item);placed=true;break;}
+          }
+          if(placed) break;
+        }
+      }
+      if(!placed) unplaced.push(item);
+    });
+
+    // Pass 3: Relax afternoon constraint for unplaced
+    unplaced=unplaced.filter(item=>{
+      if(item.priority==='afternoon'||item.priority==='morning'){
+        const orig=item.priority;
+        for(const day of DAYS){
+          const dayIdx = DAYS.indexOf(day);
+          const dayMax = cfg.perDay[dayIdx] || cfg.perDay[0] || 8;
+          for(let p=1;p<=dayMax;p++){
+            item.priority='any';
+            if(canPlace(day,p,item,true)){place(day,p,item);item.priority=orig;return false;}
+            item.priority=orig;
+          }
+        }
+      }
+      return true;
+    });
+
+    if(unplaced.length < minUnplaced){
+      minUnplaced = unplaced.length;
+      bestGrid = grid;
+      bestUnplaced = unplaced;
+    }
+    if(minUnplaced === 0) break;
+  }
+
+  generated={grid:bestGrid,cfg,lvl,unplaced:bestUnplaced};
+  renderTimetable(bestGrid,cfg,bestUnplaced);
 }
 
 function seededShuffle(arr,seed){

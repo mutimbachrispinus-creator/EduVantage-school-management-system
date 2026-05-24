@@ -168,7 +168,7 @@ export default function GradesPage() {
   const isAdminRole = user && (user.role === 'admin' || user.role === 'super-admin' || user.role?.startsWith('admin_'));
   const isTeacher = user && !isAdminRole && user.role !== 'parent';
   
-  const assignedSubjects = allSubjects.filter(s => (teacherAssigns || {})[`${grade}|${s}`] === user.id);
+  const assignedSubjects = allSubjects.filter(s => (teacherAssigns || {})[`${grade}|${s}`] === user?.id);
   const subjects = (isTeacher && Object.keys(teacherAssigns || {}).some(k => k.startsWith(`${grade}|`)))
     ? assignedSubjects
     : allSubjects;
