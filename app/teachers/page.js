@@ -194,6 +194,7 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
     phone:    user?.phone    || '',
     password: '',
     status:   user?.status   || 'active',
+    biometric_id: user?.biometric_id || '',
   });
   const [busy, setBusy]       = useState(false);
   const [err,  setErr]        = useState('');
@@ -292,9 +293,13 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
                 {ALL_GRADES.map(g => <option key={g}>{g}</option>)}
               </select></div>
           </div>
-          <div className="field"><label>Phone</label>
-            <input value={form.phone} onChange={e => F('phone', e.target.value)} type="tel"
-              placeholder="07XXXXXXXX" /></div>
+          <div className="field-row">
+            <div className="field"><label>Phone</label>
+              <input value={form.phone} onChange={e => F('phone', e.target.value)} type="tel"
+                placeholder="07XXXXXXXX" /></div>
+            <div className="field"><label>Biometric ID</label>
+              <input value={form.biometric_id} onChange={e => F('biometric_id', e.target.value)} placeholder="Scanner ID" /></div>
+          </div>
 
           {/* Password section */}
           <div className="field" style={{ position: 'relative' }}>

@@ -310,7 +310,7 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
   const [form, setForm] = useState({
     name: '', grade: ALL_GRADES[0] || '', dob: '', adm: '', sex: 'F', age: '',
     stream: '', parent: '', phone: '', parentEmail: '', addr: '', arrears: 0,
-    bloodGroup: '', allergies: '', medicalCondition: '', emergencyContact: '',
+    bloodGroup: '', allergies: '', medicalCondition: '', emergencyContact: '', biometric_id: ''
   });
   const [err,  setErr]  = useState('');
   const [busy, setBusy] = useState(false);
@@ -329,6 +329,7 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
       t1: 0, t2: 0, t3: 0, arrears: Number(form.arrears) || 0,
       bloodGroup: form.bloodGroup, allergies: form.allergies,
       medicalCondition: form.medicalCondition, emergencyContact: form.emergencyContact,
+      biometric_id: form.biometric_id || '',
     };
 
     const saveRes = await fetch('/api/db', {
@@ -431,8 +432,12 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
             placeholder="07XXXXXXXX" 
           /></div>
       </div>
-      <div className="field"><label>Parent Email (for receipts/reports)</label>
-        <input autoComplete="off" value={form.parentEmail} onChange={e => F('parentEmail', e.target.value)} type="email" placeholder="parent@example.com" /></div>
+      <div className="field-row">
+        <div className="field"><label>Parent Email (for receipts/reports)</label>
+          <input autoComplete="off" value={form.parentEmail} onChange={e => F('parentEmail', e.target.value)} type="email" placeholder="parent@example.com" /></div>
+        <div className="field"><label>Biometric/Card ID</label>
+          <input autoComplete="off" value={form.biometric_id} onChange={e => F('biometric_id', e.target.value)} placeholder="Scanner ID" /></div>
+      </div>
       <div className="field"><label>Address</label>
         <input autoComplete="off" value={form.addr} onChange={e => F('addr', e.target.value)} /></div>
 
@@ -697,8 +702,12 @@ function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
         <div className="field"><label>Phone</label>
           <input value={form.phone} onChange={e => F('phone', e.target.value)} type="tel" placeholder="07XXXXXXXX" /></div>
       </div>
-      <div className="field"><label>Parent Email</label>
-        <input value={form.parentEmail || ''} onChange={e => F('parentEmail', e.target.value)} type="email" /></div>
+      <div className="field-row">
+        <div className="field"><label>Parent Email</label>
+          <input value={form.parentEmail || ''} onChange={e => F('parentEmail', e.target.value)} type="email" /></div>
+        <div className="field"><label>Biometric/Card ID</label>
+          <input value={form.biometric_id || ''} onChange={e => F('biometric_id', e.target.value)} placeholder="Scanner ID" /></div>
+      </div>
       <div className="field"><label>Address</label>
         <input value={form.addr || ''} onChange={e => F('addr', e.target.value)} /></div>
 

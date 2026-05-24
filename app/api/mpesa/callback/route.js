@@ -133,19 +133,62 @@ export async function POST(req) {
             await kvSet('paav_mpesa_pending', pendingKey.pending, pendingKey.tenantId);
           }
 
-          // SMS Receipt
+          // SMS & Email Receipt
           try {
             const profile = await kvGet('paav_school_profile', {}, tenantId) || {};
             const learners = await kvGet('paav6_learners', [], tenantId) || [];
             const l = learners.find(x => x.adm === adm);
             const parentPhone = l?.phone || result.phone;
+            const parentEmail = l?.parentEmail;
             const schoolName = profile.name || 'EduVantage';
 
+            // 1. Send SMS Receipt
             const { sendSMS } = await import('@/lib/sms-client');
             const atCreds = (await kvGet('paav_at_creds', null, tenantId)) || (await kvGet('paav_at_creds', null, 'platform-master'));
             const msg = `✅ PAYMENT RECEIVED: KES ${result.amount.toLocaleString()} for ${l?.name || adm}. Ref: ${result.mpesaCode}. Thank you!`;
             await sendSMS({ to: parentPhone, message: msg, schoolName, ...(atCreds || {}) });
-          } catch (e) { console.warn('[M-Pesa Callback] SMS Receipt failed:', e.message); }
+
+            // 2. Send HTML Email Receipt (Implementation of Finance Recommendation)
+            if (parentEmail) {
+              const { sendEmail, getReceiptTemplate } = await import('@/lib/mail');
+              const receiptHtml = getReceiptTemplate({
+                learnerName: l?.name || adm,
+                adm: adm,
+                amount: result.amount,
+                term: term || 'Current Term',
+                date: new Date().toLocaleDateString(),
+                ref: result.mpesaCode,
+                balance: l?.arrears || 0
+              });
+              
+              await sendEmail({
+                to: parentEmail,
+                subject: `[${schoolName}] Fee Payment Receipt - ${result.mpesaCode}`,
+                html: receiptHtml
+              });
+              console.log(`[M-Pesa Callback] Email receipt sent successfully to ${parentEmail}`);
+            }
+
+            // 3. Double-Entry Accounting: Record in Finance Ledger (Implementation of Finance Recommendation)
+            try {
+              const ledger = (await kvGet('paav_finance_ledger', [], tenantId)) || [];
+              ledger.unshift({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                date: new Date().toISOString().split('T')[0],
+                description: `Fee Payment - ${l?.name || adm}`,
+                amount: result.amount,
+                debitAcc: '1001-MPESA',
+                creditAcc: '4001-FEES',
+                reference: result.mpesaCode,
+                recordedBy: 'SYSTEM-MPESA'
+              });
+              await kvSet('paav_finance_ledger', ledger, tenantId);
+              console.log(`[M-Pesa Callback] Double-Entry Ledger updated for ${tenantId}`);
+            } catch (ledgerErr) {
+              console.error('[M-Pesa Callback] Failed to write to ledger:', ledgerErr);
+            }
+
+          } catch (e) { console.warn('[M-Pesa Callback] Receipt generation failed:', e.message); }
 
         } else if (!adm && checkoutRequestId) {
           // Institutional Billing
