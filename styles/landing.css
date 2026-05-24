@@ -1443,8 +1443,8 @@
         @media (max-width: 480px) {
           .container { padding: 0 16px; }
 
-          /* Nav — keep logo + single CTA, hide ghost sign-in button on very small screens */
-          .btn-ghost { display: none; }
+          /* Nav — keep both CTAs on very small screens */
+          .btn-ghost { padding: 10px 10px; font-size: 13px; }
           .btn.btn-primary.btn-glow { padding: 10px 14px; font-size: 13px; }
           .logo-text { font-size: 20px; }
           .logo-icon { width: 36px; height: 36px; border-radius: 10px; }
