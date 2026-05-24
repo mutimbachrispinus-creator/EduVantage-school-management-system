@@ -440,7 +440,7 @@ function copyJSON(){
 
 async function saveToDB() {
   if(!generated){alert('Generate a timetable first');return;}
-  const grade = document.getElementById('gradeName').value.trim();
+  const grade = document.getElementById('gradeName').value.trim().toUpperCase();
   if(!grade) { alert('Please enter a Grade / Class Name'); return; }
   
   if(!confirm(`Save this timetable directly to the portal for ${grade}? This will overwrite the existing timetable for this class.`)) return;

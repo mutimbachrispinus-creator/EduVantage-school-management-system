@@ -538,8 +538,10 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave, c
         }
       });
 
-      setLocalTT(tt => ({ ...tt, [selGrade]: newGradeTT }));
-      alert('⚡ Auto-generation complete. Review and click Save Timetable.');
+      const updatedTT = { ...localTT, [selGrade]: newGradeTT };
+      setLocalTT(updatedTT);
+      await onSave(updatedTT);
+      alert('⚡ Auto-generation complete and saved to portal!');
 
     } catch (e) {
       alert('Error auto-generating: ' + e.message);
@@ -571,8 +573,10 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave, c
           }
         }
       });
-      setLocalTT(tt => ({ ...tt, [selGrade]: newGradeTT }));
-      alert('✅ Timetable pasted successfully! Review and click Save Timetable.');
+      const updatedTT = { ...localTT, [selGrade]: newGradeTT };
+      setLocalTT(updatedTT);
+      await onSave(updatedTT);
+      alert('✅ Timetable pasted and saved successfully!');
     } catch(e) {
       alert('Failed to paste JSON. Make sure you clicked "Copy JSON" in the Generator tool.');
     }
