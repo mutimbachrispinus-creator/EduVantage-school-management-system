@@ -533,12 +533,12 @@ export default function MessagesPage() {
 
       {showCompose && (
         <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', background: 'rgba(15, 23, 42, 0.4)' }}>
-          <div className="modal" style={{ maxWidth: 600, borderRadius: 24, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: 'none' }}>
-            <div className="modal-hdr" style={{ background: 'linear-gradient(135deg, #1e293b, #0f172a)', padding: '24px 30px' }}>
+          <div className="modal" style={{ maxWidth: 600, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: 24, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: 'none' }}>
+            <div className="modal-hdr" style={{ background: 'linear-gradient(135deg, #1e293b, #0f172a)', padding: '24px 30px', flexShrink: 0 }}>
               <h3 style={{ color: '#fff', fontSize: 20, fontWeight: 800 }}>✉️ New Message</h3>
               <button className="btn-close" onClick={() => setShowCompose(false)} style={{ color: '#fff' }}>✕</button>
             </div>
-            <div className="modal-body" style={{ padding: '30px' }}>
+            <div className="modal-body" style={{ padding: '30px', overflowY: 'auto' }}>
               {sentSuccess ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <div style={{ fontSize: 60, marginBottom: 15 }}>✅</div>
