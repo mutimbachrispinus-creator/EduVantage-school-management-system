@@ -85,7 +85,8 @@ export default function GradesPage() {
       if (myCount < loadCountRef.current) return; // Abort if newer load started
 
       if (!u) { router.push('/login'); return; }
-      if (!['admin', 'teacher', 'senior_teacher', 'jss_teacher'].includes(u.role)) {
+      const allowedRoles = ['admin', 'teacher', 'senior_teacher', 'jss_teacher', 'super-admin'];
+      if (!allowedRoles.includes(u.role) && !u.role.startsWith('admin_')) {
         router.push('/dashboard'); return;
       }
       setUser(u);
@@ -160,12 +161,16 @@ export default function GradesPage() {
   const classLearners = learners.filter(l => l.grade === grade && (!stream || (l.stream || 'Default') === stream))
     .sort((a, b) => a.name.localeCompare(b.name));
   const gradeStreams = streams.filter(s => s.grade === grade);
-  const allSubjects = (subjCfg[grade] !== undefined) ? subjCfg[grade] : (DEFAULT_SUBJECTS[grade] || []);
+  const allSubjects = (subjCfg[grade] && subjCfg[grade].length > 0) ? subjCfg[grade] : (DEFAULT_SUBJECTS[grade] || []);
 
-  // For teachers: filter to only their assigned subjects for this grade
-  const isTeacher = user && !['admin', 'super-admin'].includes(user.role);
-  const subjects = isTeacher
-    ? allSubjects.filter(s => teacherAssigns[`${grade}|${s}`] === user.id)
+  // For teachers: filter to only their assigned subjects for this grade, 
+  // but if no assignments exist for them in this grade, fallback to showing all subjects.
+  const isAdminRole = user && (user.role === 'admin' || user.role === 'super-admin' || user.role.startsWith('admin_'));
+  const isTeacher = user && !isAdminRole && user.role !== 'parent';
+  
+  const assignedSubjects = allSubjects.filter(s => teacherAssigns[`${grade}|${s}`] === user.id);
+  const subjects = (isTeacher && Object.keys(teacherAssigns).some(k => k.startsWith(`${grade}|`)))
+    ? assignedSubjects
     : allSubjects;
 
   // Build teacher's full assignment summary across all grades
@@ -188,7 +193,7 @@ export default function GradesPage() {
   const isWritingRef = useRef(false);
 
   function setScore(admNo, subj, value) {
-    if (isSubjLocked(subj) && !['admin', 'super-admin'].includes(user?.role)) return;
+    if (isSubjLocked(subj) && !isAdminRole) return;
     
     isWritingRef.current = true;
     const gsa = `${term}:${grade}|${subj}|${assess}`;
@@ -405,7 +410,7 @@ export default function GradesPage() {
 
   /* ── Clear marks ── */
   async function clearAllInView() {
-    if (isLocked && !['admin', 'super-admin'].includes(user?.role)) {
+    if (isLocked && !isAdminRole) {
       alert('Marks are locked. Only admin can clear.');
       return;
     }
@@ -442,7 +447,7 @@ export default function GradesPage() {
   }
 
   async function clearLearnerMarks(l) {
-    if (isLocked && !['admin', 'super-admin'].includes(user?.role)) {
+    if (isLocked && !isAdminRole) {
       alert('Marks are locked.');
       return;
     }
@@ -497,14 +502,14 @@ export default function GradesPage() {
         </div>
         <p>{curr.name} — {grade}</p>
         <div className="page-hdr-acts">
-          {user?.role === 'admin' && (
+          {isAdminRole && (
             <button
               className={`btn btn-sm ${isLocked ? 'btn-success' : 'btn-danger'}`}
               onClick={toggleLock}>
               {isLocked ? '🔓 Unlock All' : '🔒 Lock All'}
             </button>
           )}
-          {!['admin', 'super-admin'].includes(user?.role) && (
+          {!isAdminRole && (
             <button className="btn btn-warning btn-sm" onClick={submitForApproval}>
               📨 Submit for Approval
             </button>
@@ -512,7 +517,7 @@ export default function GradesPage() {
           <button className="btn btn-ghost btn-sm no-print" onClick={() => window.print()}>
             🖨️ Print
           </button>
-          {user?.role === 'admin' && (
+          {isAdminRole && (
             <button className="btn btn-danger btn-sm" onClick={clearAllInView} disabled={saving}>
               🗑️ Clear All
             </button>
@@ -601,13 +606,13 @@ export default function GradesPage() {
 
           {isLocked && (
             <div style={{ padding: '8px 14px',
-              background: user?.role === 'admin' ? '#ECFDF5' : '#FEF2F2',
+              background: isAdminRole ? '#ECFDF5' : '#FEF2F2',
               borderRadius: 8, fontSize: 12,
-              color: user?.role === 'admin' ? 'var(--green)' : 'var(--red)',
+              color: isAdminRole ? 'var(--green)' : 'var(--red)',
               fontWeight: 700,
-              border: `1.5px solid ${user?.role === 'admin' ? '#A7F3D0' : '#FECACA'}`,
+              border: `1.5px solid ${isAdminRole ? '#A7F3D0' : '#FECACA'}`,
               display: 'flex', alignItems: 'center', gap: 6 }}>
-              {user?.role === 'admin'
+              {isAdminRole
                 ? '🔓 Locked — Admin override active (your edits will save)'
                 : '🔒 Marks locked — contact admin to unlock'}
             </div>
@@ -619,7 +624,7 @@ export default function GradesPage() {
         </div>
 
         {/* Admin: pending approval panel */}
-        {user?.role === 'admin' && subjects.some(s => isSubjPending(s)) && (
+        {isAdminRole && subjects.some(s => isSubjPending(s)) && (
           <div style={{ padding: '12px 16px', background: '#FFFBEB', border: '1.5px solid #FCD34D', borderRadius: 10, margin: '10px 20px' }}>
             <div style={{ fontWeight: 800, fontSize: 12, color: '#92400E', marginBottom: 8 }}>⏳ Pending Approval Requests</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -713,7 +718,7 @@ export default function GradesPage() {
                 Tip: Use <b>Tab</b> to move quickly between learners.
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-                {user?.role === 'admin' && (
+                {isAdminRole && (
                   <button className="btn btn-danger" onClick={clearAllInView} disabled={saving}>
                     🗑️ Clear {selectedSubj}
                   </button>
@@ -778,11 +783,11 @@ const LearnerRow = memo(({
               setScore(learner.adm, subject, localVal);
               save(true);
             }}
-            disabled={isLocked && userRole !== 'admin'}
+            disabled={isLocked && userRole !== 'admin' && !userRole?.startsWith('admin_') && userRole !== 'super-admin'}
             className="score-input-large"
             style={{
               borderColor: inf ? inf.c : 'var(--border)',
-              background: isLocked && userRole !== 'admin' ? '#f1f5f9' : '#fff'
+              background: isLocked && userRole !== 'admin' && !userRole?.startsWith('admin_') && userRole !== 'super-admin' ? '#f1f5f9' : '#fff'
             }}
           />
         </div>
