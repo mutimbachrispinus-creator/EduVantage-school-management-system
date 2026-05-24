@@ -84,16 +84,58 @@ export default function AllocationsPage() {
   async function save() {
     setBusy(true);
     try {
+      // Fetch current timetable to auto-adjust teachers
+      const ttRes = await fetchWithRetry('/api/db', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ type: 'get', key: 'paav_timetable' }] })
+      });
+      const dbTT = await ttRes.json();
+      const currentTT = dbTT.results?.[0]?.value || {};
+      
+      let timetableUpdated = false;
+      Object.entries(currentTT).forEach(([grade, days]) => {
+        if (!days) return;
+        Object.entries(days).forEach(([day, periods]) => {
+          if (!periods) return;
+          Object.entries(periods).forEach(([period, slot]) => {
+            if (slot && slot.subject) {
+              const staffId = allocs[`${grade}|${slot.subject}`];
+              if (staffId) {
+                const tCode = teacherCodes[staffId];
+                const tName = staff.find(s=>s.id===staffId)?.name;
+                const newTeacher = tCode ? tCode : (tName || '');
+                if (slot.teacher !== newTeacher || slot.teacherId !== staffId) {
+                  slot.teacher = newTeacher;
+                  slot.teacherId = staffId;
+                  timetableUpdated = true;
+                }
+              } else if (slot.teacher || slot.teacherId) {
+                slot.teacher = '';
+                slot.teacherId = '';
+                timetableUpdated = true;
+              }
+            }
+          });
+        });
+      });
+
+      const requests = [
+        { type: 'set', key: 'paav_allocations',    value: allocs },
+        { type: 'set', key: 'paav_class_teachers', value: classTeachers },
+        { type: 'set', key: 'paav_teacher_codes',  value: teacherCodes },
+      ];
+      
+      if (timetableUpdated) {
+        requests.push({ type: 'set', key: 'paav_timetable', value: currentTT });
+      }
+
       await fetchWithRetry('/api/db', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [
-          { type: 'set', key: 'paav_allocations',    value: allocs },
-          { type: 'set', key: 'paav_class_teachers', value: classTeachers },
-          { type: 'set', key: 'paav_teacher_codes',  value: teacherCodes },
-        ]})
+        body: JSON.stringify({ requests })
       });
-      alert('✅ All allocations saved!');
+      
+      alert(timetableUpdated ? '✅ Allocations saved and Timetable auto-adjusted!' : '✅ All allocations saved!');
     } catch (e) {
       alert('❌ Failed: ' + e.message);
     } finally {

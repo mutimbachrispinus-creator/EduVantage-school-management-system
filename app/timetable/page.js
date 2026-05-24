@@ -77,6 +77,8 @@ export default function TimetablePage() {
   const [events, setEvents] = useState([]);
   const [timetable, setTimetable] = useState({});
   const [staff, setStaff] = useState([]);
+  const [allocs, setAllocs] = useState({});
+  const [codes, setCodes] = useState({});
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [selGrade, setSelGrade] = useState('');
@@ -98,13 +100,13 @@ export default function TimetablePage() {
       const u = await getCachedUser();
       if (!u) { router.push('/login'); return; }
       setUser(u);
-      const data = await getCachedDBMulti(['paav_calendar_events','paav_timetable','paav6_staff', 'paav7_timetable_cfg']);
+      const data = await getCachedDBMulti(['paav_calendar_events','paav_timetable','paav6_staff', 'paav7_timetable_cfg', 'paav_allocations', 'paav_teacher_codes']);
       setEvents(data['paav_calendar_events'] || []);
       setTimetable(data['paav_timetable'] || {});
       setStaff(data['paav6_staff'] || []);
-      if (data['paav7_timetable_cfg']) {
-        setCustomCfg(data['paav7_timetable_cfg']);
-      }
+      setCustomCfg(data['paav7_timetable_cfg'] || null);
+      setAllocs(data['paav_allocations'] || {});
+      setCodes(data['paav_teacher_codes'] || {});
     } catch(e){ console.error(e); } finally { setLoading(false); }
   }, [router]);
 
@@ -179,7 +181,11 @@ export default function TimetablePage() {
         Object.entries(days).forEach(([day, periods]) => {
           if (!periods) return;
           Object.entries(periods).forEach(([period, slot]) => {
-            if (slot?.teacherId === user.id || slot?.teacher === user.name) {
+            let isMine = false;
+            if (slot?.teacherId === user.id || slot?.teacher === user.name) isMine = true;
+            if (slot?.subject && allocs[`${grade}|${slot.subject}`] === user.id) isMine = true;
+            
+            if (isMine) {
               out.push({ grade, day, period: Number(period), subject: slot.subject, teacher: slot.teacher });
             }
           });
@@ -187,7 +193,7 @@ export default function TimetablePage() {
       });
     } catch(e) { console.error('[Timetable] mySlots failed:', e); }
     return out;
-  }, [timetable, user]);
+  }, [timetable, user, allocs]);
 
   const isAdmin   = ['admin', 'staff', 'super-admin'].includes(user?.role);
   const isTeacher = ['admin', 'teacher', 'staff', 'jss_teacher', 'senior_teacher', 'super-admin'].includes(user?.role);
@@ -342,13 +348,24 @@ export default function TimetablePage() {
                         const dayMax = cfg.perDay?.[di] || 8;
                         const isOutOfBounds = (pi + 1) > dayMax;
                         const slot = (gradeTT[day]||{})[pi+1];
+                        
+                        let displayTeacher = slot?.teacher;
+                        if (slot?.subject) {
+                          const staffId = allocs[`${selGrade}|${slot.subject}`];
+                          if (staffId) {
+                            const tCode = codes[staffId];
+                            const tName = staff.find(s=>s.id===staffId)?.name;
+                            displayTeacher = tCode ? tCode : (tName || displayTeacher);
+                          }
+                        }
+
                         const bg = slot?.subject ? subjColor(slot.subject) : null;
                         return (
                           <td key={day} style={{padding:4,verticalAlign:'top', background: isOutOfBounds ? '#f1f5f9' : 'transparent'}}>
                             {isOutOfBounds ? null : slot?.subject ? (
                               <div style={{background:`${bg}18`,border:`1.5px solid ${bg}40`,borderRadius:8,padding:'6px 8px'}}>
                                 <div style={{fontWeight:700,fontSize:11,color:bg}}>{slot.subject}</div>
-                                {slot.teacher && <div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>{slot.teacher}</div>}
+                                {displayTeacher && <div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>{displayTeacher}</div>}
                               </div>
                             ) : (
                               <div style={{color:'#cbd5e1',fontSize:10,textAlign:'center',padding:8}}>—</div>
@@ -410,6 +427,8 @@ export default function TimetablePage() {
           <EditTimetablePanel
             timetable={timetable}
             staff={staff}
+            allocs={allocs}
+            codes={codes}
             selGrade={selGrade}
             setSelGrade={setSelGrade}
             onSave={saveTimetable}
@@ -455,7 +474,7 @@ export default function TimetablePage() {
 }
 
 /* ── Edit Timetable Panel ── */
-function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave, curr, ALL_GRADES }) {
+function EditTimetablePanel({ timetable, staff, allocs, codes, selGrade, setSelGrade, onSave, curr, ALL_GRADES }) {
   const [localTT, setLocalTT] = useState(timetable);
   const [saving, setSaving] = useState(false);
   const gradeKey = getGradeKey(selGrade, curr);
@@ -481,33 +500,15 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave, c
   async function autoGenerate() {
     setSaving(true);
     try {
-      // Fetch allocations, subjects, codes
-      const dbRes = await fetchWithRetry('/api/db', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [
-          { type: 'get', key: 'paav_allocations' },
-          { type: 'get', key: 'paav8_subj' },
-          { type: 'get', key: 'paav_teacher_codes' }
-        ]})
-      });
-      
-      const db = await dbRes.json();
-      if (!db.results) throw new Error('Failed to retrieve allocation data.');
-
-      const allocs = db.results[0]?.value || {};
-      const subjCfg = db.results[1]?.value || {};
-      const codes = db.results[2]?.value || {};
-
       const lvl = gradeLevel(selGrade, curr);
-      const gradeSubjects = subjCfg[selGrade] || []; // usually empty unless customized, fallback handled
-      
-      // Build subjects array for generator
-      // We will look at paav_allocations for selGrade to see what is assigned
-      const assignedSubjects = Object.keys(allocs).filter(k => k.startsWith(selGrade + '|')).map(k => k.split('|')[1]);
+      let assignedSubjects = Object.keys(allocs).filter(k => k.startsWith(selGrade + '|')).map(k => k.split('|')[1]);
       
       if(assignedSubjects.length === 0) {
-        alert('No subjects allocated for ' + selGrade + '. Please assign subjects in Allocations module first.');
-        setSaving(false); return;
+        assignedSubjects = curr.DEFAULT_SUBJECTS?.[selGrade] || [];
+        if(assignedSubjects.length === 0) {
+          alert('No subjects allocated for ' + selGrade + '. Please assign subjects in Allocations module first.');
+          setSaving(false); return;
+        }
       }
 
       const subjectsForGen = assignedSubjects.map(subjName => {
@@ -622,16 +623,25 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave, c
                 {DAYS.map((day, di) => {
                   const dayMax = cfg.perDay?.[di] || 8;
                   const isOutOfBounds = (pi + 1) > dayMax;
-                  const slot = (gradeTT[day]||{})[pi+1] || {};
+                  const slot = (localTT[selGrade]?.[day]||{})[pi+1] || {};
+                  const allocStaffId = allocs[`${selGrade}|${slot.subject}`];
+                  const phTeacher = allocStaffId ? (codes[allocStaffId] || staff.find(s=>s.id===allocStaffId)?.name) : 'Teacher';
+                  
                   return (
-                    <td key={day} style={{padding:3,verticalAlign:'top', background: isOutOfBounds ? '#f1f5f9' : 'transparent'}}>
+                    <td key={day} style={{padding:'4px 6px', background: isOutOfBounds ? '#f1f5f9' : 'transparent'}}>
                       {isOutOfBounds ? null : (
-                        <>
+                        <div style={{display:'flex',flexDirection:'column',gap:4}}>
                           <input
                             placeholder="Subject"
-                            value={slot.subject||''}
-                            onChange={e => setSlot(day,pi+1,'subject',e.target.value)}
-                            style={{width:'100%',fontSize:10,padding:'3px 5px',border:'1px solid #ddd',borderRadius:5,marginBottom:2}}
+                            value={slot.subject || ''}
+                            onChange={e => setSlot(day, pi+1, 'subject', e.target.value)}
+                            style={{fontSize:11,fontWeight:600,padding:'4px 6px',border:'1px solid var(--border)',borderRadius:4,width:'100%',outline:'none'}}
+                          />
+                          <input
+                            placeholder={phTeacher}
+                            value={slot.teacher || ''}
+                            onChange={e => setSlot(day, pi+1, 'teacher', e.target.value)}
+                            style={{fontSize:11,padding:'4px 6px',border:'1px solid var(--border)',borderRadius:4,width:'100%',outline:'none'}}
                           />
                           <select
                             value={slot.teacherId||''}
@@ -645,7 +655,7 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave, c
                             <option value="">— Teacher —</option>
                             {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                           </select>
-                        </>
+                        </div>
                       )}
                     </td>
                   );
