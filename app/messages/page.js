@@ -25,6 +25,8 @@ export default function MessagesPage() {
   const [cmpSearch, setCmpSearch] = useState('');
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('inbox');
+  const [sendSmsCopy, setSendSmsCopy] = useState(false);
+  const [prevUnreadCount, setPrevUnreadCount] = useState(0);
   
   // Contacts
   const [staff, setStaff] = useState([]);
@@ -157,6 +159,47 @@ export default function MessagesPage() {
         return newMsgs;
       });
       setSentSuccess(true);
+      
+      // Send SMS copy if checked
+      if (sendSmsCopy) {
+        let phones = [];
+        if (cmpMode === 'individual') {
+          const target = [...staff, ...learners].find(x => x.username === cmpTo || x.adm === cmpTo || x.id === cmpTo);
+          if (target && target.phone) phones.push(target.phone);
+        } else {
+          // Group SMS logic for this message
+          if (cmpTo === 'ALL' || cmpTo === 'ALL_PARENTS') {
+            learners.forEach(l => l.phone && phones.push(l.phone));
+            staff.forEach(s => s.role === 'parent' && s.phone && phones.push(s.phone));
+          }
+          if (cmpTo === 'ALL' || cmpTo === 'ALL_STAFF' || cmpTo === 'ALL_TEACHERS') {
+            staff.forEach(s => s.role === 'teacher' && s.phone && phones.push(s.phone));
+          }
+          if (cmpTo === 'ALL' || cmpTo === 'ALL_STAFF' || cmpTo === 'NON_TEACHING_STAFF') {
+            staff.forEach(s => ['admin', 'staff'].includes(s.role) && s.phone && phones.push(s.phone));
+          }
+        }
+        
+        phones = [...new Set(phones)];
+        
+        if (phones.length > 0) {
+          try {
+            fetchWithRetry('/api/sms', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'bulk',
+                phones,
+                message: `[EduVantage MSG: ${cmpSub.trim()}] ${cmpBody.trim()}`,
+                toLabel: 'SMS Copy'
+              })
+            });
+          } catch (smsError) {
+            console.error('Failed to send SMS copy', smsError);
+          }
+        }
+      }
+
       setTimeout(() => {
         setShowCompose(false);
         setSentSuccess(false);
@@ -164,6 +207,7 @@ export default function MessagesPage() {
         setCmpBody('');
         setCmpTo('ALL');
         setCmpMode('group');
+        setSendSmsCopy(false);
       }, 1500);
     } catch (e) {
       console.error(e);
@@ -239,6 +283,40 @@ export default function MessagesPage() {
       return false;
     }).sort((a,b) => b.id.localeCompare(a.id));
   }, [allMessages, activeTab, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const currentUnread = allMessages.filter(m => {
+      const isMine = m.to === user.username || m.to === user.role || m.to === 'ALL' || 
+          (m.to === 'ALL_PARENTS' && user.role === 'parent') || 
+          (m.to === 'ALL_STAFF' && ['admin','teacher','staff'].includes(user.role)) ||
+          (m.to === 'ALL_TEACHERS' && ['admin','teacher'].includes(user.role)) ||
+          (m.to === 'NON_TEACHING_STAFF' && ['admin','staff'].includes(user.role));
+      return isMine && !(m.read || []).includes(user.username) && m.from !== user.username;
+    }).length;
+
+    if (currentUnread > prevUnreadCount) {
+      // Play WhatsApp-like notification sound
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU' + 'A'.repeat(50));
+        // Note: Using a short beep or standard HTML5 audio to simulate WhatsApp sound
+        // We will just use an oscillator for a clean "ding"
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1); // A6
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      } catch (e) {}
+    }
+    setPrevUnreadCount(currentUnread);
+  }, [allMessages, user, prevUnreadCount]);
 
   if (error) return (
     <div className="page on" style={{ padding: '40px', textAlign: 'center' }}>
@@ -538,6 +616,11 @@ export default function MessagesPage() {
                   <div className="field">
                     <label>Message Body</label>
                     <textarea value={cmpBody} onChange={e => setCmpBody(e.target.value)} rows="5" placeholder="Type your message content..." required style={{ borderRadius: 16, padding: 15 }}></textarea>
+                  </div>
+
+                  <div className="field" style={{ marginTop: 15, background: '#f0fdf4', padding: '12px 16px', borderRadius: 12, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input type="checkbox" id="sendSmsCopy" checked={sendSmsCopy} onChange={e => setSendSmsCopy(e.target.checked)} style={{ width: 18, height: 18, cursor: 'pointer' }} />
+                    <label htmlFor="sendSmsCopy" style={{ margin: 0, color: '#166534', cursor: 'pointer', fontWeight: 700 }}>📱 Send copy to recipient's mobile phone via SMS</label>
                   </div>
 
                   <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>

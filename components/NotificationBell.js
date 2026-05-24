@@ -23,6 +23,7 @@ export default function NotificationBell({ userId }) {
   const [open, setOpen]       = useState(false);
   const [notes, setNotes]     = useState([]);
   const [loading, setLoading] = useState(false);
+  const [prevUnread, setPrevUnread] = useState(0);
   const ref = useRef(null);
 
   const load = useCallback(async () => {
@@ -48,6 +49,26 @@ export default function NotificationBell({ userId }) {
   }, []);
 
   const unread = notes.filter(n => !(n.readBy || []).includes(userId)).length;
+
+  useEffect(() => {
+    if (unread > prevUnread) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      } catch (e) {}
+    }
+    setPrevUnread(unread);
+  }, [unread, prevUnread]);
 
   async function markAllRead() {
     setLoading(true);
