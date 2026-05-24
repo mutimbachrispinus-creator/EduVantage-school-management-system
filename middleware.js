@@ -32,8 +32,12 @@ export function middleware(request) {
   }
 
   // 2. Platform Main Domain Check
-  // Supports Cloudflare Pages preview domains (.pages.dev) and custom domain
+  // Supports Cloudflare Pages preview domains (.pages.dev) and custom domains
+  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || process.env.MAIN_DOMAIN || 'eduvantage.app';
+
   const isMainPlatform =
+    host === mainDomain ||
+    host === `portal.${mainDomain}` ||
     host === 'eduvantage.app' ||
     host === 'portal.eduvantage.app' ||
     host === 'localhost:3000' ||
