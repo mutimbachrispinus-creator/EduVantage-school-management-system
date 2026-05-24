@@ -17,8 +17,8 @@ function formatForExamBody(curriculumId, learners) {
         examBody: 'KNEC',
         endpoint: 'https://registration.knec.ac.ke/api/v1/candidates',
         payload: learners.map((l, index) => ({
-          index_number: `PREFIX${String(index + 1).padStart(3, '0')}`, // Mock index generation
-          nemis_upi: l.adm, // Assuming ADM stores UPI for CBC public schools
+          index_number: l.index_number || `PREFIX${String(index + 1).padStart(3, '0')}`,
+          nemis_upi: l.nemis_upi || l.adm,
           candidate_name: l.name.toUpperCase(),
           gender: l.sex === 'M' ? 'Male' : 'Female',
           birth_date: l.dob,
@@ -34,8 +34,8 @@ function formatForExamBody(curriculumId, learners) {
         examBody: 'CAMBRIDGE_CIE',
         endpoint: 'https://direct.cie.org.uk/api/sync/candidates',
         payload: learners.map((l, index) => ({
-          candidate_number: String(1000 + index),
-          uci: `XX999-${String(1000 + index).padStart(4, '0')}X`,
+          candidate_number: l.index_number || String(1000 + index),
+          uci: l.nemis_upi || `XX999-${String(1000 + index).padStart(4, '0')}X`,
           names: l.name,
           date_of_birth: l.dob,
           gender: l.sex,
@@ -103,7 +103,7 @@ export async function POST(req) {
     const currCtx = getCurriculum(curriculumId, profile.levels);
 
     // 2. Fetch Learners for the specified Exam Grade
-    const learners = await query('SELECT adm, name, sex, dob, grade, stream FROM learners WHERE grade = ? AND tenant_id = ?', [grade, tenantId]);
+    const learners = await query('SELECT adm, name, sex, dob, grade, stream, nemis_upi, index_number FROM learners WHERE grade = ? AND tenant_id = ?', [grade, tenantId]);
     
     if (learners.length === 0) {
       return NextResponse.json({ success: false, error: `No candidates found in grade ${grade}` });

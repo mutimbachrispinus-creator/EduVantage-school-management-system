@@ -310,7 +310,8 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
   const [form, setForm] = useState({
     name: '', grade: ALL_GRADES[0] || '', dob: '', adm: '', sex: 'F', age: '',
     stream: '', parent: '', phone: '', parentEmail: '', addr: '', arrears: 0,
-    bloodGroup: '', allergies: '', medicalCondition: '', emergencyContact: '', biometric_id: ''
+    bloodGroup: '', allergies: '', medicalCondition: '', emergencyContact: '', biometric_id: '',
+    nemis_upi: '', index_number: ''
   });
   const [err,  setErr]  = useState('');
   const [busy, setBusy] = useState(false);
@@ -330,6 +331,7 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
       bloodGroup: form.bloodGroup, allergies: form.allergies,
       medicalCondition: form.medicalCondition, emergencyContact: form.emergencyContact,
       biometric_id: form.biometric_id || '',
+      nemis_upi: form.nemis_upi || '', index_number: form.index_number || ''
     };
 
     const saveRes = await fetch('/api/db', {
@@ -437,6 +439,12 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
           <input autoComplete="off" value={form.parentEmail} onChange={e => F('parentEmail', e.target.value)} type="email" placeholder="parent@example.com" /></div>
         <div className="field"><label>Biometric/Card ID</label>
           <input autoComplete="off" value={form.biometric_id} onChange={e => F('biometric_id', e.target.value)} placeholder="Scanner ID" /></div>
+      </div>
+      <div className="field-row">
+        <div className="field"><label>NEMIS UPI / Learner ID</label>
+          <input autoComplete="off" value={form.nemis_upi} onChange={e => F('nemis_upi', e.target.value)} placeholder="e.g. XXX-1234" /></div>
+        <div className="field"><label>National Exam Index Number</label>
+          <input autoComplete="off" value={form.index_number} onChange={e => F('index_number', e.target.value)} placeholder="e.g. 10000100" /></div>
       </div>
       <div className="field"><label>Address</label>
         <input autoComplete="off" value={form.addr} onChange={e => F('addr', e.target.value)} /></div>
@@ -707,6 +715,12 @@ function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
           <input value={form.parentEmail || ''} onChange={e => F('parentEmail', e.target.value)} type="email" /></div>
         <div className="field"><label>Biometric/Card ID</label>
           <input value={form.biometric_id || ''} onChange={e => F('biometric_id', e.target.value)} placeholder="Scanner ID" /></div>
+      </div>
+      <div className="field-row">
+        <div className="field"><label>NEMIS UPI / Learner ID</label>
+          <input value={form.nemis_upi || ''} onChange={e => F('nemis_upi', e.target.value)} placeholder="e.g. XXX-1234" /></div>
+        <div className="field"><label>National Exam Index Number</label>
+          <input value={form.index_number || ''} onChange={e => F('index_number', e.target.value)} placeholder="e.g. 10000100" /></div>
       </div>
       <div className="field"><label>Address</label>
         <input value={form.addr || ''} onChange={e => F('addr', e.target.value)} /></div>
