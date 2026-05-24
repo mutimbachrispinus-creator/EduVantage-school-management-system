@@ -87,12 +87,14 @@ export default function NationalExamsSyncPage() {
 
   if (loading || !user) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading...</div>;
 
+  const currName = school?.curriculum || 'CBC';
+
   return (
     <div className="page on">
       <div className="page-hdr">
         <div>
           <h2>🎓 National Exams Sync</h2>
-          <p>Synchronize candidates directly with {curr.name} examination bodies</p>
+          <p>Synchronize candidates directly with {currName} examination bodies</p>
         </div>
       </div>
 
@@ -102,11 +104,11 @@ export default function NationalExamsSyncPage() {
         </div>
         <div className="panel-body">
           <div className="note-box" style={{ background: '#F0F9FF', borderLeft: '3px solid #0284C7', marginBottom: 20 }}>
-            <strong>Active Curriculum: {curr.name}</strong>
+            <strong>Active Curriculum: {currName}</strong>
             <p style={{ marginTop: 5, fontSize: 13, color: 'var(--muted)' }}>
               This module automatically formats your candidate lists into the exact payload required by your examination body. 
-              {curr.name.includes('CBC') && ' Payload is formatted for KNEC (KPSEA/KCSE).'}
-              {curr.name.includes('British') || curr.name.includes('Cambridge') ? ' Payload is formatted for CIE Direct.' : ''}
+              {currName.includes('CBC') && ' Payload is formatted for KNEC (KPSEA/KCSE).'}
+              {(currName.includes('British') || currName.includes('Cambridge')) ? ' Payload is formatted for CIE Direct.' : ''}
             </p>
           </div>
 
