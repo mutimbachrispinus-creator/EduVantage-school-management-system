@@ -3,6 +3,8 @@ import { getClient, execute, query } from '@/lib/db';
 import { sendSMS } from '@/lib/sms-client';
 import { normaliseKenyanNumber } from '@/lib/sms-client';
 
+export const runtime = 'edge';
+
 /**
  * POST /api/attendance/sync
  * Endpoint for ZKTeco (or similar) biometric devices to push attendance records.
