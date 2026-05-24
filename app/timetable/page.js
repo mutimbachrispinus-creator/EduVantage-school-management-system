@@ -159,13 +159,49 @@ export default function TimetablePage() {
     const levelCfg = customCfg[setLevel];
     if (!levelCfg) return base;
 
+    let breaks = levelCfg.breaks || base.breaks;
+    
+    // Map custom breaks from Setup to include 'after' if missing
+    if (breaks && breaks.length > 0 && levelCfg.startTime) {
+       let curMins = timeToMins(levelCfg.startTime);
+       const lessonDur = levelCfg.lessonDuration || base.dur;
+       
+       breaks = breaks.map(b => {
+         if (b.after !== undefined) return b;
+         const bStart = timeToMins(b.startTime);
+         const periodsBefore = Math.round((bStart - curMins) / lessonDur);
+         return {
+           label: b.name || 'Break',
+           dur: b.duration || 30,
+           after: periodsBefore
+         };
+       });
+    }
+
     return {
       ...base,
+      startTime: levelCfg.startTime || '08:00',
       dur: levelCfg.lessonDuration || base.dur,
       perDay: levelCfg.lessonsPerDay ? Array(5).fill(levelCfg.lessonsPerDay) : base.perDay,
-      breaks: levelCfg.breaks || base.breaks
+      breaks: breaks
     };
   }, [gradeKey, customCfg]);
+
+  const slotTimes = useMemo(() => {
+    const times = [];
+    let cur = timeToMins(cfg.startTime || '08:00');
+    const globalMax = cfg.perDay ? Math.max(...cfg.perDay) : 8;
+    let period = 1;
+    for (let i=1; i<=globalMax; i++) {
+      const end = cur + (cfg.dur || 40);
+      times.push({ period, start: minsToTime(cur), end: minsToTime(end) });
+      cur = end;
+      period++;
+      const brk = (cfg.breaks||[]).find(b => b.after === i);
+      if (brk) cur += (brk.dur || 30);
+    }
+    return times;
+  }, [cfg]);
 
   const gradeTT = useMemo(() => (timetable && selGrade) ? (timetable[selGrade] || {}) : {}, [timetable, selGrade]);
   const perDay = Array.isArray(cfg.perDay) ? cfg.perDay : [8,8,8,8,8];
@@ -341,9 +377,15 @@ export default function TimetablePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.from({length: maxPeriods}, (_,pi) => (
-                    <tr key={pi}>
-                      <td style={{fontWeight:700,textAlign:'center',fontSize:12,background:'#F8FAFF'}}>{pi+1}</td>
+                  {Array.from({length: maxPeriods}, (_,pi) => {
+                    const brk = (cfg.breaks||[]).find(b => b.after === (pi + 1));
+                    return (
+                    <React.Fragment key={pi}>
+                    <tr>
+                      <td style={{fontWeight:700,textAlign:'center',fontSize:12,background:'#F8FAFF'}}>
+                        <div>{pi+1}</div>
+                        {slotTimes[pi] && <div style={{fontSize:9,color:'var(--muted)',fontWeight:500,marginTop:2}}>{slotTimes[pi].start}<br/>{slotTimes[pi].end}</div>}
+                      </td>
                       {DAYS.map((day, di) => {
                         const dayMax = cfg.perDay?.[di] || 8;
                         const isOutOfBounds = (pi + 1) > dayMax;
@@ -374,7 +416,15 @@ export default function TimetablePage() {
                         );
                       })}
                     </tr>
-                  ))}
+                    {brk && (
+                      <tr>
+                        <td colSpan={DAYS.length + 1} style={{textAlign:'center', background:'#f8fafc', padding:'8px', fontSize:11, fontWeight:700, color:'var(--muted)', letterSpacing:'1px', textTransform:'uppercase'}}>
+                          ☕ {brk.label || 'Break'} ({brk.dur} min)
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
+                  )})}
                 </tbody>
               </table>
             </div>
@@ -434,6 +484,7 @@ export default function TimetablePage() {
             onSave={saveTimetable}
             curr={curr}
             ALL_GRADES={ALL_GRADES}
+            cfg={cfg}
           />
         )}
       </div>
@@ -474,14 +525,28 @@ export default function TimetablePage() {
 }
 
 /* ── Edit Timetable Panel ── */
-function EditTimetablePanel({ timetable, staff, allocs, codes, selGrade, setSelGrade, onSave, curr, ALL_GRADES }) {
+function EditTimetablePanel({ timetable, staff, allocs, codes, selGrade, setSelGrade, onSave, curr, ALL_GRADES, cfg }) {
   const [localTT, setLocalTT] = useState(timetable);
   const [saving, setSaving] = useState(false);
   const gradeKey = getGradeKey(selGrade, curr);
-  const cfg = LEVEL_CFG[gradeKey] || LEVEL_CFG.primary13;
-  const maxPeriods = Math.max(...cfg.perDay);
+  const maxPeriods = cfg.perDay ? Math.max(...cfg.perDay) : 8;
   const gradeTT = localTT[selGrade] || {};
   const teachers = staff.filter(s => s.role==='teacher' || s.role==='admin');
+
+  const slotTimes = useMemo(() => {
+    const times = [];
+    let cur = timeToMins(cfg.startTime || '08:00');
+    let period = 1;
+    for (let i=1; i<=maxPeriods; i++) {
+      const end = cur + (cfg.dur || 40);
+      times.push({ period, start: minsToTime(cur), end: minsToTime(end) });
+      cur = end;
+      period++;
+      const brk = (cfg.breaks||[]).find(b => b.after === i);
+      if (brk) cur += (brk.dur || 30);
+    }
+    return times;
+  }, [cfg, maxPeriods]);
 
   function setSlot(day, period, field, value) {
     setLocalTT(tt => ({
@@ -617,9 +682,15 @@ function EditTimetablePanel({ timetable, staff, allocs, codes, selGrade, setSelG
             </tr>
           </thead>
           <tbody>
-            {Array.from({length: maxPeriods}, (_,pi) => (
-              <tr key={pi}>
-                <td style={{fontWeight:700,textAlign:'center',fontSize:12,background:'#F8FAFF'}}>{pi+1}</td>
+            {Array.from({length: maxPeriods}, (_,pi) => {
+              const brk = (cfg.breaks||[]).find(b => b.after === (pi + 1));
+              return (
+              <React.Fragment key={pi}>
+              <tr>
+                <td style={{fontWeight:700,textAlign:'center',fontSize:12,background:'#F8FAFF'}}>
+                  <div>{pi+1}</div>
+                  {slotTimes[pi] && <div style={{fontSize:9,color:'var(--muted)',fontWeight:500,marginTop:2}}>{slotTimes[pi].start}<br/>{slotTimes[pi].end}</div>}
+                </td>
                 {DAYS.map((day, di) => {
                   const dayMax = cfg.perDay?.[di] || 8;
                   const isOutOfBounds = (pi + 1) > dayMax;
@@ -661,7 +732,15 @@ function EditTimetablePanel({ timetable, staff, allocs, codes, selGrade, setSelG
                   );
                 })}
               </tr>
-            ))}
+              {brk && (
+                <tr>
+                  <td colSpan={DAYS.length + 1} style={{textAlign:'center', background:'#f8fafc', padding:'8px', fontSize:11, fontWeight:700, color:'var(--muted)', letterSpacing:'1px', textTransform:'uppercase'}}>
+                    ☕ {brk.label || 'Break'} ({brk.dur} min)
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
+            )})}
           </tbody>
         </table>
       </div>

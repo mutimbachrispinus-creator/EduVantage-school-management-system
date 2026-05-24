@@ -130,6 +130,56 @@ function updateLevelInfo(){
   document.getElementById('levelInfo').innerHTML=`<strong>Duration:</strong> ${cfg.dur} min &nbsp;|&nbsp; <strong>Lessons/week:</strong> ${total} &nbsp;|&nbsp; <strong>Start:</strong> ${cfg.startTime} &nbsp;|&nbsp; <strong>Breaks:</strong> ${cfg.breaks.map(b=>b.label+' ('+b.dur+' min)').join(', ')}`;
 }
 
+async function loadConfig() {
+  try {
+    const res = await fetch('/api/db', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ type: 'get', key: 'paav7_timetable_cfg' }] })
+    });
+    const data = await res.json();
+    if (data.results && data.results[0]?.value) {
+      const cfgObj = data.results[0].value;
+      
+      function timeToMins(t) {
+        if (!t) return 0;
+        const [h,m] = t.split(':');
+        return parseInt(h, 10)*60 + parseInt(m, 10);
+      }
+
+      function updateLvl(key, setKey) {
+        if (cfgObj[setKey]) {
+          const c = cfgObj[setKey];
+          if (c.startTime) LEVEL_CFG[key].startTime = c.startTime;
+          if (c.lessonDuration) LEVEL_CFG[key].dur = c.lessonDuration;
+          if (c.lessonsPerDay) LEVEL_CFG[key].perDay = Array(5).fill(c.lessonsPerDay);
+          
+          if (c.breaks && c.breaks.length > 0 && c.startTime) {
+            let curMins = timeToMins(c.startTime);
+            const lessonDur = c.lessonDuration || LEVEL_CFG[key].dur;
+            LEVEL_CFG[key].breaks = c.breaks.map(b => {
+              if (b.after !== undefined) return b;
+              const bStart = timeToMins(b.startTime);
+              const periodsBefore = Math.round((bStart - curMins) / lessonDur);
+              return {
+                label: b.name || 'Break',
+                dur: b.duration || 30,
+                after: periodsBefore
+              };
+            });
+          }
+        }
+      }
+      
+      updateLvl('primary13', 'primary');
+      updateLvl('primary46', 'primary');
+      updateLvl('jss', 'junior');
+      updateLvl('senior', 'senior');
+    }
+  } catch(e) {
+    console.error('Error loading config:', e);
+  }
+}
+
 function addSubject(){
   const name=document.getElementById('subjName').value.trim();
   const teacher=document.getElementById('subjTeacher').value.trim();
@@ -497,8 +547,12 @@ async function saveToDB() {
 }
 
 // Init
-updateLevelInfo();
-addDefaultSubjects();
+async function init() {
+  await loadConfig();
+  updateLevelInfo();
+  addDefaultSubjects();
+}
+init();
 </script>
 </body>
 </html>
