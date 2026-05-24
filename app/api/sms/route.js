@@ -56,8 +56,12 @@ export async function POST(request) {
     /* ── Single SMS ── */
     case 'send': {
       const { to, message } = body;
+      const tid = getTenantId(session);
+      const profile = await kvGet('paav_school_profile', null, tid);
+      const schoolName = profile?.name || 'School';
+
       if (!to || !message) return err('to and message are required');
-      result = await sendSMS({ to, message, ...creds });
+      result = await sendSMS({ to, message, schoolName, ...creds });
       logEntry = smsLogEntry({
         to, message, type: 'manual',
         status: result.success ? 'submitted' : 'failed',
@@ -73,10 +77,14 @@ export async function POST(request) {
     case 'bulk': {
       if (!['admin', 'super-admin'].includes(session.role)) return err('Only admins can send bulk SMS', 403);
       const { phones, message } = body;
+      const tid = getTenantId(session);
+      const profile = await kvGet('paav_school_profile', null, tid);
+      const schoolName = profile?.name || 'School';
+
       if (!Array.isArray(phones) || !phones.length) return err('phones array is required');
       if (!message) return err('message is required');
 
-      result = await sendBulkSMS(phones, message, creds);
+      result = await sendBulkSMS(phones, message, { schoolName, ...creds });
       logEntry = smsLogEntry({
         to: `${phones.length} recipients`,
         message, type: 'bulk',
@@ -96,8 +104,11 @@ export async function POST(request) {
       const staff = (await kvGet('paav6_staff', [], tid)) || [];
       const user  = staff.find(s => s.id === userId);
       if (!user) return err(`User ${userId} not found`);
+      
+      const profile = await kvGet('paav_school_profile', null, tid);
+      const schoolName = profile?.name || 'School';
 
-      result = await sendCredentialsSMS(user, creds);
+      result = await sendCredentialsSMS(user, { schoolName, ...creds });
       logEntry = smsLogEntry({
         to: user.phone, message: `Credentials for ${user.name}`,
         type: 'credentials',
@@ -158,13 +169,17 @@ export async function POST(request) {
     case 'bulk_absenteeism_alert': {
       if (!['admin', 'super-admin'].includes(session.role)) return err('Unauthorized', 403);
       const { alerts } = body; // Array of { phone, name, count }
+      const tid = getTenantId(session);
+      const profile = await kvGet('paav_school_profile', null, tid);
+      const schoolName = profile?.name || 'School';
+
       if (!Array.isArray(alerts) || !alerts.length) return err('alerts array is required');
 
       const results = [];
       for (const a of alerts) {
         if (!a.phone) continue;
         const msg = `Attendance Alert: ${a.name} has missed ${a.count} days recently. Please contact the school office.`;
-        const r = await sendSMS({ to: a.phone, message: msg, ...creds });
+        const r = await sendSMS({ to: a.phone, message: msg, schoolName, ...creds });
         results.push(r);
       }
       

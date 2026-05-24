@@ -139,11 +139,12 @@ export async function POST(req) {
             const learners = await kvGet('paav6_learners', [], tenantId) || [];
             const l = learners.find(x => x.adm === adm);
             const parentPhone = l?.phone || result.phone;
+            const schoolName = profile.name || 'EduVantage';
 
             const { sendSMS } = await import('@/lib/sms-client');
             const atCreds = (await kvGet('paav_at_creds', null, tenantId)) || (await kvGet('paav_at_creds', null, 'platform-master'));
-            const msg = `✅ PAYMENT RECEIVED: KES ${result.amount.toLocaleString()} for ${l?.name || adm}. Ref: ${result.mpesaCode}. Thank you for using ${profile.name || 'EduVantage'}.`;
-            await sendSMS({ to: parentPhone, message: msg, ...(atCreds || {}) });
+            const msg = `✅ PAYMENT RECEIVED: KES ${result.amount.toLocaleString()} for ${l?.name || adm}. Ref: ${result.mpesaCode}. Thank you!`;
+            await sendSMS({ to: parentPhone, message: msg, schoolName, ...(atCreds || {}) });
           } catch (e) { console.warn('[M-Pesa Callback] SMS Receipt failed:', e.message); }
 
         } else if (!adm && checkoutRequestId) {

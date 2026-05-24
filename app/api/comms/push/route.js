@@ -38,6 +38,7 @@ export async function POST(request) {
       username: savedCreds?.username || process.env.AT_USERNAME || 'sandbox',
       apiKey:   savedCreds?.apiKey   || process.env.AT_API_KEY  || '',
       senderId: savedCreds?.senderId || process.env.AT_SENDER_ID || '',
+      schoolName: schoolName || 'EduVantage',
     };
 
     const results = [];

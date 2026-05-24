@@ -583,10 +583,13 @@ async function handleRequestOtp(body, request) {
   try {
     const { sendSMS, normalizePhone } = await import('@/lib/sms-client');
     const atCreds = (await kvGet('paav_at_creds', null, user.tenant_id)) || (await kvGet('paav_at_creds', null, 'platform-master'));
-    
+    const profile = await kvGet('paav_school_profile', null, user.tenant_id);
+    const schoolName = profile?.name || 'EduVantage';
+
     const res = await sendSMS({
       to: normalizePhone(user.phone),
-      message: `EduVantage Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
+      message: `Password Reset\nHello ${user.name},\nYour reset OTP is: ${otp}.\nValid for 10 minutes.`,
+      schoolName,
       ...(atCreds || {})
     });
     
@@ -645,7 +648,8 @@ async function handleRequestRegOtp({ phone }, request) {
     const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
     const res = await sendSMS({
       to: normalizePhone(phone),
-      message: `EduVantage Verification\nYour registration code is: ${otp}.\nDo not share this code.`,
+      message: `Verification\nYour registration code is: ${otp}.\nDo not share this code.`,
+      schoolName: 'EduVantage',
       ...(atCreds || {})
     });
     
