@@ -4,7 +4,8 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ALL_GRADES, DEFAULT_SUBJECTS } from '@/lib/cbe';
+import { getAllGrades, getDefaultSubjects } from '@/lib/cbe';
+import { useProfile } from '@/app/PortalShell';
 
 export default function SubjectsPage() {
   const router = useRouter();
@@ -12,7 +13,14 @@ export default function SubjectsPage() {
   const [assigns, setAssigns] = useState({});
   const [loading, setLoading] = useState(true);
   const [saved,   setSaved]   = useState(false);
-  const [grade,   setGrade]   = useState('GRADE 7');
+  const [grade,   setGrade]   = useState('');
+  const [subjCfg, setSubjCfg] = useState({});
+  const { profile: school } = useProfile() || {};
+  const ALL_GRADES = getAllGrades(school?.curriculum || 'CBC', school);
+
+  useEffect(() => {
+    if (!grade && ALL_GRADES.length > 0) setGrade(ALL_GRADES[0]);
+  }, [ALL_GRADES, grade]);
 
   const load = useCallback(async () => {
     const authRes = await fetch('/api/auth');
@@ -24,17 +32,19 @@ export default function SubjectsPage() {
       body: JSON.stringify({ requests: [
         { type: 'get', key: 'paav6_staff'            },
         { type: 'get', key: 'paav_teacher_assignments' },
+        { type: 'get', key: 'paav8_subj' },
       ]}),
     });
     const db = await dbRes.json();
     setStaff(  (db.results[0]?.value || []).filter(s => s.role === 'teacher'));
     setAssigns(db.results[1]?.value || {});
+    setSubjCfg(db.results[2]?.value || {});
     setLoading(false);
   }, [router]);
 
   useEffect(() => { load(); }, [load]);
 
-  const subjects = DEFAULT_SUBJECTS[grade] || [];
+  const subjects = (subjCfg[grade] && subjCfg[grade].length > 0) ? subjCfg[grade] : getDefaultSubjects(grade, school?.curriculum || 'CBC');
 
   function assign(subj, teacherId) {
     const key = `${grade}|${subj}`;

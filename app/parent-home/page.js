@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { DEFAULT_SUBJECTS, gInfo, fmtK } from '@/lib/cbe';
+import { getDefaultSubjects, gInfo, fmtK } from '@/lib/cbe';
 
 const M = '#8B1A1A', M2 = '#6B1212', ML = '#FDF2F2', MB = '#F5E6E6';
 
@@ -281,7 +281,7 @@ export default function ParentHome() {
   const exp = (cfg.t1 || 0) + (cfg.t2 || 0) + (cfg.t3 || 0) || cfg.annual || 5000;
   const paid = (child?.t1||0)+(child?.t2||0)+(child?.t3||0);
   const bal = exp + (child?.arrears || 0) - paid;
-  const subjs = DEFAULT_SUBJECTS[child?.grade] || [];
+  const subjs = getDefaultSubjects(child?.grade, child?.profile?.curriculum || 'CBC');
   const unr = messages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).filter(m=>!(m.read||[]).includes(user.username)).length;
 
   const TABS = [

@@ -86,7 +86,7 @@ export default function GradesPage() {
 
       if (!u) { router.push('/login'); return; }
       const allowedRoles = ['admin', 'teacher', 'senior_teacher', 'jss_teacher', 'super-admin'];
-      if (!allowedRoles.includes(u.role) && !u.role.startsWith('admin_')) {
+      if (!allowedRoles.includes(u.role) && !u.role?.startsWith('admin_')) {
         router.push('/dashboard'); return;
       }
       setUser(u);
@@ -165,17 +165,17 @@ export default function GradesPage() {
 
   // For teachers: filter to only their assigned subjects for this grade, 
   // but if no assignments exist for them in this grade, fallback to showing all subjects.
-  const isAdminRole = user && (user.role === 'admin' || user.role === 'super-admin' || user.role.startsWith('admin_'));
+  const isAdminRole = user && (user.role === 'admin' || user.role === 'super-admin' || user.role?.startsWith('admin_'));
   const isTeacher = user && !isAdminRole && user.role !== 'parent';
   
-  const assignedSubjects = allSubjects.filter(s => teacherAssigns[`${grade}|${s}`] === user.id);
-  const subjects = (isTeacher && Object.keys(teacherAssigns).some(k => k.startsWith(`${grade}|`)))
+  const assignedSubjects = allSubjects.filter(s => (teacherAssigns || {})[`${grade}|${s}`] === user.id);
+  const subjects = (isTeacher && Object.keys(teacherAssigns || {}).some(k => k.startsWith(`${grade}|`)))
     ? assignedSubjects
     : allSubjects;
 
   // Build teacher's full assignment summary across all grades
   const teacherAssignmentSummary = isTeacher
-    ? Object.entries(teacherAssigns)
+    ? Object.entries(teacherAssigns || {})
         .filter(([, tid]) => tid === user?.id)
         .map(([key]) => {
           const [g, s] = key.split('|');

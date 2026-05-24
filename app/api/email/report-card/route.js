@@ -2,7 +2,9 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { sendEmail, getReportCardTemplate } from '@/lib/mail';
 import { kvGet } from '@/lib/db';
-import { DEFAULT_SUBJECTS, gInfo, maxPts, promotionStatus } from '@/lib/cbe';
+import { getSession } from '@/lib/auth';
+import { getTenantId } from '@/lib/learner-lookup';
+import { getDefaultSubjects, gInfo, maxPts, promotionStatus } from '@/lib/cbe';
 
 export async function POST(req) {
   try {
@@ -10,12 +12,18 @@ export async function POST(req) {
 
     if (!adm || !term) return NextResponse.json({ error: 'ADM and Term required' }, { status: 400 });
 
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+    const tid = getTenantId(session);
+
     // 1. Fetch data
-    const [learners, marks, feeCfg, gradCfg] = await Promise.all([
-      kvGet('paav6_learners'),
-      kvGet('paav6_marks'),
-      kvGet('paav6_feecfg'),
-      kvGet('paav8_grad'),
+    const [learners, marks, feeCfg, gradCfg, profile, subjCfg] = await Promise.all([
+      kvGet('paav6_learners', [], tid),
+      kvGet('paav6_marks', {}, tid),
+      kvGet('paav6_feecfg', {}, tid),
+      kvGet('paav8_grad', null, tid),
+      kvGet('paav_school_profile', null, tid),
+      kvGet('paav8_subj', {}, tid)
     ]);
 
     const learner = (learners || []).find(l => l.adm === adm);
@@ -25,7 +33,7 @@ export async function POST(req) {
     }
 
     // 2. Calculate performance (simplified for the email summary)
-    const subjects = DEFAULT_SUBJECTS[learner.grade] || [];
+    const subjects = (subjCfg[learner.grade] && subjCfg[learner.grade].length > 0) ? subjCfg[learner.grade] : getDefaultSubjects(learner.grade, profile?.curriculum || 'CBC');
     let totalPts = 0;
     let enteredCount = 0;
 

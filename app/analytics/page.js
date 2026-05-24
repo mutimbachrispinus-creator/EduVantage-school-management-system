@@ -1070,7 +1070,7 @@ function pct(n) {
 }
 
 function PerformanceDetail({ learners, marks, grade, term, assess, subjCfg, gradCfg, curriculum, stream, setStream, query }) {
-  const subjects = (subjCfg[grade] !== undefined) ? subjCfg[grade] : getDefaultSubjects(grade, curriculum);
+  const subjects = (subjCfg[grade] && subjCfg[grade].length > 0) ? subjCfg[grade] : getDefaultSubjects(grade, curriculum);
   const streams = React.useMemo(() => {
     return [...new Set(learners.filter(l => l.grade === grade && l.stream).map(l => l.stream))].sort();
   }, [learners, grade]);

@@ -1,13 +1,15 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { DEFAULT_SUBJECTS, isJSSGrade, maxPts, gInfo } from '@/lib/cbe';
+import { getDefaultSubjects, isJSSGrade, maxPts, gInfo } from '@/lib/cbe';
 
 export default function ParentMarksPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [child, setChild] = useState(null);
   const [marks, setMarks] = useState({});
+  const [school, setSchool] = useState({});
+  const [subjCfg, setSubjCfg] = useState({});
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -26,7 +28,9 @@ export default function ParentMarksPage() {
         body: JSON.stringify({
           requests: [
             { type: 'get', key: 'paav6_learners' },
-            { type: 'get', key: 'paav6_marks' }
+            { type: 'get', key: 'paav6_marks' },
+            { type: 'get', key: 'paav_school_profile' },
+            { type: 'get', key: 'paav8_subj' }
           ]
         })
       });
@@ -35,6 +39,8 @@ export default function ParentMarksPage() {
       const learners = db.results[0]?.value || [];
       const mks = db.results[1]?.value || {};
       
+      setSchool(db.results[2]?.value || {});
+      setSubjCfg(db.results[3]?.value || {});
       setChild(learners.find(l => l.adm === auth.user.childAdm));
       setMarks(mks);
     } catch (e) {
@@ -61,7 +67,7 @@ export default function ParentMarksPage() {
     );
   }
 
-  const subjs = DEFAULT_SUBJECTS[child.grade] || [];
+  const subjs = (subjCfg[child.grade] && subjCfg[child.grade].length > 0) ? subjCfg[child.grade] : getDefaultSubjects(child.grade, school?.curriculum || 'CBC');
   const isJSS = isJSSGrade(child.grade);
   const mx = maxPts(child.grade, subjs);
   

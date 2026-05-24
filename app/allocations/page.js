@@ -233,7 +233,7 @@ export default function AllocationsPage() {
       {tab === 'subjects' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
           {ALL_GRADES.map(grade => {
-            const subjects = (subjCfg[grade] !== undefined)
+            const subjects = (subjCfg[grade] && subjCfg[grade].length > 0)
               ? subjCfg[grade]
               : getDefaultSubjects(grade, school?.curriculum || 'CBC');
             return (

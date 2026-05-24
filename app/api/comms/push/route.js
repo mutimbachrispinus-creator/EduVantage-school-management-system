@@ -5,7 +5,7 @@ import { getSession } from '@/lib/auth';
 import { kvGet, kvSet } from '@/lib/db';
 import { sendSMS, sendFeeReminderSMS, getResultNotificationMessage } from '@/lib/sms-client';
 import { sendEmail, getReportCardTemplate, getFeeBalanceTemplate } from '@/lib/mail';
-import { calcLearnerReportData, DEFAULT_SUBJECTS } from '@/lib/cbe';
+import { calcLearnerReportData, getDefaultSubjects } from '@/lib/cbe';
 import { findLearner, getTenantId } from '@/lib/learner-lookup';
 
 export async function POST(request) {
@@ -111,10 +111,10 @@ export async function POST(request) {
     if (type === 'report') {
       if (!term) continue;
       
-      const subjCfg = await kvGet('paav_teacher_assignments', {}, tid) || {};
+      const subjCfg = await kvGet('paav8_subj', {}, tid) || {};
       const gradeSubjects = (subjCfg[learner.grade] && subjCfg[learner.grade].length > 0)
-        ? subjCfg[learner.grade].map(s => s.subject)
-        : (DEFAULT_SUBJECTS[learner.grade] || []);
+        ? subjCfg[learner.grade]
+        : getDefaultSubjects(learner.grade, profile?.curriculum || 'CBC');
       
       if (!gradeSubjects.length) continue;
       

@@ -95,7 +95,7 @@ export default function TemplatesPage() {
   [learners, grade]);
 
   const subjects = useMemo(() => {
-    const list = subjCfg[grade] !== undefined ? subjCfg[grade] : getDefaultSubjects(grade, profile?.curriculum || 'CBC');
+    const list = (subjCfg[grade] && subjCfg[grade].length > 0) ? subjCfg[grade] : getDefaultSubjects(grade, profile?.curriculum || 'CBC');
     return (list || []).filter(s => s && s.trim());
   }, [subjCfg, grade, profile?.curriculum]);
 
@@ -1296,7 +1296,7 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
     if (gLearners.length === 0) return null;
 
     // Use custom subjects if available
-    const gSubjs = subjects[g] !== undefined ? subjects[g] : null;
+    const gSubjs = (subjects[g] && subjects[g].length > 0) ? subjects[g] : null;
     const merit = buildMeritList(gLearners, marks, g, term, assess, gradCfg, curr, gSubjs, mode);
     
     const totalScoreSum = merit.reduce((acc, l) => acc + l.totalPts, 0);
@@ -1341,7 +1341,7 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
   const subjMap = {};
   filteredGrades.forEach(g => {
     const gLearners = scopedLearners.filter(l => l.grade === g);
-    const gSubjs = subjects[g] !== undefined ? subjects[g] : getDefaultSubjects(g, curr);
+    const gSubjs = (subjects[g] && subjects[g].length > 0) ? subjects[g] : getDefaultSubjects(g, curr);
     gLearners.forEach(l => {
       gSubjs.forEach(s => {
         const score = getMark(marks, term, g, s, assess, l.adm);
@@ -1367,7 +1367,7 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
   const allRanked = [];
   filteredGrades.forEach(g => {
     const gLearners = scopedLearners.filter(l => l.grade === g);
-    const gSubjs = subjects[g] !== undefined ? subjects[g] : null;
+    const gSubjs = (subjects[g] && subjects[g].length > 0) ? subjects[g] : null;
     const merit = buildMeritList(gLearners, marks, g, term, assess, gradCfg, curr, gSubjs, mode);
     merit.forEach(l => {
       const lPct = l.maxTotal > 0 ? (l.totalPts / l.maxTotal * 100) : 0;

@@ -4,7 +4,7 @@ import { sendSMS, getResultNotificationMessage } from '@/lib/sms-client';
 import { kvGet } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { findLearner, getTenantId } from '@/lib/learner-lookup';
-import { DEFAULT_SUBJECTS, gInfo, maxPts } from '@/lib/cbe';
+import { getDefaultSubjects, gInfo, maxPts } from '@/lib/cbe';
 
 export async function POST(req) {
   try {
@@ -16,12 +16,13 @@ export async function POST(req) {
 
     if (!adm || !term) return NextResponse.json({ error: 'ADM and Term required' }, { status: 400 });
 
-    const [learners, marks, gradCfg, savedCreds, profile] = await Promise.all([
+    const [learners, marks, gradCfg, savedCreds, profile, subjCfg] = await Promise.all([
       kvGet('paav6_learners', [], tid),
       kvGet('paav6_marks', {}, tid),
       kvGet('paav8_grad', null, tid),
       kvGet('paav_at_creds', {}, 'platform-master'),
-      kvGet('paav_school_profile', null, tid)
+      kvGet('paav_school_profile', null, tid),
+      kvGet('paav8_subj', {}, tid)
     ]);
 
     const schoolName = profile?.name || '';
@@ -33,7 +34,7 @@ export async function POST(req) {
     }
 
     // Calculate performance
-    const subjects = DEFAULT_SUBJECTS[learner.grade] || [];
+    const subjects = (subjCfg[learner.grade] && subjCfg[learner.grade].length > 0) ? subjCfg[learner.grade] : getDefaultSubjects(learner.grade, profile?.curriculum || 'CBC');
     let totalPts = 0;
     let enteredCount = 0;
 
