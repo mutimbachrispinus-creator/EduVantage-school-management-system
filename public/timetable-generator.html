@@ -98,6 +98,7 @@ input:focus,select:focus{border-color:#8B1A1A;box-shadow:0 0 0 3px rgba(139,26,2
     <button class="btn btn-ghost" onclick="shuffleGenerate()">🔀 Shuffle & Regenerate</button>
     <button class="btn btn-green" onclick="printTT()">🖨️ Print</button>
     <button class="btn btn-gold" onclick="downloadCSV()">📥 Download CSV</button>
+    <button class="btn btn-red" onclick="saveToDB()" id="saveDbBtn" style="background: linear-gradient(135deg, #4F46E5, #3730A3)">💾 Save to Portal</button>
     <button class="btn btn-ghost" onclick="copyJSON()">📋 Copy JSON</button>
   </div>
   <div id="statusBox" style="margin-top:10px"></div>
@@ -435,6 +436,64 @@ function downloadCSV(){
 function copyJSON(){
   if(!generated){alert('Generate a timetable first');return;}
   navigator.clipboard.writeText(JSON.stringify(generated.grid,null,2)).then(()=>alert('✅ JSON copied to clipboard! Paste in the portal timetable editor.'));
+}
+
+async function saveToDB() {
+  if(!generated){alert('Generate a timetable first');return;}
+  const grade = document.getElementById('gradeName').value.trim();
+  if(!grade) { alert('Please enter a Grade / Class Name'); return; }
+  
+  if(!confirm(`Save this timetable directly to the portal for ${grade}? This will overwrite the existing timetable for this class.`)) return;
+  
+  const btn = document.getElementById('saveDbBtn');
+  btn.textContent = '⏳ Saving...';
+  btn.disabled = true;
+
+  try {
+    // 1. Fetch current timetable
+    const dbRes = await fetch('/api/db', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ type: 'get', key: 'paav_timetable' }] })
+    });
+    const db = await dbRes.json();
+    if(!db.results) throw new Error('Could not connect to portal DB.');
+    const fullTT = db.results[0]?.value || {};
+    
+    // 2. Format grid to match localTT structure (remove cont flags)
+    const newGradeTT = {};
+    const globalMax = Math.max(...(generated.cfg.perDay || [8]));
+    DAYS.forEach((d, i) => {
+      newGradeTT[d] = {};
+      const dayMax = generated.cfg.perDay[i] || generated.cfg.perDay[0];
+      for(let p=1; p<=dayMax; p++) {
+        const slot = generated.grid[d]?.[p];
+        if(slot && !slot.cont) {
+          newGradeTT[d][p] = { subject: slot.name || slot.subject, teacher: slot.teacher || '' };
+        }
+      }
+    });
+
+    // 3. Update specific grade
+    fullTT[grade] = newGradeTT;
+
+    // 4. Save back
+    const saveRes = await fetch('/api/db', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ type: 'set', key: 'paav_timetable', value: fullTT }] })
+    });
+    
+    const saveData = await saveRes.json();
+    if(saveData.results) {
+      alert(`✅ Timetable for ${grade} saved successfully to the portal!`);
+    } else {
+      throw new Error('Save failed');
+    }
+  } catch(e) {
+    alert('❌ Error saving to portal: ' + e.message + '\nAre you logged in as an Admin?');
+  } finally {
+    btn.textContent = '💾 Save to Portal';
+    btn.disabled = false;
+  }
 }
 
 // Init

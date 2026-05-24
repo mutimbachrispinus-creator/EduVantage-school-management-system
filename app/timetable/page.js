@@ -555,6 +555,29 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave, c
     alert('✅ Timetable saved!');
   }
 
+  async function pasteJSON() {
+    try {
+      const text = await navigator.clipboard.readText();
+      const grid = JSON.parse(text);
+      if(!grid.Monday) throw new Error("Invalid format");
+      
+      const newGradeTT = {};
+      DAYS.forEach(d => {
+        newGradeTT[d] = {};
+        for(let p=1; p<=8; p++) {
+          const slot = grid[d]?.[p];
+          if(slot && !slot.cont) {
+            newGradeTT[d][p] = { subject: slot.name || slot.subject, teacher: slot.teacher || '' };
+          }
+        }
+      });
+      setLocalTT(tt => ({ ...tt, [selGrade]: newGradeTT }));
+      alert('✅ Timetable pasted successfully! Review and click Save Timetable.');
+    } catch(e) {
+      alert('Failed to paste JSON. Make sure you clicked "Copy JSON" in the Generator tool.');
+    }
+  }
+
   return (
     <div>
       <div className="panel" style={{marginBottom:12}}>
@@ -568,7 +591,10 @@ function EditTimetablePanel({ timetable, staff, selGrade, setSelGrade, onSave, c
           <button className="btn btn-gold btn-sm" onClick={autoGenerate} disabled={saving}>
             {saving ? '⏳...' : '⚡ Auto-Generate'}
           </button>
-          <a href="/timetable-generator.html" target="_blank" className="btn btn-ghost btn-sm">🛠 Generator</a>
+          <a href="/timetable-generator.html" target="_blank" className="btn btn-ghost btn-sm">🛠 Generator Tool</a>
+          <button className="btn btn-ghost btn-sm" onClick={pasteJSON} disabled={saving}>
+            📋 Paste JSON from Generator
+          </button>
           <button className="btn btn-maroon btn-sm" onClick={save} disabled={saving}>
             {saving ? '⏳ Saving…' : '💾 Save Timetable'}
           </button>
