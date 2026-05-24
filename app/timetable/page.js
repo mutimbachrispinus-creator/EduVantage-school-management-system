@@ -45,6 +45,18 @@ const SUBJ_COLORS = {
 };
 function subjColor(s) { return SUBJ_COLORS[s] || SUBJ_COLORS.default; }
 
+function timeToMins(t) {
+  if (!t) return 0;
+  const [h, m] = t.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function minsToTime(m) {
+  const h = Math.floor(m / 60);
+  const min = Math.floor(m % 60);
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
 const gradeLevel = (grade, curr) => {
   if (!grade || !curr) return 'Unknown';
   const group = curr.gradeGroup(grade);
