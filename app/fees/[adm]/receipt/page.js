@@ -78,7 +78,7 @@ export default function LearnerReceiptPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, borderBottom: '2px solid var(--maroon)', paddingBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-            <img src={school.logo || "/eduvantage-logo.png"} alt="Logo" style={{ width: 55, height: 55, objectFit: 'contain', background: '#fff', borderRadius: '50%', padding: 2, border: '1px solid #eee' }} />
+            <img src={school.logo || "/eduvantage-logo.png"} alt="Logo" style={{ width: 55, height: 55, objectFit: 'contain', background: 'transparent', borderRadius: '50%', padding: 2, border: '1px solid #eee' }} />
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 900, fontSize: 18, color: 'var(--maroon)', letterSpacing: -0.5 }}>{school.name || 'SCHOOL PORTAL'}</div>
               <div style={{ fontSize: 10, color: '#444', fontWeight: 600 }}>{school.motto || 'Quality Education for All'}</div>

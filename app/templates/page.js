@@ -268,7 +268,7 @@ function PrintHeader({ title, grade, profile = {} }) {
   return (
     <div style={{ textAlign: 'center', borderBottom: `3.5px double ${themeColor}`, paddingBottom: 12, marginBottom: 16, position: 'relative' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, fontSize: 8, color: '#94A3B8', fontWeight: 800 }}>{curr} SYSTEM</div>
-      <img src={profile.logo || "/eduvantage-logo.png"} alt="School Logo" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'contain', margin: '0 auto 8px', border: `2.5px solid ${themeColor}`, background: '#fff', padding: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+      <img src={profile.logo || "/eduvantage-logo.png"} alt="School Logo" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'contain', margin: '0 auto 8px', border: `2.5px solid ${themeColor}`, background: 'transparent', padding: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
       <h1 style={{ fontFamily: 'Sora', fontSize: 20, fontWeight: 900, color: themeColor, margin: 0, letterSpacing: -0.5 }}>{profile.name?.toUpperCase() || 'EDU-VANTAGE SCHOOL'}</h1>
       <p style={{ fontSize: 11, margin: '2px 0', color: '#475569', fontWeight: 600 }}>{profile.address || '—'} | {profile.phone || '—'}</p>
       <p style={{ fontSize: 10, fontStyle: 'italic', color: '#64748B', fontWeight: 700, margin: '2px 0' }}>"{profile.motto || 'Excellence in Every Step'}"</p>
@@ -1115,7 +1115,7 @@ function IDCardTemplate({ learners, grade, profile }) {
         <div key={l.adm} style={{ width: 340, height: 215, border: '1.5px solid #8B1A1A', borderRadius: 10, overflow: 'hidden', position: 'relative', background: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
           <div style={{ background: '#8B1A1A', color: '#fff', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src={profile.logo || "/eduvantage-logo.png"} alt="L" style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', padding: 2 }} />
+            <img src={profile.logo || "/eduvantage-logo.png"} alt="L" style={{ width: 22, height: 22, borderRadius: '50%', background: 'transparent', padding: 2 }} />
             <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: 0.5 }}>{profile.name?.toUpperCase() || 'EDUVANTAGE SCHOOL MANAGEMENT SYSTEM'}</div>
           </div>
           

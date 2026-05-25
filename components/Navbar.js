@@ -100,7 +100,7 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
               height: '100%', 
               objectFit: 'cover', 
               borderRadius: '50%', 
-              background: '#fff',
+              background: 'transparent',
               border: '2px solid #FCD34D',
               boxShadow: '0 0 12px rgba(252, 211, 77, 0.6), 0 0 24px rgba(255, 255, 255, 0.3)',
               animation: 'pulseGlow 2.5s infinite alternate'
