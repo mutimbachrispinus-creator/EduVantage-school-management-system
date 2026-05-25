@@ -12,8 +12,8 @@ export const metadata = {
     google: process.env.GOOGLE_SITE_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'google4a94ac500e88f427',
   },
   icons: { 
-    icon: '/eduvantage-logo.png',
-    apple: '/eduvantage-logo.png',
+    icon: '/eduvantage-logo.png?v=7',
+    apple: '/apple-touch-icon.png?v=7',
   },
   manifest: '/manifest.json',
 };
