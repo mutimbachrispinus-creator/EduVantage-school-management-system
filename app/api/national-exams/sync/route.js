@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getCachedUser } from '@/lib/client-cache';
+import { getSession } from '@/lib/auth';
 import { kvGet, query } from '@/lib/db';
 import { getCurriculum } from '@/lib/curriculum';
 
 export const runtime = 'edge';
+const ALLOWED_ROLES = ['admin', 'admin_academics', 'super-admin'];
 
 /**
  * Maps standard learner data into curriculum-specific payloads for National Examining Bodies.
@@ -17,6 +18,7 @@ function formatForExamBody(curriculumId, learners) {
         examBody: 'KNEC',
         endpoint: 'https://registration.knec.ac.ke/api/v1/candidates',
         payload: learners.map((l, index) => ({
+          _adm: l.adm,
           index_number: l.index_number || `PREFIX${String(index + 1).padStart(3, '0')}`,
           nemis_upi: l.nemis_upi || l.adm,
           candidate_name: l.name.toUpperCase(),
@@ -34,6 +36,7 @@ function formatForExamBody(curriculumId, learners) {
         examBody: 'CAMBRIDGE_CIE',
         endpoint: 'https://direct.cie.org.uk/api/sync/candidates',
         payload: learners.map((l, index) => ({
+          _adm: l.adm,
           candidate_number: l.index_number || String(1000 + index),
           uci: l.nemis_upi || `XX999-${String(1000 + index).padStart(4, '0')}X`,
           names: l.name,
@@ -49,6 +52,7 @@ function formatForExamBody(curriculumId, learners) {
         examBody: 'TVET_CDACC',
         endpoint: 'https://cdacc.tvet.go.ke/api/v1/trainees',
         payload: learners.map((l) => ({
+          _adm: l.adm,
           registration_number: l.adm,
           trainee_name: l.name,
           gender: l.sex,
@@ -64,6 +68,7 @@ function formatForExamBody(curriculumId, learners) {
         examBody: 'MONTESSORI_AMI',
         endpoint: 'https://registry.montessori-ami.org/api/v1/students/sync',
         payload: learners.map((l, index) => ({
+          _adm: l.adm,
           student_id: `AMI-${l.adm}`,
           first_name: l.name.split(' ')[0] || '',
           last_name: l.name.split(' ').slice(1).join(' ') || '',
@@ -86,13 +91,22 @@ function formatForExamBody(curriculumId, learners) {
 
 export async function POST(req) {
   try {
-    const { action, grade } = await req.json();
-    
-    // Auth Check
-    const authHeader = req.headers.get('authorization') || '';
-    const tenantId = req.headers.get('x-tenant-id') || 'platform-master';
-    
-    // In production, validate JWT. Here we assume middleware passes tenantId.
+    const { action, grade, updates } = await req.json();
+
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ success: false, error: 'Unauthorised' }, { status: 401 });
+    }
+
+    if (!ALLOWED_ROLES.includes(session.role)) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
+    const headerTenant = req.headers.get('x-tenant-id');
+    const tenantId = session.role === 'super-admin' && headerTenant
+      ? headerTenant
+      : (session.tenantId || 'platform-master');
+
     if (!action || !grade) {
       return NextResponse.json({ success: false, error: 'Missing action or grade' }, { status: 400 });
     }
@@ -120,6 +134,16 @@ export async function POST(req) {
         candidatesFound: learners.length,
         fullPayload: examSyncData.payload
       });
+    }
+
+    if (action === 'save') {
+      if (!updates || updates.length === 0) return NextResponse.json({ success: true, message: 'No changes to save.' });
+      for (const u of updates) {
+        const dbIndex = u.index_number || u.candidate_number || u.registration_number || u.student_id;
+        const dbUpi = u.nemis_upi || u.uci;
+        await query('UPDATE learners SET index_number = ?, nemis_upi = ? WHERE adm = ? AND tenant_id = ?', [dbIndex || null, dbUpi || null, u._adm, tenantId]);
+      }
+      return NextResponse.json({ success: true, message: 'Identifiers saved successfully.' });
     }
 
     if (action === 'submit') {
