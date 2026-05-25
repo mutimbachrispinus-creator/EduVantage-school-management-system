@@ -213,6 +213,10 @@ export default function LandingPage() {
                 <strong>📈 Advanced Academic Analytics</strong>
                 <span>Drive student success with real-time, data-driven insights. Our performance monitoring dashboards provide index-optimized reporting across diverse curriculums.</span>
               </div>
+              <div className="tech-check-item" style={{ marginTop: 24 }}>
+                <strong>👆 Biometric Integration</strong>
+                <span>Enhance security and automate attendance tracking with seamless biometric and RFID integrations for both students and staff.</span>
+              </div>
             </div>
           </div>
 
