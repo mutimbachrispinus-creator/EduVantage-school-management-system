@@ -25,6 +25,7 @@ const TRUST_POINTS = [
   { label: 'Comprehensive Workflows', value: 'Manage admissions, fees, grading, attendance, timetabling, and reports in one place.' },
   { label: 'Seamless Communication', value: 'Built-in support for bulk SMS, real-time in-app messages, and push notifications to keep parents and staff informed.' },
   { label: 'Secure and Reliable', value: 'Fast, dependable, and accessible on any device with bank-level encryption.' },
+  { label: 'Actionable Analytics & Sync', value: 'Empower educators with real-time academic insights and seamless National Exams API synchronization.' },
 ];
 
 export default function LandingPage() {
@@ -203,6 +204,14 @@ export default function LandingPage() {
               <div className="tech-check-item" style={{ marginTop: 24 }}>
                 <strong>🔐 Anti-Fraud Document Verification</strong>
                 <span>Every report card and fee receipt generated prints with a secure, unique QR code. Parents and partners can scan these codes to instantly verify authenticity, eliminating forgery.</span>
+              </div>
+              <div className="tech-check-item" style={{ marginTop: 24 }}>
+                <strong>🌐 National Exams Integration</strong>
+                <span>Seamlessly synchronize student data and exam identifiers with external examination bodies like KNEC through our scalable and secure API integration.</span>
+              </div>
+              <div className="tech-check-item" style={{ marginTop: 24 }}>
+                <strong>📈 Advanced Academic Analytics</strong>
+                <span>Drive student success with real-time, data-driven insights. Our performance monitoring dashboards provide index-optimized reporting across diverse curriculums.</span>
               </div>
             </div>
           </div>
