@@ -217,6 +217,14 @@ export default function LandingPage() {
                 <strong>👆 Biometric Integration</strong>
                 <span>Enhance security and automate attendance tracking with seamless biometric and RFID integrations for both students and staff.</span>
               </div>
+              <div className="tech-check-item" style={{ marginTop: 24 }}>
+                <strong>💸 Automated M-Pesa Reconciliation</strong>
+                <span>Real-time fee payment tracking and automatic ledger updates via direct M-Pesa integration, completely eliminating manual financial data entry.</span>
+              </div>
+              <div className="tech-check-item" style={{ marginTop: 24 }}>
+                <strong>📋 Comprehensive Audit Trails</strong>
+                <span>Maintain complete transparency and accountability with detailed, tamper-proof logs of all administrative actions, financial transactions, and system events.</span>
+              </div>
             </div>
           </div>
 
