@@ -157,8 +157,15 @@ async function handleLogin({ username, password }, request) {
       const choices = await Promise.all(matches.map(async (m) => {
         const profile = await query('SELECT value FROM kv WHERE key = ? AND tenant_id = ?', ['paav_school_profile', m.tenant_id]);
         let name = m.tenant_id;
-        try { if(profile[0]) name = JSON.parse(profile[0].value).name; } catch(e){}
-        return { id: m.tenant_id, name };
+        let curriculum = 'CBC';
+        try { 
+          if(profile[0]) {
+            const p = JSON.parse(profile[0].value);
+            name = p.name || m.tenant_id;
+            if (p.curriculum) curriculum = p.curriculum;
+          } 
+        } catch(e){}
+        return { id: m.tenant_id, name, curriculum };
       }));
       return NextResponse.json({ error: 'Multiple accounts found.', choices }, { status: 403 });
     }

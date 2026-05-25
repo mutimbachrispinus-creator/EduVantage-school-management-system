@@ -23,14 +23,16 @@ export async function GET() {
       });
       
       let name = r.tenant_id;
+      let curriculum = 'CBC';
       try {
         if (profileRes.rows.length) {
           const profile = JSON.parse(profileRes.rows[0].value);
           name = profile.name || r.tenant_id;
+          if (profile.curriculum) curriculum = profile.curriculum;
         }
       } catch (e) {}
 
-      return { id: r.tenant_id, name: name };
+      return { id: r.tenant_id, name, curriculum };
     }));
 
     return NextResponse.json({ ok: true, schools });
