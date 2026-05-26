@@ -48,9 +48,8 @@ export default function StudentDiaryPage() {
     let targetLearners = db.paav6_learners || [];
     if (user.role === 'parent') {
       const parentLinks = user.links || [];
-      targetLearners = targetLearners.filter(l => 
-        parentLinks.some(link => String(link.adm) === String(l.adm))
-      );
+      const parentAdms = parentLinks.flatMap(l => (l.adm || '').split(',').map(s => s.trim()).filter(Boolean));
+      targetLearners = targetLearners.filter(l => parentAdms.includes(String(l.adm)));
     }
 
     // Apply Search Filter (Name, Adm, Grade)

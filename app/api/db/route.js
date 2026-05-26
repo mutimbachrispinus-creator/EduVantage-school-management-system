@@ -275,7 +275,7 @@ async function handleRequest(req, auth, impTenant = null) {
     }
 
     case 'upsertMessage': {
-      if (!hasRole(auth, ['admin', 'super-admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff'])) {
+      if (!hasRole(auth, ['admin', 'super-admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff', 'parent', 'learner'])) {
         return { type: req.type, error: 'Unauthorized' };
       }
       const { kvUpsertMessage } = await import('@/lib/db');

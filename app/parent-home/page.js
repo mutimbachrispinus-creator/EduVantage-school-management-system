@@ -149,66 +149,74 @@ export default function ParentHome() {
   }, [router, selAdm]);
 
   useEffect(() => { load(); }, [load]);
+  const compressImage = (file, maxWidth, maxHeight, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height *= maxWidth / width));
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width *= maxHeight / height));
+              height = maxHeight;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+      };
+    });
+  };
 
   async function uploadPhoto(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async ev => {
-      const dataUrl = ev.target.result;
-      try {
-        const staffRes = await fetch('/api/db', { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ requests:[{ type:'get', key:'paav6_staff' }] })
-        });
-        const sdb = await staffRes.json();
-        const staffList = sdb.results[0]?.value||[];
-        const idx = staffList.findIndex(s=>s.id===user.id);
-        if (idx>=0) { staffList[idx].avatar=dataUrl; }
-        else { staffList.push({ id:user.id, avatar:dataUrl }); }
-        await fetch('/api/db', { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ requests:[{ type:'set', key:'paav6_staff', value:staffList }] })
-        });
-        setUser(u=>({...u, avatar:dataUrl}));
-      } catch(err) { alert('Upload failed: '+err.message); }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedBase64 = await compressImage(file, 400, 400, 0.9);
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'edit_user', id: user.id, avatar: compressedBase64 })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setUser(u => ({ ...u, avatar: compressedBase64 }));
+        if (typeof window !== 'undefined') {
+           const raw = localStorage.getItem('paav_cache_user');
+           if (raw) {
+             const u = JSON.parse(raw);
+             u.v.avatar = compressedBase64;
+             localStorage.setItem('paav_cache_user', JSON.stringify(u));
+           }
+        }
+      } else {
+        alert('Upload failed: ' + data.error);
+      }
+    } catch(err) {
+      alert('Upload failed: ' + err.message);
+    }
   }
+
 
   /* ── M-Pesa STK Push ── */
   async function initiateMpesa(account, termLabel) {
-    const phone = user.phone || prompt('Enter M-Pesa Phone Number (07xxxxxxxx):');
-    if (!phone) return;
-    
-    const amount = prompt(`Enter amount to pay for ${termLabel}:`, '1000');
-    if (!amount || isNaN(amount) || amount <= 0) return;
-
-    const confirmFee = confirm(`An EduVantage Platform Convenience Fee of KES 50 will be added to this transaction.\n\nTotal to Pay: KES ${Number(amount) + 50}\n\nProceed?`);
-    if (!confirmFee) return;
-
-    try {
-      const res = await fetch('/api/mpesa/stk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: phone,
-          amount: Number(amount),
-          accountRef: child.adm,
-          term: termLabel.replace('Term ', 'T'),
-          description: `${child.name} Fees`,
-          paybillId: account.id,
-          includeFee: true
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('✅ M-Pesa prompt sent to your phone! Please enter your PIN to complete payment.');
-      } else {
-        alert('❌ Error: ' + (data.error || 'Failed to initiate M-Pesa.'));
-      }
-    } catch (err) {
-      alert('❌ Connection error: ' + err.message);
-    }
+    // Moved to setMpesaModal in UI
   }
+
 
   function printReceipt(p) {
     const win = window.open('', '_blank');
@@ -755,7 +763,11 @@ export default function ParentHome() {
                           <button 
                             className="btn btn-success btn-sm w-full" 
                             style={{ background: '#059669', border: 'none', height: 42, borderRadius: 10, fontWeight: 800, boxShadow: '0 4px 12px rgba(5,150,105,0.2)' }}
-                            onClick={() => initiateMpesa(acc, 'Term ' + term.replace('T', ''))}
+                            onClick={() => {
+                              const bal = Array.isArray(db.paav_student_fees) ? (db.paav_student_fees.find(f => f.adm === child.adm)?.balance || 0) : 0;
+                              setMpesaForm(f => ({ ...f, term: 'T' + term.replace('Term ', '').replace('T', ''), paybillId: acc.id }));
+                              setMpesaModal({ adm: child.adm, name: child.name, bal });
+                            }}
                           >
                             🚀 Pay Now with M-Pesa
                           </button>
