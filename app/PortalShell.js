@@ -167,6 +167,7 @@ export default function PortalShell({ children }) {
   const [pendingDuties, setPendingDuties] = useState(0);
   const [pendingReqs,   setPendingReqs]   = useState(0);
   const [showBanner,   setShowBanner]   = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [countdown,    setCountdown]    = useState(60);
   const [editAnn,      setEditAnn]      = useState(false);
   const [annDraft,     setAnnDraft]     = useState('');
@@ -431,6 +432,13 @@ export default function PortalShell({ children }) {
   /* PWA Update Detection — avoid stale UI */
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      // Periodically check for updates if tab is left open
+      const interval = setInterval(() => {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg) reg.update();
+        });
+      }, 60 * 60 * 1000); // Check every hour
+
       navigator.serviceWorker.getRegistration().then(reg => {
         if (!reg) return;
         reg.addEventListener('updatefound', () => {
@@ -438,13 +446,13 @@ export default function PortalShell({ children }) {
           if (!newWorker) return;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              if (confirm('A new version of the portal is available. Update now?')) {
-                window.location.reload();
-              }
+              setUpdateAvailable(true);
             }
           });
         });
       });
+
+      return () => clearInterval(interval);
     }
   }, []);
 
@@ -589,6 +597,48 @@ export default function PortalShell({ children }) {
           Log Out
         </button>
       </div>
+
+      {updateAvailable && (
+        <div className="update-banner no-print" style={{
+          position: 'fixed', bottom: 80, right: 20, zIndex: 9999,
+          background: '#fff', border: '2px solid var(--primary)', borderRadius: 16,
+          padding: '16px 20px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+          display: 'flex', alignItems: 'center', gap: 16, animation: 'slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, background: '#EFF6FF', borderRadius: 12, fontSize: 20 }}>
+            🚀
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>Update Available</div>
+            <div style={{ fontSize: 12, color: '#64748B' }}>A new version of EduVantage is ready.</div>
+          </div>
+          <button 
+            onClick={() => {
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                  if (reg && reg.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                  window.location.reload();
+                });
+              } else {
+                window.location.reload();
+              }
+            }}
+            style={{ 
+              background: 'var(--primary)', color: '#fff', border: 'none', 
+              padding: '10px 16px', borderRadius: 10, fontWeight: 700, 
+              fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+            }}>
+            Update Now
+          </button>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes slideUp { from { opacity: 0; transform: translateY(40px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            @media (max-width: 768px) { .update-banner { bottom: 90px !important; right: 10px !important; left: 10px !important; } }
+          `}} />
+        </div>
+      )}
 
       {/* ── Mobile Bottom Nav ── */}
       {showNav && user && (
