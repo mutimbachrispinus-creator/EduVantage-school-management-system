@@ -9,6 +9,7 @@ import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { getDefaultSubjects, fmtK } from '@/lib/cbe';
 import PrintHeader from '@/components/PrintHeader';
 import { useProfile } from '@/app/PortalShell';
+import ViewLearnerModal from '@/components/ViewLearnerModal';
 
 export default function ClassPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function ClassPage() {
   const [loading,  setLoading] = useState(true);
   const [streamF,  setStreamF] = useState('');
   const [mounted,  setMounted] = useState(false);
+  const [modal,    setModal]   = useState(null);
   useEffect(() => setMounted(true), []);
 
   const load = useCallback(async () => {
@@ -142,7 +144,7 @@ export default function ClassPage() {
                     </td>
                     <td style={{ whiteSpace:'nowrap' }}>
                       <button className="btn btn-ghost btn-sm"
-                        onClick={() => router.push(`/learners/${encodeURIComponent(l.adm)}`)}>👁</button>
+                        onClick={() => setModal({ type: 'view_learner', learner: l })}>👁</button>
                       <button className="btn btn-gold btn-sm" style={{ marginLeft:4 }}
                         onClick={() => router.push(`/grades/report-card/${encodeURIComponent(l.adm)}`)}>📋</button>
                     </td>
@@ -153,6 +155,7 @@ export default function ClassPage() {
           </table>
         </div>
       </div>
+      {modal?.type === 'view_learner' && <ViewLearnerModal learner={modal.learner} onClose={() => setModal(null)} />}
     </div>
   );
 }

@@ -25,6 +25,7 @@ export default function MessagesPage() {
   const [cmpSearch, setCmpSearch] = useState('');
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('inbox');
+  const [activeDeleteId, setActiveDeleteId] = useState(null);
   const [sendSmsCopy, setSendSmsCopy] = useState(false);
   const [prevUnreadCount, setPrevUnreadCount] = useState(0);
   
@@ -115,6 +116,39 @@ export default function MessagesPage() {
       alert('Failed to send reply');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteMessage = async (mId, e) => {
+    if (e) e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this message?')) return;
+    
+    const msg = allMessages.find(m => m.id === mId);
+    if (!msg) return;
+
+    const updatedMsg = {
+      ...msg,
+      deletedBy: [...(msg.deletedBy || []), user.username]
+    };
+
+    setActiveDeleteId(mId);
+    try {
+      await fetchWithRetry('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ type: 'upsertMessage', message: updatedMsg }] })
+      });
+      setAllMessages(prev => {
+        const newMsgs = prev.map(m => m.id === mId ? updatedMsg : m);
+        updateLocalDBCache('paav6_msgs', newMsgs);
+        return newMsgs;
+      });
+      if (activeThread?.id === mId) setActiveThread(null);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to delete message');
+    } finally {
+      setActiveDeleteId(null);
     }
   };
 
@@ -267,16 +301,18 @@ export default function MessagesPage() {
   const filteredMsgs = useMemo(() => {
     if (!user) return [];
     return allMessages.filter(m => {
-      if (activeTab === 'inbox') {
-        return (
-          m.to === user.username || 
-          m.to === user.role ||
-          m.to === 'ALL' || 
+      if (m.deletedBy?.includes(user.username)) return false;
+
+      const isMine = m.to === user.username || m.to === user.role || m.to === 'ALL' || 
           (m.to === 'ALL_PARENTS' && user.role === 'parent') || 
           (m.to === 'ALL_STAFF' && ['admin','teacher','staff'].includes(user.role)) ||
           (m.to === 'ALL_TEACHERS' && ['admin','teacher'].includes(user.role)) ||
-          (m.to === 'NON_TEACHING_STAFF' && ['admin','staff'].includes(user.role))
-        );
+          (m.to === 'NON_TEACHING_STAFF' && ['admin','staff'].includes(user.role));
+
+      if (activeTab === 'inbox') { // Unread
+        return isMine && !(m.read || []).includes(user.username) && m.from !== user.username;
+      } else if (activeTab === 'read') { // Read
+        return isMine && (m.read || []).includes(user.username);
       } else if (activeTab === 'sent') {
         return m.from === user.username;
       }
@@ -345,7 +381,10 @@ export default function MessagesPage() {
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
         <button className={`btn btn-sm ${activeTab === 'inbox' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setActiveTab('inbox'); setActiveThread(null); }}>
-          <Inbox size={14} /> Inbox
+          <Inbox size={14} /> Inbox (Unread)
+        </button>
+        <button className={`btn btn-sm ${activeTab === 'read' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setActiveTab('read'); setActiveThread(null); }}>
+          <CheckCircle size={14} /> Read Box
         </button>
         <button className={`btn btn-sm ${activeTab === 'sent' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setActiveTab('sent'); setActiveThread(null); }}>
           <Send size={14} /> Sent
@@ -382,10 +421,21 @@ export default function MessagesPage() {
                         <div style={{ fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600 }}>{m.date}</div>
                       </div>
                       <div style={{ fontWeight: 700, fontSize: '12.5px', color: '#334155', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.subject}</div>
-                      <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', paddingRight: '20px' }}>
                         {m.body}
                       </div>
                       {unr && <div style={{ position: 'absolute', right: 12, top: '50%', width: 8, height: 8, background: 'var(--blue)', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(37,99,235,0.1)' }} />}
+                      
+                      {/* Delete Button */}
+                      <button 
+                        onClick={(e) => deleteMessage(m.id, e)}
+                        disabled={activeDeleteId === m.id}
+                        className="btn-ghost"
+                        style={{ position: 'absolute', bottom: 12, right: 12, padding: '4px', border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.6 }}
+                        title="Delete SMS"
+                      >
+                        {activeDeleteId === m.id ? '🗑️...' : '🗑️'}
+                      </button>
                     </div>
                   );
                 }) : <div style={{ padding: '60px 20px', color: 'var(--muted)', fontSize: '13px', textAlign: 'center' }}>
@@ -400,25 +450,36 @@ export default function MessagesPage() {
                 <h3 style={{ fontSize: 14 }}>Thread Conversation</h3>
                 {activeThread && <span className="badge bg-blue" style={{ fontSize: 10 }}>{activeThread.priority?.toUpperCase()}</span>}
               </div>
-              <div className="panel-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', overflow: 'hidden' }}>
+              <div className="panel-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden', backgroundColor: '#efeae2', backgroundImage: 'radial-gradient(#d1c8bd 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                 {activeThread ? (
                   <>
-                    <div style={{ paddingBottom: '16px', borderBottom: '1.5px solid #f1f5f9', marginBottom: '20px' }}>
-                      <div style={{ fontWeight: 900, fontSize: '18px', color: 'var(--navy)', letterSpacing: '-0.3px' }}>{activeThread.subject}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', display: 'flex', gap: 12 }}>
-                        <span><strong>From:</strong> {activeThread.fromName}</span>
-                        <span><strong>To:</strong> {activeThread.toName || activeThread.to}</span>
-                        <span><strong>Date:</strong> {activeThread.date}</span>
+                    <div style={{ padding: '16px 24px', backgroundColor: '#f0f2f5', borderBottom: '1px solid #d1d7db', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '16px', color: '#111b21', letterSpacing: '-0.2px' }}>{activeThread.subject}</div>
+                        <div style={{ fontSize: '13px', color: '#667781', marginTop: '2px' }}>
+                          {activeThread.fromName} {activeThread.toName && activeThread.to !== 'ALL' && activeTab === 'sent' ? `to ${activeThread.toName}` : ''}
+                        </div>
                       </div>
+                      <button onClick={() => deleteMessage(activeThread.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '18px', opacity: 0.6 }} title="Delete Conversation">🗑️</button>
                     </div>
                     
-                    <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                        <div style={{ maxWidth: '85%' }}>
-                          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px 18px', borderRadius: '18px 18px 18px 4px', fontSize: '14px', color: '#1E293B', lineHeight: 1.6 }}>
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ alignSelf: 'center', backgroundColor: '#fff', color: '#54656f', fontSize: '12px', padding: '5px 12px', borderRadius: '8px', marginBottom: '8px', boxShadow: '0 1px 0.5px rgba(11,20,26,.13)' }}>
+                        {activeThread.date}
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: activeThread.from === user.username ? 'flex-end' : 'flex-start' }}>
+                        <div style={{ maxWidth: '75%', position: 'relative' }}>
+                          <div style={{ 
+                            background: activeThread.from === user.username ? '#d9fdd3' : '#ffffff', 
+                            padding: '6px 7px 8px 9px', borderRadius: '7.5px', fontSize: '14.2px', color: '#111b21', lineHeight: '19px',
+                            boxShadow: '0 1px 0.5px rgba(11,20,26,.13)', position: 'relative'
+                          }}>
                             {activeThread.body}
+                            <span style={{ fontSize: '11px', color: '#667781', float: 'right', margin: '8px 0 -5px 12px' }}>
+                              {activeThread.date}
+                            </span>
                           </div>
-                          <div style={{ fontSize: '10px', color: 'var(--light)', marginTop: '6px', fontWeight: 700, paddingLeft: 4 }}>{activeThread.fromName} · {activeThread.date}</div>
                         </div>
                       </div>
                       
@@ -426,17 +487,17 @@ export default function MessagesPage() {
                         const mine = r.from === user.username;
                         return (
                           <div key={i} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
-                            <div style={{ maxWidth: '85%' }}>
+                            <div style={{ maxWidth: '75%' }}>
                               <div style={{ 
-                                background: mine ? 'linear-gradient(135deg, #2563EB, #1D4ED8)' : '#F1F5F9', 
-                                color: mine ? '#fff' : '#334155', padding: '12px 16px', 
-                                borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', 
-                                fontSize: '14px', lineHeight: 1.6, boxShadow: mine ? '0 4px 12px rgba(37,99,235,0.2)' : 'none'
+                                background: mine ? '#d9fdd3' : '#ffffff', 
+                                padding: '6px 7px 8px 9px', borderRadius: '7.5px', fontSize: '14.2px', color: '#111b21', lineHeight: '19px',
+                                boxShadow: '0 1px 0.5px rgba(11,20,26,.13)', position: 'relative'
                               }}>
+                                {!mine && <div style={{ fontSize: '12.5px', fontWeight: 500, color: '#027eb5', marginBottom: '2px' }}>{r.fromName}</div>}
                                 {r.text}
-                              </div>
-                              <div style={{ fontSize: '10px', color: 'var(--light)', marginTop: '6px', fontWeight: 700, textAlign: mine ? 'right' : 'left', padding: '0 4px' }}>
-                                {r.fromName || r.from} · {r.date}
+                                <span style={{ fontSize: '11px', color: '#667781', float: 'right', margin: '8px 0 -5px 12px' }}>
+                                  {r.date}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -444,17 +505,20 @@ export default function MessagesPage() {
                       })}
                     </div>
 
-                    <form onSubmit={sendReply} style={{ marginTop: '20px', display: 'flex', gap: '10px', background: '#F8FAFC', padding: 8, borderRadius: 16, border: '1px solid #E2E8F0' }}>
+                    <form onSubmit={sendReply} style={{ backgroundColor: '#f0f2f5', padding: '10px 16px', display: 'flex', gap: '10px', alignItems: 'center' }}>
                       <input 
                         type="text" 
                         value={replyText} 
                         onChange={e => setReplyText(e.target.value)} 
-                        placeholder="Write a professional reply..." 
-                        style={{ flex: 1, padding: '12px 16px', borderRadius: 12, border: 'none', background: 'transparent', fontSize: '14px', outline: 'none' }} 
+                        placeholder="Type a message" 
+                        style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#ffffff', fontSize: '15px', outline: 'none', color: '#111b21' }} 
                         disabled={saving} 
                       />
-                      <button type="submit" className="btn btn-primary" disabled={saving || !replyText.trim()} style={{ borderRadius: 12, width: 80 }}>
-                        {saving ? '...' : 'Reply'}
+                      <button type="submit" disabled={saving || !replyText.trim()} style={{ 
+                        backgroundColor: replyText.trim() ? '#00a884' : '#e9edef', color: replyText.trim() ? '#fff' : '#aebac1',
+                        border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: replyText.trim() ? 'pointer' : 'default', transition: '0.2s'
+                      }}>
+                        <Send size={18} style={{ transform: 'translateX(-1px)' }} />
                       </button>
                     </form>
                   </>

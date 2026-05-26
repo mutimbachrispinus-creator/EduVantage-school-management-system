@@ -17,6 +17,7 @@ import { fmtK } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 import { useProfile } from '@/app/PortalShell';
 import { usePersistedState } from '@/components/TabState';
+import ViewLearnerModal from '@/components/ViewLearnerModal';
 
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 
@@ -225,7 +226,7 @@ export default function LearnersPage() {
                       )}
                       <td style={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>
                         <button className="btn btn-ghost btn-sm"
-                          onClick={() => router.push(`/learners/${encodeURIComponent(l.adm)}`)}>
+                          onClick={() => setModal({ type: 'view_learner', learner: l })}>
                           👁 View
                         </button>
                         {user?.role === 'admin' && (
@@ -268,6 +269,7 @@ export default function LearnersPage() {
       {modal === 'reassign' && <ReassignStreamModal streams={streams} adms={selAdms} learners={learners} onClose={() => { setModal(null); setSelAdms([]); load(); }} />}
       {modal === 'upgrade' && <UpgradeModal onClose={() => setModal(null)} school={school} currentCount={learners.length} />}
       {modal?.type === 'edit' && <EditLearnerModal curr={curr} isAdmin={user.role === 'admin'} streams={streams} onClose={() => { setModal(null); load(); }} learner={modal.learner} />}
+      {modal?.type === 'view_learner' && <ViewLearnerModal learner={modal.learner} onClose={() => setModal(null)} />}
     </>
   );
 }

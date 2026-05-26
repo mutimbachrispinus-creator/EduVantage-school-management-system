@@ -19,6 +19,7 @@ import { useSchoolProfile } from '@/lib/school-profile';
 import { useProfile } from '@/app/PortalShell';
 import PrintHeader from '@/components/PrintHeader';
 import { getLabels } from '@/lib/cbe';
+import ViewLearnerModal from '@/components/ViewLearnerModal';
 
 const ASSESS_LABELS = { op1:'Opener Exam', mt1:'Mid-Term Exam', et1:'End-Term Exam' };
 
@@ -41,6 +42,7 @@ export default function MeritListPage() {
   const [error,    setError]    = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [mounted,  setMounted]  = useState(false);
+  const [modal,    setModal]    = useState(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -370,9 +372,9 @@ export default function MeritListPage() {
                                    : l.rank === 3 ? '#C2410C' : 'var(--navy)' }}>
                               {MEDALS[l.rank] || `#${l.rank}`}
                             </span>
-                            <button className="btn btn-ghost btn-sm no-print" title="View Profile"
+                            <button className="btn btn-ghost btn-sm no-print" title="View Learner"
                               style={{ padding: '1px 4px', fontSize: 12 }}
-                              onClick={() => router.push(`/learners/${encodeURIComponent(l.adm)}`)}>
+                              onClick={() => setModal({ type: 'view_learner', learner: l })}>
                               👁
                             </button>
                           </div>
@@ -574,6 +576,7 @@ export default function MeritListPage() {
           </div>
         </>
       )}
+      {modal?.type === 'view_learner' && <ViewLearnerModal learner={modal.learner} onClose={() => setModal(null)} />}
       <style jsx global>{`
         @media print {
           .print-only { display: block !important; }
