@@ -88,6 +88,7 @@ function LoginContent() {
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     if (tab !== 'register') return;
@@ -657,10 +658,25 @@ function LoginContent() {
                 </div>
               </div>
 
+              {tab === 'register' && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20 }}>
+                  <input 
+                    type="checkbox" 
+                    id="termsCheckParent" 
+                    checked={agreedToTerms} 
+                    onChange={e => setAgreedToTerms(e.target.checked)} 
+                    style={{ marginTop: 3, width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  <label htmlFor="termsCheckParent" style={{ fontSize: 12, color: '#64748B', lineHeight: 1.5, cursor: 'pointer' }}>
+                    I agree to the <a href="/terms" target="_blank" style={{ color: 'var(--primary)', fontWeight: 700 }}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{ color: 'var(--primary)', fontWeight: 700 }}>Privacy Policy</a>.
+                  </label>
+                </div>
+              )}
+
               {err && <div className="alert alert-err show">{err}</div>}
               {okMsg && <div className="alert alert-ok show">{okMsg}</div>}
 
-              <button type="submit" className="btn btn-primary" disabled={busy || (tab === 'register' && !otpVerified)} style={{ marginTop: 10, background: (tab === 'register' && !otpVerified) ? '#94A3B8' : `linear-gradient(135deg, var(--primary), var(--primary))` }}>
+              <button type="submit" className="btn btn-primary" disabled={busy || (tab === 'register' && (!otpVerified || !agreedToTerms))} style={{ marginTop: 10, background: (tab === 'register' && (!otpVerified || !agreedToTerms)) ? '#94A3B8' : `linear-gradient(135deg, var(--primary), var(--primary))` }}>
                 {busy ? 'Processing...' : tab === 'login' ? '🔐 Sign In' : '🚀 Create Account'}
               </button>
             </form>

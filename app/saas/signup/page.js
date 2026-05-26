@@ -31,6 +31,7 @@ export default function SignupPage() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpMsg, setOtpMsg] = useState('');
   const [payLoading, setPayLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [processingPay] = useState(searchParams.get('processing') === 'true');
   const [orderId] = useState(searchParams.get('orderId'));
@@ -440,9 +441,22 @@ export default function SignupPage() {
                 </div>
               ):null}
 
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20, marginTop: 16, background: '#F8FAFC', padding: 16, borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                <input 
+                  type="checkbox" 
+                  id="termsCheckSaas" 
+                  checked={agreedToTerms} 
+                  onChange={e => setAgreedToTerms(e.target.checked)} 
+                  style={{ marginTop: 3, width: 18, height: 18, cursor: 'pointer' }}
+                />
+                <label htmlFor="termsCheckSaas" style={{ fontSize: 13, color: '#475569', lineHeight: 1.5, cursor: 'pointer' }}>
+                  I agree to EduVantage's <a href="/terms" target="_blank" style={{ color: '#4F46E5', fontWeight: 700 }}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{ color: '#4F46E5', fontWeight: 700 }}>Privacy Policy</a>.
+                </label>
+              </div>
+
               <div className="su-actions">
                 <button className="su-btn su-btn-ghost" onClick={back}>← Back</button>
-                <button className="su-btn su-btn-primary" disabled={loading||payLoading} onClick={submit}>
+                <button className="su-btn su-btn-primary" disabled={loading||payLoading||!agreedToTerms} onClick={submit}>
                   {loading?'Activating…':totalDue>0?'Confirm Registration':'🚀 Activate School — Free'}
                 </button>
               </div>
@@ -451,12 +465,6 @@ export default function SignupPage() {
 
           <div className="su-login-link">
             Already registered? <a onClick={()=>router.push('/login')}>Sign in here →</a>
-          </div>
-          <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: '#94A3B8', lineHeight: 1.7 }}>
-            By registering, you agree to EduVantage's{' '}
-            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#4F46E5', fontWeight: 700, textDecoration: 'underline' }}>Terms of Service</a>
-            {' '}and{' '}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#4F46E5', fontWeight: 700, textDecoration: 'underline' }}>Privacy Policy</a>.
           </div>
         </div>
       </div>
