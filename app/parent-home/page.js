@@ -38,6 +38,10 @@ export default function ParentHome() {
   const [addChildBusy, setAddChildBusy] = useState(false);
   const [addChildMsg, setAddChildMsg] = useState('');
   const [addChildErr, setAddChildErr] = useState('');
+  const [mpesaModal, setMpesaModal] = useState(null); // { adm, name, bal }
+  const [mpesaForm, setMpesaForm] = useState({ phone: '', amount: '', term: 'T1', paybillId: '' });
+  const [mpesaBusy, setMpesaBusy] = useState(false);
+  const [mpesaMsg, setMpesaMsg] = useState('');
 
   useEffect(() => {
     fetch('/api/saas/schools')
@@ -346,7 +350,7 @@ export default function ParentHome() {
           <div style={{fontSize:9,opacity:.7}}>{bal<=0?'✅ Cleared':'⚠ Outstanding'}</div>
           {bal > 0 && (
             <button
-              onClick={() => setTab('fees')}
+              onClick={() => setMpesaModal({ adm: child?.adm, name: child?.name, bal })}
               style={{
                 marginTop: 8, padding: '7px 16px', borderRadius: 20,
                 background: 'linear-gradient(135deg, #059669, #047857)',
@@ -1075,6 +1079,102 @@ export default function ParentHome() {
           .pay-btn-glint:hover::after { transform: rotate(45deg) translateX(100%); transition: transform 0.6s ease-in-out; }
         `}</style>
       )}
+      {/* ── M-Pesa STK Push Modal ── */}
+      {mpesaModal && (() => {
+        async function submitMpesa(e) {
+          e.preventDefault();
+          const phone = mpesaForm.phone || user.phone;
+          if (!phone) return setMpesaMsg('❌ Please enter your M-Pesa phone number.');
+          if (!mpesaForm.amount || Number(mpesaForm.amount) < 1) return setMpesaMsg('❌ Enter a valid amount.');
+          const accounts = payInfo.accounts || [];
+          const acct = accounts.find(a => String(a.id) === String(mpesaForm.paybillId)) || accounts[0] || {};
+          setMpesaBusy(true); setMpesaMsg('');
+          try {
+            const res = await fetch('/api/mpesa/stk', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone, amount: Number(mpesaForm.amount),
+                accountRef: `${mpesaModal.adm}:${mpesaForm.term}`,
+                term: mpesaForm.term,
+                description: `${mpesaModal.name} School Fees`,
+                paybillId: acct.id,
+                includeFee: true
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              setMpesaMsg('✅ STK Push sent! Check your phone and enter M-Pesa PIN to complete payment.');
+              setTimeout(() => { setMpesaModal(null); setMpesaMsg(''); }, 5000);
+            } else {
+              setMpesaMsg('❌ ' + (data.error || 'Failed to initiate M-Pesa.'));
+            }
+          } catch (err) { setMpesaMsg('❌ ' + err.message); }
+          finally { setMpesaBusy(false); }
+        }
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 420, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.22)' }}>
+              {/* Header */}
+              <div style={{ background: `linear-gradient(135deg, #059669, #047857)`, padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 900, fontSize: 16 }}>💳 Pay School Fees via M-Pesa</div>
+                  <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 2 }}>{mpesaModal.name} · Outstanding: KES {fmtK(mpesaModal.bal)}</div>
+                </div>
+                <button onClick={() => { setMpesaModal(null); setMpesaMsg(''); }} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 10, color: '#fff', width: 32, height: 32, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              </div>
+
+              {/* Body */}
+              <form onSubmit={submitMpesa} style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>M-Pesa Phone Number</label>
+                  <input
+                    type="tel" required placeholder="07XXXXXXXX"
+                    value={mpesaForm.phone || user.phone || ''}
+                    onChange={e => setMpesaForm(f => ({ ...f, phone: e.target.value }))}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #D1FAE5', fontSize: 14, fontWeight: 700, outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Term</label>
+                  <select value={mpesaForm.term} onChange={e => setMpesaForm(f => ({ ...f, term: e.target.value }))}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #D1FAE5', fontSize: 14, fontWeight: 700, outline: 'none' }}>
+                    <option value="T1">Term 1</option>
+                    <option value="T2">Term 2</option>
+                    <option value="T3">Term 3</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Amount (KES)</label>
+                  <input
+                    type="number" required min="1" placeholder={`e.g. ${fmtK(mpesaModal.bal)}`}
+                    value={mpesaForm.amount}
+                    onChange={e => setMpesaForm(f => ({ ...f, amount: e.target.value }))}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #D1FAE5', fontSize: 14, fontWeight: 700, outline: 'none', boxSizing: 'border-box' }}
+                  />
+                  <div style={{ fontSize: 10, color: '#6B7280', marginTop: 4 }}>A KES 50 platform convenience fee will be added.</div>
+                </div>
+                {(payInfo.accounts?.length > 1) && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Pay To</label>
+                    <select value={mpesaForm.paybillId} onChange={e => setMpesaForm(f => ({ ...f, paybillId: e.target.value }))}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #D1FAE5', fontSize: 14, fontWeight: 700, outline: 'none' }}>
+                      {payInfo.accounts.map(a => <option key={a.id} value={a.id}>{a.name} — {a.shortcode || a.accNo}</option>)}
+                    </select>
+                  </div>
+                )}
+                {mpesaMsg && (
+                  <div style={{ padding: '10px 14px', borderRadius: 10, background: mpesaMsg.startsWith('✅') ? '#ECFDF5' : '#FEF2F2', color: mpesaMsg.startsWith('✅') ? '#065F46' : '#991B1B', fontWeight: 700, fontSize: 13 }}>{mpesaMsg}</div>
+                )}
+                <button type="submit" disabled={mpesaBusy} style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: '#fff', border: 'none', borderRadius: 12, padding: '13px', fontSize: 15, fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 14px rgba(5,150,105,0.3)', marginTop: 4 }}>
+                  {mpesaBusy ? '⏳ Sending STK Push…' : '📱 Send M-Pesa Prompt'}
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
