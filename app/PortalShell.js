@@ -150,14 +150,15 @@ export default function PortalShell({ children }) {
         const { v: u } = JSON.parse(rawUser);
         const { v: msgs } = JSON.parse(rawMsgs);
         if (u && Array.isArray(msgs)) {
-          return msgs.filter(m => 
-            m && !m.read?.includes(u.username) && (
-              m.to === 'ALL' || 
-              m.to === u.username || 
-              (m.to === 'ALL_STAFF' && ['admin','teacher','staff'].includes(u.role)) ||
-              (m.to === 'ALL_PARENTS' && u.role === 'parent')
-            )
-          ).length;
+          return msgs.filter(m => {
+            if (!m || m.deletedBy?.includes(u.username) || m.read?.includes(u.username) || m.from === u.username) return false;
+            const isMine = m.to === u.username || m.to === u.role || m.to === 'ALL' || 
+                (m.to === 'ALL_PARENTS' && u.role === 'parent') || 
+                (m.to === 'ALL_STAFF' && ['admin','teacher','staff'].includes(u.role)) ||
+                (m.to === 'ALL_TEACHERS' && ['admin','teacher'].includes(u.role)) ||
+                (m.to === 'NON_TEACHING_STAFF' && ['admin','staff'].includes(u.role));
+            return isMine;
+          }).length;
         }
       }
     } catch {}
@@ -306,7 +307,15 @@ export default function PortalShell({ children }) {
         setUser(u);
         if (db?.paav_announcement?.text) setAnnouncement(db.paav_announcement.text);
         if (db?.paav6_msgs) {
-          const unr = db.paav6_msgs.filter(m => !m.read?.includes(u.username)).length;
+          const unr = db.paav6_msgs.filter(m => {
+            if (!m || m.deletedBy?.includes(u.username) || m.read?.includes(u.username) || m.from === u.username) return false;
+            const isMine = m.to === u.username || m.to === u.role || m.to === 'ALL' || 
+                (m.to === 'ALL_PARENTS' && u.role === 'parent') || 
+                (m.to === 'ALL_STAFF' && ['admin','teacher','staff'].includes(u.role)) ||
+                (m.to === 'ALL_TEACHERS' && ['admin','teacher'].includes(u.role)) ||
+                (m.to === 'NON_TEACHING_STAFF' && ['admin','staff'].includes(u.role));
+            return isMine;
+          }).length;
           setUnreadCount(unr);
         }
         

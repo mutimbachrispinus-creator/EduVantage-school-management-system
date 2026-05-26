@@ -70,21 +70,22 @@ export default function MessagesPage() {
     const readArray = Array.isArray(m.read) ? m.read : [];
     if (!readArray.includes(user.username)) {
       const updatedMsg = { ...m, read: [...readArray, user.username] };
-      setSaving(true);
-      try {
-        await fetchWithRetry('/api/db', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requests: [{ type: 'upsertMessage', message: updatedMsg }] })
-        });
-        setAllMessages(prev => {
-          const newMsgs = prev.map(msg => msg.id === m.id ? updatedMsg : msg);
-          updateLocalDBCache('paav6_msgs', newMsgs); // Update cache so Navbar badge clears
-          return newMsgs;
-        });
-        setActiveThread(updatedMsg);
-      } catch (e) { console.error(e); }
-      finally { setSaving(false); }
+      
+      // Optimistic update so the badge clears instantly
+      setAllMessages(prev => {
+        const newMsgs = prev.map(msg => msg.id === m.id ? updatedMsg : msg);
+        updateLocalDBCache('paav6_msgs', newMsgs); // Instantly trigger sync for Navbar
+        return newMsgs;
+      });
+      setActiveThread(updatedMsg);
+
+      // We do not need setSaving(true) just for marking as read.
+      // Send the background request fire-and-forget.
+      fetchWithRetry('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ type: 'upsertMessage', message: updatedMsg }] })
+      }).catch(e => console.error('Failed to sync read status:', e));
     }
   };
 
