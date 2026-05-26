@@ -129,14 +129,20 @@ export default function ClassesPage() {
                               
                               <div className="field" style={{ marginBottom: 0 }}>
                                 <label style={{ fontSize: 10, marginBottom: 2 }}>Class Teacher</label>
-                                <select 
-                                  value={tId || ''} 
-                                  onChange={e => updateTeacher(grade, s, e.target.value)}
-                                  style={{ fontSize: 11, padding: '4px 8px' }}
-                                >
-                                  <option value="">— Unassigned —</option>
-                                  {staff.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
-                                </select>
+                                {user?.role === 'admin' || user?.role === 'super-admin' ? (
+                                  <select 
+                                    value={tId || ''} 
+                                    onChange={e => updateTeacher(grade, s, e.target.value)}
+                                    style={{ fontSize: 11, padding: '4px 8px' }}
+                                  >
+                                    <option value="">— Unassigned —</option>
+                                    {staff.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
+                                  </select>
+                                ) : (
+                                  <div style={{ fontSize: 11, padding: '4px 8px', background: '#e2e8f0', borderRadius: 4, color: 'var(--navy)', fontWeight: 600 }}>
+                                    {staff.find(st => st.id === tId)?.name || '— Unassigned —'}
+                                  </div>
+                                )}
                               </div>
 
                               <button 

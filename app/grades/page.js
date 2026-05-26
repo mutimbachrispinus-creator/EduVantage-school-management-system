@@ -78,7 +78,7 @@ export default function GradesPage() {
           'paav7_streams',
           'paav8_grad',
           'paav8_subj',
-          'paav_teacher_assignments'
+          'paav_allocations'
         ])
       ]);
 
@@ -112,7 +112,7 @@ export default function GradesPage() {
       setStreams( db.paav7_streams  || []);
       setGradCfg( db.paav8_grad     || null);
       setSubjCfg( db.paav8_subj     || {});
-      setTeacherAssigns(db.paav_teacher_assignments || {});
+      setTeacherAssigns(db.paav_allocations || {});
     } catch (e) {
       console.error('Grades load error:', e);
     } finally {

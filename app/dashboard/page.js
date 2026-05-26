@@ -25,6 +25,8 @@ function DashboardContent() {
   const [loading, setLoading]   = useState(true);
   const [busy, setBusy]         = useState(false);
   const [themePrimary, setThemePrimary] = useState('#1E293B');
+  const [teacherAllocations, setTeacherAllocations] = useState({});
+  const [classTeacherOf, setClassTeacherOf] = useState([]);
 
   const { profile: school } = useProfile() || {};
   const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
@@ -48,7 +50,7 @@ function DashboardContent() {
 
       // 2. Fetch CORE data in parallel
       const [db, statRes] = await Promise.all([
-        getCachedDBMulti(['paav_theme', 'paav_school_profile', 'paav_announcement']),
+        getCachedDBMulti(['paav_theme', 'paav_school_profile', 'paav_announcement', 'paav_allocations', 'paav_class_teachers']),
         fetch('/api/stats/dashboard').then(r => r.json()).catch(() => ({ stats: {} }))
       ]);
 
@@ -59,6 +61,29 @@ function DashboardContent() {
 
       const s = statRes.stats || {};
       setStats(s);
+
+      // Process teacher allocations
+      if (!isSuper && u.role === 'teacher') {
+        const allocs = db.paav_allocations || {};
+        const myAllocs = [];
+        Object.entries(allocs).forEach(([key, staffId]) => {
+          if (staffId === u.id) {
+            const [grade, subject] = key.split('|');
+            myAllocs.push({ grade, subject });
+          }
+        });
+        myAllocs.sort((a, b) => a.grade.localeCompare(b.grade));
+        setTeacherAllocations(myAllocs);
+
+        const classTs = db.paav_class_teachers || {};
+        const myClassRoles = [];
+        Object.entries(classTs).forEach(([key, staffId]) => {
+          if (staffId === u.id) {
+            myClassRoles.push(key.replace('|', ' Stream '));
+          }
+        });
+        setClassTeacherOf(myClassRoles);
+      }
 
       // Warm up other common keys
       prefetchKeys(['paav_hero_img', 'paav6_fin_config']);
@@ -281,6 +306,49 @@ function DashboardContent() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+            
+            {user.role === 'teacher' && (
+              <div className="panel insight-panel" style={{ gridColumn: '1 / -1' }}>
+                <div className="panel-hdr"><h3>📋 My Allocations</h3></div>
+                <div className="panel-body">
+                  {classTeacherOf.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <h4 style={{ fontSize: 13, color: 'var(--navy)', marginBottom: 8 }}>🏫 Class Teacher</h4>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {classTeacherOf.map(role => (
+                          <span key={role} style={{ background: '#FEF3C7', color: '#D97706', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                            {role}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <h4 style={{ fontSize: 13, color: 'var(--navy)', marginBottom: 8 }}>📚 Subject Assignments</h4>
+                    {teacherAllocations.length > 0 ? (
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {teacherAllocations.map(({ grade, subject }) => (
+                          <span key={`${grade}|${subject}`} style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                            {grade} · {subject}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 12, color: 'var(--muted)', background: '#F8FAFC', padding: '12px', borderRadius: 8, textAlign: 'center' }}>
+                        You have not been assigned any subjects yet. Please contact the administrator.
+                      </div>
+                    )}
+                  </div>
+                  
+                  {teacherAllocations.length > 0 && (
+                    <div style={{ marginTop: 16, textAlign: 'right' }}>
+                      <Link href="/marks" className="btn btn-primary btn-sm">Enter Marks</Link>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
