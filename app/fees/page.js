@@ -648,9 +648,25 @@ function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
   const configuredCount = (grades || []).filter(isConfigured).length;
 
   return (
-    <ModalOverlay title="⚙ Fee Configuration" onClose={onClose}>
-      {/* Wrap in flex column so footer always sticks at bottom */}
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <ModalOverlay
+      title="⚙ Fee Configuration"
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Cancel</button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={save}
+            disabled={busy}
+            style={{ width: 'auto', opacity: busy ? 0.7 : 1, background: saved ? '#059669' : undefined, minWidth: 160, fontWeight: 800 }}
+          >
+            {saved ? '✅ Saved!' : busy ? '⏳ Saving…' : '💾 Save Fee Config'}
+          </button>
+        </>
+      }
+    >
+      {/* Flex column so content fills modal-body */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
 
         {/* Summary bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14,
@@ -718,31 +734,6 @@ function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
             );
           })}
         </div>
-
-        {/* ─── Sticky Save Footer — always visible ─── */}
-        <div style={{
-          flexShrink: 0,
-          display: 'flex', justifyContent: 'flex-end', gap: 8,
-          marginTop: 14, paddingTop: 12,
-          borderTop: '1.5px solid var(--border)',
-          background: 'var(--card, #fff)',
-          position: 'sticky', bottom: 0,
-          zIndex: 10
-        }}>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Cancel</button>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={save}
-            disabled={busy}
-            style={{
-              width: 'auto', opacity: busy ? 0.7 : 1,
-              background: saved ? '#059669' : undefined,
-              minWidth: 160, fontWeight: 800
-            }}
-          >
-            {saved ? '✅ Saved!' : busy ? '⏳ Saving…' : '💾 Save Fee Config'}
-          </button>
-        </div>
       </div>
     </ModalOverlay>
   );
@@ -780,17 +771,22 @@ function SCard({ icon, label, value, bg }) {
   );
 }
 
-function ModalOverlay({ title, onClose, children }) {
+function ModalOverlay({ title, onClose, children, footer }) {
   return (
     <div className="modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-lg" style={{ display: 'flex', flexDirection: 'column', maxHeight: '90dvh' }}>
-        <div className="modal-hdr" style={{ flexShrink: 0 }}>
+      <div className="modal modal-lg" style={{ overflow: 'visible', display: 'flex', flexDirection: 'column', maxHeight: '92dvh' }}>
+        <div className="modal-hdr">
           <h3>{title}</h3>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
-        <div className="modal-body" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div className="modal-body" style={{ overflowY: 'auto', flex: 1 }}>
           {children}
         </div>
+        {footer && (
+          <div className="modal-footer">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
