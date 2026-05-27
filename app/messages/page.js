@@ -701,7 +701,7 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .msg-item:hover { background: #F8FAFC !important; }
         .unread { background: #F0F9FF !important; }
         .badge.bg-blue { background: #DBEAFE; color: #1E40AF; }
@@ -719,7 +719,7 @@ function LoadingSkeleton() {
       <div className="ai-loader" style={{ width: 50, height: 50, border: '3px solid #f3f3f3', borderTop: '3px solid var(--blue)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }} />
       <h3 style={{ fontWeight: 800 }}>Initializing Comms Hub...</h3>
       <p style={{ fontSize: 13 }}>Preparing your secure message environment.</p>
-      <style jsx>{` @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } `}</style>
+      <style>{` @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } `}</style>
     </div>
   );
 }

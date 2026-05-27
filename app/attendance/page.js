@@ -473,7 +473,7 @@ export default function AttendancePage() {
         );
       })()}
 
-      <style jsx>{`
+      <style>{`
         .sc-inp { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
         
         @media print {

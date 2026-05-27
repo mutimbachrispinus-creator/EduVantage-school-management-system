@@ -522,7 +522,7 @@ export default function UnifiedPayrollPage() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .tab-btn { padding: 10px 24px; border: none; background: none; border-radius: 10px; font-weight: 700; color: #64748B; cursor: pointer; transition: 0.2s; font-size: 13px; }
         .tab-btn.on { background: #fff; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .hover-row:hover { background: #F8FAFC; }

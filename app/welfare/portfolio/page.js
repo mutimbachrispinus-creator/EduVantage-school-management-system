@@ -104,7 +104,7 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .portfolio-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

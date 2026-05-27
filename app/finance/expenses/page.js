@@ -203,7 +203,7 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .sg-responsive { display: flex; gap: 20px; }
         @media print {
           .no-print { display: none !important; }

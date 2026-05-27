@@ -109,7 +109,7 @@ export default function SettingsHubPage() {
         ))}
       </div>
       
-      <style jsx>{`
+      <style>{`
         .panel:hover {
           transform: translateY(-2px);
           border-color: var(--primary);

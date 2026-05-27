@@ -110,7 +110,7 @@ export default function BillingPage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .sg { gap: 20px; }
         @media (max-width: 800px) {
           .sg { grid-template-columns: 1fr; }

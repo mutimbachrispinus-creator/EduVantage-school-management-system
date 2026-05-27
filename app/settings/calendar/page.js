@@ -187,7 +187,7 @@ export default function CalendarSettingsPage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .panel { background: #fff; border-radius: 24px; box-shadow: 0 10px 40px rgba(15,23,42,0.05); border: 1px solid #E2E8F0; }
         .sc-inp { padding: 12px 16px; border-radius: 12px; border: 1.5px solid #E2E8F0; font-size: 14px; font-weight: 600; transition: all 0.2s; }
         .sc-inp:focus { border-color: #2563EB; outline: none; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }

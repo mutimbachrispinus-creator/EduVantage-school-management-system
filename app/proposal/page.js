@@ -7,7 +7,7 @@ export default function ProposalPage() {
       </div>
 
       <div className="proposal-page" style={{ background: 'white', width: '210mm', minHeight: '297mm', margin: '0 auto', padding: '25mm', boxSizing: 'border-box', boxShadow: '0 0 50px rgba(0,0,0,0.05)', position: 'relative' }}>
-        <style jsx>{`
+        <style>{`
           @media print {
             .no-print { display: none !important; }
             .proposal-page { box-shadow: none !important; margin: 0 !important; padding: 15mm !important; width: 100% !important; }

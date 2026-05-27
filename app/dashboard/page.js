@@ -356,7 +356,7 @@ function DashboardContent() {
         </>
       )}
 
-      <style jsx>{`
+      <style>{`
         .home-page {
           --home-shadow: 0 18px 45px rgba(5, 15, 28, 0.08);
         }

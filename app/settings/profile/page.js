@@ -523,7 +523,7 @@ function SchoolProfileContent() {
         )}
       </div>
       
-      <style jsx>{`
+      <style>{`
         .tab-btn {
           padding: 10px 20px;
           border: none;

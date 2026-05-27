@@ -196,7 +196,7 @@ export default function SuperAdminPage() {
         <div className="spinner" style={{ border: `4px solid ${M}22`, borderTopColor: M, borderRadius: '50%', width: 50, height: 50, animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
         <div style={{ color: NAVY, fontWeight: 700, fontSize: 18 }}>👑 Authenticating Super-Admin…</div>
       </div>
-      <style jsx>{` @keyframes spin { to { transform: rotate(360deg); } } `}</style>
+      <style>{` @keyframes spin { to { transform: rotate(360deg); } } `}</style>
     </div>
   );
 
@@ -987,7 +987,7 @@ export default function SuperAdminPage() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .sa-dashboard { padding: 0 !important; }
         .sa-hdr { padding: 30px 40px; display: block; height: auto; }
         .sa-hdr-inner { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 20px; }

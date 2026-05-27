@@ -204,7 +204,7 @@ export default function BulkPushPage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .quick-access-btn {
           display: flex;
           flex-direction: column;

@@ -188,7 +188,7 @@ export default function InvoicesPage() {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .invoice-page { 
           margin-bottom: 30px; 
           box-shadow: 0 10px 25px rgba(0,0,0,0.05);

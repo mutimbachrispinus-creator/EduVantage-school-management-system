@@ -352,7 +352,7 @@ export default function LibraryPage() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .bg-blue { background: #DBEAFE; color: #1D4ED8; }
       `}</style>
     </div>

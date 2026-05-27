@@ -660,7 +660,7 @@ function SCard({ icon, label, value, bg }) {
           <div className="sc-l">{label}</div>
         </div>
       </div>
-      <style jsx>{`
+      <style>{`
         @media print {
           @page { size: landscape; margin: 10mm; }
           body { -webkit-print-color-adjust: exact; background: white !important; }

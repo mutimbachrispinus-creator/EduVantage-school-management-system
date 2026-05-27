@@ -211,7 +211,7 @@ function Section({ title, children }) {
       <div style={{ color: '#475569', fontSize: 16, lineHeight: 1.8 }}>
         {children}
       </div>
-      <style jsx>{`
+      <style>{`
         section p { margin: 0 0 16px; }
         section ul { margin: 8px 0 16px; padding-left: 24px; }
         section li { margin-bottom: 10px; }

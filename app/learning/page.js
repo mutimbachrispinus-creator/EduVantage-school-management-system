@@ -558,7 +558,7 @@ export default function EducationHubPage() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .sg-responsive { display: flex; gap: 20px; }
         .resource-filters { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
         .cat-card { cursor: pointer; text-align: center; padding: 15px; transition: 0.2s; border: 1.5px solid #E2E8F0; min-width: 100px; }

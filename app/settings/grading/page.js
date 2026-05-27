@@ -270,7 +270,7 @@ export default function GradingSettingsPage() {
       )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .mode-card-item:hover {
           border-color: var(--primary) !important;
           transform: translateY(-4px) !important;

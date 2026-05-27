@@ -1057,7 +1057,7 @@ export default function ParentHome() {
         </div>
       )}
       {user && (
-        <style jsx>{`
+        <style>{`
           .page { animation: homeRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
           @keyframes homeRise {
             from { opacity: 0; transform: translateY(12px) scale(0.99); }
