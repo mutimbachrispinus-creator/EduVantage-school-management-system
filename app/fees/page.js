@@ -115,17 +115,22 @@ export default function FeesPage() {
 
   function getAnnualFee(grade) {
     const cfg = feeCfg[grade] || {};
-    const sum = (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0);
-    return sum || cfg.annual || 5000;
+    // Sum across all curriculum terms (e.g. t1+t2+t3 for CBC, s1+s2 for IB)
+    const termSum = TERMS.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0);
+    return termSum || cfg.annual || 5000;
+  }
+  // Helper: total paid by a learner across all terms
+  function getPaidTotal(l) {
+    return TERMS.reduce((s, t) => s + (l[t.id.toLowerCase()] || 0), 0);
   }
   function getBal(l, term = '') {
     if (term) {
       const cfg = feeCfg[l.grade] || {};
-      const exp = cfg[term.toLowerCase()] || 0;
+      const exp  = cfg[term.toLowerCase()] || 0;
       const paid = l[term.toLowerCase()] || 0;
       return exp - paid;
     }
-    return getAnnualFee(l.grade) + (l.arrears || 0) - (l.t1||0) - (l.t2||0) - (l.t3||0);
+    return getAnnualFee(l.grade) + (l.arrears || 0) - getPaidTotal(l);
   }
 
   const filtered = learners.filter(l => {
@@ -141,7 +146,7 @@ export default function FeesPage() {
   }, 0);
   const totalPaid = learners.reduce((s, l) => {
     if (termF) return s + (l[termF.toLowerCase()] || 0);
-    return s + (l.t1 || 0) + (l.t2 || 0) + (l.t3 || 0);
+    return s + getPaidTotal(l);
   }, 0);
   const totalBalance = totalExp + (termF ? 0 : totalAccumulated) - totalPaid;
   const cleared = learners.filter(l => getBal(l, termF) <= 0).length;
@@ -256,9 +261,9 @@ export default function FeesPage() {
                     </>
                   ) : (
                     <>
-                      <th>Term 1 (P)</th>
-                      <th>Term 2 (P)</th>
-                      <th>Term 3 (P)</th>
+                      {TERMS.map(t => (
+                        <th key={t.id}>{t.name} (P)</th>
+                      ))}
                     </>
                   )}
                   <th>Total Paid</th>
@@ -270,7 +275,7 @@ export default function FeesPage() {
                 {filtered.map(l => {
                   const cfg = feeCfg[l.grade] || {};
                   const fee = termF ? (cfg[termF.toLowerCase()] || 0) : getAnnualFee(l.grade);
-                  const tp  = termF ? (l[termF.toLowerCase()] || 0) : (l.t1||0)+(l.t2||0)+(l.t3||0);
+                  const tp  = termF ? (l[termF.toLowerCase()] || 0) : getPaidTotal(l);
                   const bal = termF ? (fee - tp) : getBal(l);
                   return (
                     <tr key={l.adm} className="hover-row">
@@ -284,9 +289,15 @@ export default function FeesPage() {
                         </>
                       ) : (
                         <>
-                          <td><div style={{ fontSize: 10, color: 'var(--muted)' }}>{fmtK(cfg.t1||0)}</div><div style={{ fontWeight: 700 }}>{fmtK(l.t1||0)}</div></td>
-                          <td><div style={{ fontSize: 10, color: 'var(--muted)' }}>{fmtK(cfg.t2||0)}</div><div style={{ fontWeight: 700 }}>{fmtK(l.t2||0)}</div></td>
-                          <td><div style={{ fontSize: 10, color: 'var(--muted)' }}>{fmtK(cfg.t3||0)}</div><div style={{ fontWeight: 700 }}>{fmtK(l.t3||0)}</div></td>
+                          {TERMS.map(t => {
+                            const tk = t.id.toLowerCase();
+                            return (
+                              <td key={t.id}>
+                                <div style={{ fontSize: 10, color: 'var(--muted)' }}>{fmtK(cfg[tk]||0)}</div>
+                                <div style={{ fontWeight: 700 }}>{fmtK(l[tk]||0)}</div>
+                              </td>
+                            );
+                          })}
                         </>
                       )}
                       <td style={{ fontWeight: 900 }}>{fmtK(tp)}</td>
@@ -354,7 +365,7 @@ export default function FeesPage() {
       {modal === 'pay' && selLearner && (
         <PayModal learner={selLearner} feeCfg={feeCfg} onClose={() => { setModal(null); setSelLearner(null); load(); }} recordedBy={user?.name} TERMS={TERMS} />
       )}
-      {modal === 'config' && <FeeConfigModal feeCfg={feeCfg} onClose={() => { setModal(null); load(); }} TERMS={TERMS} />}
+      {modal === 'config' && <FeeConfigModal feeCfg={feeCfg} grades={curr.ALL_GRADES || []} onClose={() => { setModal(null); load(); }} TERMS={TERMS} />}
       {modal === 'paybills' && <PaybillConfigModal accounts={paybillAccounts} onClose={() => { setModal(null); load(); }} />}
     </>
   );
@@ -580,69 +591,137 @@ function PayModal({ learner, feeCfg, onClose, recordedBy, TERMS }) {
 }
 
 /* ─── Fee Config Modal ───────────────────────────────────────────────────── */
-function FeeConfigModal({ feeCfg, onClose, TERMS }) {
-  const [cfg,  setCfg]  = useState({ ...feeCfg });
-  const [busy, setBusy] = useState(false);
+function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
+  const [cfg,     setCfg]    = useState(() => JSON.parse(JSON.stringify(feeCfg || {})));
+  const [busy,    setBusy]   = useState(false);
+  const [saved,   setSaved]  = useState(false);
+  const [search,  setSearch] = useState('');
+
+  // Compute annual total for a grade from all terms
+  function annualFor(g) {
+    return TERMS.reduce((s, t) => s + (cfg[g]?.[t.id.toLowerCase()] || 0), 0);
+  }
+
+  // Check if a grade has any fee set
+  function isConfigured(g) {
+    return TERMS.some(t => (cfg[g]?.[t.id.toLowerCase()] || 0) > 0);
+  }
+
+  function updateFee(grade, termId, val) {
+    const key = termId.toLowerCase();
+    setCfg(prev => ({
+      ...prev,
+      [grade]: {
+        ...(prev[grade] || {}),
+        [key]: Number(val) || 0,
+        // Keep the annual field in sync for backward compat
+        annual: TERMS.reduce((s, t) => {
+          const k = t.id.toLowerCase();
+          return s + (k === key ? (Number(val) || 0) : (prev[grade]?.[k] || 0));
+        }, 0)
+      }
+    }));
+  }
 
   async function save() {
     setBusy(true);
-    await fetch('/api/db', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requests: [{ type: 'set', key: 'paav6_feecfg', value: cfg }] }),
-    });
-    setBusy(false);
-    onClose();
+    try {
+      const res = await fetch('/api/db', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ type: 'set', key: 'paav6_feecfg', value: cfg }] }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setSaved(true);
+      setTimeout(() => { setSaved(false); onClose(); }, 1200);
+    } catch (e) {
+      alert('Could not save fee config: ' + e.message);
+    } finally {
+      setBusy(false);
+    }
   }
+
+  const displayGrades = (grades || []).filter(g =>
+    !search || g.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const configuredCount = (grades || []).filter(isConfigured).length;
 
   return (
     <ModalOverlay title="⚙ Fee Configuration" onClose={onClose}>
-      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-        Set the expected fees for each term per grade. The annual total is calculated automatically.
-      </p>
-      <div style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 5 }}>
-        {ALL_GRADES.map(g => (
-          <div key={g} style={{ padding: 12, border: '1.5px solid var(--border)', borderRadius: 10, marginBottom: 10, background: '#FAFBFF' }}>
-            <div style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 11, marginBottom: 10 }}>{g}</div>
-            <div className="field-row">
-              <div className="field">
-                <label style={{ fontSize: 10 }}>{TERMS[0]?.name || 'Term 1'}</label>
-                <input
-                  type="number"
-                  value={cfg[g]?.t1 || ''}
-                  onChange={e => setCfg(prev => ({ ...prev, [g]: { ...(prev[g]||{}), t1: Number(e.target.value) } }))}
-                  placeholder="e.g. 5000"
-                />
-              </div>
-              <div className="field">
-                <label style={{ fontSize: 10 }}>{TERMS[1]?.name || 'Term 2'}</label>
-                <input
-                  type="number"
-                  value={cfg[g]?.t2 || ''}
-                  onChange={e => setCfg(prev => ({ ...prev, [g]: { ...(prev[g]||{}), t2: Number(e.target.value) } }))}
-                  placeholder="e.g. 3000"
-                />
-              </div>
-              <div className="field">
-                <label style={{ fontSize: 10 }}>{TERMS[2]?.name || 'Term 3'}</label>
-                <input
-                  type="number"
-                  value={cfg[g]?.t3 || ''}
-                  onChange={e => setCfg(prev => ({ ...prev, [g]: { ...(prev[g]||{}), t3: Number(e.target.value) } }))}
-                  placeholder="e.g. 2000"
-                />
-              </div>
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, textAlign: 'right' }}>
-              Annual Total: <strong>{fmtK((cfg[g]?.t1||0) + (cfg[g]?.t2||0) + (cfg[g]?.t3||0) || cfg[g]?.annual || 0)}</strong>
-            </div>
-          </div>
-        ))}
+      {/* Summary bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14,
+        padding: '10px 14px', borderRadius: 10, background: configuredCount > 0 ? 'rgba(5,150,105,0.08)' : '#FFF7ED',
+        border: `1px solid ${configuredCount > 0 ? 'rgba(5,150,105,0.2)' : '#FDE68A'}` }}>
+        <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+          Set expected fees per {TERMS.length === 2 ? 'semester' : 'term'} for each grade level.
+          Annual total is calculated automatically.
+        </div>
+        <span className={`badge ${configuredCount > 0 ? 'bg-green' : 'bg-amber'}`} style={{ fontSize: 10, whiteSpace: 'nowrap' }}>
+          {configuredCount} / {(grades||[]).length} configured
+        </span>
       </div>
-      <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:12 }}>
-        <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary btn-sm" onClick={save} disabled={busy}
-          style={{ width:'auto', opacity: busy ? 0.7:1 }}>
-          {busy ? '⏳ Saving…' : '💾 Save Config'}
+
+      {/* Grade search */}
+      <input
+        placeholder="🔍 Filter grades…"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        style={{ width: '100%', marginBottom: 10, padding: '8px 12px', border: '1.5px solid var(--border)',
+          borderRadius: 8, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+      />
+
+      <div style={{ maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
+        {displayGrades.length === 0 && (
+          <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>No grades match your filter.</p>
+        )}
+        {displayGrades.map(g => {
+          const annual = annualFor(g);
+          const configured = isConfigured(g);
+          return (
+            <div key={g} style={{ padding: 12, border: `1.5px solid ${configured ? 'rgba(5,150,105,0.35)' : 'var(--border)'}`,
+              borderRadius: 10, marginBottom: 10,
+              background: configured ? 'rgba(5,150,105,0.04)' : '#FAFBFF',
+              transition: 'border-color 0.2s' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 12 }}>{g}</span>
+                {configured
+                  ? <span className="badge bg-green" style={{ fontSize: 9 }}>✓ Configured — {fmtK(annual)}/yr</span>
+                  : <span className="badge bg-amber" style={{ fontSize: 9 }}>Not set</span>}
+              </div>
+              <div className="field-row">
+                {TERMS.map((t, idx) => (
+                  <div className="field" key={t.id}>
+                    <label style={{ fontSize: 10 }}>{t.name}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={cfg[g]?.[t.id.toLowerCase()] || ''}
+                      onChange={e => updateFee(g, t.id, e.target.value)}
+                      placeholder={idx === 0 ? 'e.g. 15000' : idx === 1 ? 'e.g. 12000' : 'e.g. 10000'}
+                      style={{ borderColor: configured ? 'rgba(5,150,105,0.4)' : undefined }}
+                    />
+                  </div>
+                ))}
+              </div>
+              {configured && (
+                <div style={{ fontSize: 10, color: '#059669', marginTop: 4, textAlign: 'right', fontWeight: 700 }}>
+                  Annual Total: {fmtK(annual)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:14 }}>
+        <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Cancel</button>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={save}
+          disabled={busy}
+          style={{ width: 'auto', opacity: busy ? 0.7 : 1, background: saved ? '#059669' : undefined }}
+        >
+          {saved ? '✅ Saved!' : busy ? '⏳ Saving…' : '💾 Save Fee Config'}
         </button>
       </div>
     </ModalOverlay>
