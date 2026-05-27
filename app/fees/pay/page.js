@@ -20,11 +20,11 @@ import { getCurriculum } from '@/lib/curriculum';
 
 
 
-function getTermFee(feeCfg, grade, termKey) {
+function getTermFee(feeCfg, grade, termKey, termsArr) {
   const cfg = feeCfg[grade] || {};
-  // Support both {t1, t2, t3} and {term1, term2, term3} and fallback to annual/3
-  const map = { T1: cfg.t1 || cfg.term1, T2: cfg.t2 || cfg.term2, T3: cfg.t3 || cfg.term3 };
-  return Number(map[termKey] || (cfg.annual ? Math.round(cfg.annual / 3) : 0));
+  const val = cfg[termKey.toLowerCase()];
+  if (val !== undefined) return Number(val);
+  return cfg.annual ? Math.round(cfg.annual / (termsArr?.length || 3)) : 0;
 }
 
 export default function PayPage() {
@@ -93,11 +93,13 @@ export default function PayPage() {
       setPaybillAccounts(pbas);
 
       // Auto-select the first term with an outstanding balance
+      let autoSet = false;
       for (const t of TERMS) {
-        const due  = getTermFee(cfg, found.grade, t.key);
+        const due  = getTermFee(cfg, found.grade, t.key, TERMS);
         const paid = found[t.col] || 0;
-        if (due > 0 && paid < due) { setTerm(t.key); setAmount(String(due - paid)); break; }
+        if (due > 0 && paid < due) { setTerm(t.key); setAmount(String(due - paid)); autoSet = true; break; }
       }
+      if (!autoSet && TERMS.length > 0) setTerm(TERMS[0].key);
     } catch (e) {
       setErr('Network error. Please try again.');
     } finally {
@@ -135,7 +137,7 @@ export default function PayPage() {
 
   /* ── Computed per-term balances ── */
   const termData = learner ? TERMS.map(t => {
-    const expected = getTermFee(feeCfg, learner.grade, t.key);
+    const expected = getTermFee(feeCfg, learner.grade, t.key, TERMS);
     const paid     = learner[t.col] || 0;
     const balance  = Math.max(0, expected - paid);
     const cleared  = expected > 0 && balance <= 0;

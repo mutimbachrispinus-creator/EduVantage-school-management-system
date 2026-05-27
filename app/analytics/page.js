@@ -41,13 +41,13 @@ export default function AnalyticsPage() {
   // Sync grade & term defaults when profile/curriculum loads
   useEffect(() => {
     if (profile?.curriculum && grades.length) {
-      setGrade(g => g || grades[0]);
-      setPGrade(g => g || grades[0]);
+      setGrade(g => grades.includes(g) ? g : grades[0]);
+      setPGrade(g => grades.includes(g) ? g : grades[0]);
     }
     if (profile?.curriculum && currTerms.length) {
-      setTerm(t => t || currTerms[0].id);
-      setPTerm(t => t || currTerms[0].id);
-      setPAssess(a => a || (curr.ASSESSMENT_TYPES?.[curr.ASSESSMENT_TYPES.length - 1]?.key || 'et1'));
+      setTerm(t => currTerms.some(x => x.id === t) ? t : currTerms[0].id);
+      setPTerm(t => currTerms.some(x => x.id === t) ? t : currTerms[0].id);
+      setPAssess(a => currAssessments.some(x => x.key === a) ? a : (currAssessments[currAssessments.length - 1]?.key || 'et1'));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.curriculum]);
@@ -1189,7 +1189,7 @@ function PerformanceDetail({ learners, marks, grade, term, assess, subjCfg, grad
         if (!q) return true;
         return String(l.name || '').toLowerCase().includes(q) || String(l.adm || '').toLowerCase().includes(q);
       });
-  }, [learners, marks, grade, term, assess, gradCfg, curriculum, stream, query]);
+  }, [learners, marks, grade, term, assess, gradCfg, curriculum, stream, query, subjects]);
 
   const analysis = React.useMemo(() => {
     const classLearners = learners.filter(l => l.grade === grade && (!stream || l.stream === stream));

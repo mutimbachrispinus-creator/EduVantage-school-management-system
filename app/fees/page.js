@@ -12,7 +12,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ALL_GRADES, fmtK } from '@/lib/cbe';
+import { getAllGrades, fmtK } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 import { usePersistedState } from '@/components/TabState';
 import { useProfile } from '@/app/PortalShell';
@@ -26,6 +26,7 @@ export default function FeesPage() {
   const router = useRouter();
   const { playSuccessSound, profile } = useProfile();
   const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
+  const gradesList = getAllGrades(profile?.curriculum || 'CBC', profile);
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const [user,     setUser]     = useState(null);
   const [learners, setLearners] = useState([]);
@@ -239,7 +240,7 @@ export default function FeesPage() {
               </div>
               <select value={gradeF} onChange={e => setGradeF(e.target.value)} style={{ padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 10, fontSize: 12, outline: 'none' }}>
                 <option value="">All Grades</option>
-                {ALL_GRADES.map(g => <option key={g}>{g}</option>)}
+                {gradesList.map(g => <option key={g}>{g}</option>)}
               </select>
               <select value={termF} onChange={e => setTermF(e.target.value)} style={{ padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 10, fontSize: 12, outline: 'none' }}>
                 <option value="">Full Year View</option>
@@ -365,7 +366,7 @@ export default function FeesPage() {
       {modal === 'pay' && selLearner && (
         <PayModal learner={selLearner} feeCfg={feeCfg} onClose={() => { setModal(null); setSelLearner(null); load(); }} recordedBy={user?.name} TERMS={TERMS} />
       )}
-      {modal === 'config' && <FeeConfigModal feeCfg={feeCfg} grades={curr.ALL_GRADES || []} onClose={() => { setModal(null); load(); }} TERMS={TERMS} />}
+      {modal === 'config' && <FeeConfigModal feeCfg={feeCfg} grades={gradesList} onClose={() => { setModal(null); load(); }} TERMS={TERMS} />}
       {modal === 'paybills' && <PaybillConfigModal accounts={paybillAccounts} onClose={() => { setModal(null); load(); }} />}
     </>
   );
@@ -469,7 +470,7 @@ function PaybillConfigModal({ accounts, onClose }) {
 
 function PayModal({ learner, feeCfg, onClose, recordedBy, TERMS }) {
   const getAnnualFee = g => feeCfg[g]?.annual || 5000;
-  const [term,   setTerm]   = useState('T1');
+  const [term,   setTerm]   = useState(TERMS[0]?.id || 'T1');
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('Cash');
   const [ref,    setRef]    = useState('');
@@ -523,7 +524,7 @@ function PayModal({ learner, feeCfg, onClose, recordedBy, TERMS }) {
   }
 
   const annualFee = getAnnualFee(learner.grade);
-  const totalPaid = (learner.t1||0)+(learner.t2||0)+(learner.t3||0);
+  const totalPaid = TERMS.reduce((s, t) => s + (learner[t.id.toLowerCase()] || 0), 0);
   const balance   = annualFee + (learner.arrears || 0) - totalPaid;
 
   return (
@@ -543,9 +544,9 @@ function PayModal({ learner, feeCfg, onClose, recordedBy, TERMS }) {
           <span style={{ color:'var(--muted)' }}>Accumulated Fee</span>
           <strong>{fmtK(learner.arrears || 0)}</strong>
         </div>
-        {(feeCfg[learner.grade]?.t1 || feeCfg[learner.grade]?.t2 || feeCfg[learner.grade]?.t3) && (
+        {(TERMS.some(t => feeCfg[learner.grade]?.[t.id.toLowerCase()])) && (
           <div style={{ fontSize: 11, color: 'var(--muted)', borderTop: '1px dashed var(--border)', paddingTop: 4, marginTop: 4 }}>
-            T1: {fmtK(feeCfg[learner.grade]?.t1 || 0)} · T2: {fmtK(feeCfg[learner.grade]?.t2 || 0)} · T3: {fmtK(feeCfg[learner.grade]?.t3 || 0)}
+            {TERMS.map(t => `${t.id}: ${fmtK(feeCfg[learner.grade]?.[t.id.toLowerCase()] || 0)}`).join(' · ')}
           </div>
         )}
         <div style={{ display:'flex', justifyContent:'space-between', marginTop: 4 }}>

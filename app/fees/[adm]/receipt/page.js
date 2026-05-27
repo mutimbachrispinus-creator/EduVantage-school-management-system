@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { useSchoolProfile } from '@/lib/school-profile';
 import { useProfile } from '@/app/PortalShell';
+import { getCurriculum } from '@/lib/curriculum';
 
 export default function LearnerReceiptPage() {
   const router = useRouter();
@@ -17,6 +18,8 @@ export default function LearnerReceiptPage() {
   const { profile: ctxProfile } = useProfile() || {};
   const localProfile = useSchoolProfile();
   const school = ctxProfile && Object.keys(ctxProfile).length > 0 ? ctxProfile : localProfile;
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
+  const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,10 +61,7 @@ export default function LearnerReceiptPage() {
   if (loading || !user || !learner) return <div style={{ padding: 40 }}>Loading statement...</div>;
 
   const cfg = feecfg[learner.grade] || {};
-  const t1Fee = cfg.t1 || 0;
-  const t2Fee = cfg.t2 || 0;
-  const t3Fee = cfg.t3 || 0;
-  const annualFee = t1Fee + t2Fee + t3Fee;
+  const annualFee = TERMS.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 0;
   const paid = paylog.reduce((acc, x) => acc + (x.status === 'pending' ? 0 : (x.amount || 0)), 0);
   const arrears = learner.arrears || 0;
   const bal = annualFee + arrears - paid;
@@ -123,19 +123,13 @@ export default function LearnerReceiptPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, padding: '5px 0' }}>
-            <div>
-              <div style={{ fontSize: 7, color: '#666' }}>T1 EXP</div>
-              <div style={{ fontSize: 10, fontWeight: 700 }}>{t1Fee.toLocaleString()}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 7, color: '#666' }}>T2 EXP</div>
-              <div style={{ fontSize: 10, fontWeight: 700 }}>{t2Fee.toLocaleString()}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 7, color: '#666' }}>T3 EXP</div>
-              <div style={{ fontSize: 10, fontWeight: 700 }}>{t3Fee.toLocaleString()}</div>
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${TERMS.length + 1}, 1fr)`, gap: 8, padding: '5px 0' }}>
+            {TERMS.map(t => (
+              <div key={t.id}>
+                <div style={{ fontSize: 7, color: '#666', textTransform: 'uppercase' }}>{t.id} EXP</div>
+                <div style={{ fontSize: 10, fontWeight: 700 }}>{(cfg[t.id.toLowerCase()] || 0).toLocaleString()}</div>
+              </div>
+            ))}
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 8, color: '#666', fontWeight: 800 }}>BALANCE</div>
               <div style={{ fontSize: 14, fontWeight: 900, color: bal > 0 ? '#DC2626' : '#059669' }}>{bal.toLocaleString()}</div>
@@ -143,25 +137,17 @@ export default function LearnerReceiptPage() {
           </div>
         </div>
           
-        {(t1Fee > 0 || t2Fee > 0 || t3Fee > 0) && (
+        {(TERMS.some(t => (cfg[t.id.toLowerCase()] || 0) > 0)) && (
           <div style={{ marginTop: 15 }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: '#4A5568', marginBottom: 5, textTransform: 'uppercase' }}>Termly Fee Breakdown</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-              <div style={{ background: '#fff', padding: '6px 10px', borderRadius: 6, border: '1px solid #EDF2F7' }}>
-                <div style={{ fontSize: 8, color: '#718096' }}>Term 1</div>
-                <div style={{ fontSize: 10, fontWeight: 700 }}>Exp: {fmtK(t1Fee)}</div>
-                <div style={{ fontSize: 9, color: '#059669' }}>Paid: {fmtK(learner.t1||0)}</div>
-              </div>
-              <div style={{ background: '#fff', padding: '6px 10px', borderRadius: 6, border: '1px solid #EDF2F7' }}>
-                <div style={{ fontSize: 8, color: '#718096' }}>Term 2</div>
-                <div style={{ fontSize: 10, fontWeight: 700 }}>Exp: {fmtK(t2Fee)}</div>
-                <div style={{ fontSize: 9, color: '#059669' }}>Paid: {fmtK(learner.t2||0)}</div>
-              </div>
-              <div style={{ background: '#fff', padding: '6px 10px', borderRadius: 6, border: '1px solid #EDF2F7' }}>
-                <div style={{ fontSize: 8, color: '#718096' }}>Term 3</div>
-                <div style={{ fontSize: 10, fontWeight: 700 }}>Exp: {fmtK(t3Fee)}</div>
-                <div style={{ fontSize: 9, color: '#059669' }}>Paid: {fmtK(learner.t3||0)}</div>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${TERMS.length}, 1fr)`, gap: 8 }}>
+              {TERMS.map(t => (
+                <div key={t.id} style={{ background: '#fff', padding: '6px 10px', borderRadius: 6, border: '1px solid #EDF2F7' }}>
+                  <div style={{ fontSize: 8, color: '#718096' }}>{t.name}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700 }}>Exp: {fmtK(cfg[t.id.toLowerCase()] || 0)}</div>
+                  <div style={{ fontSize: 9, color: '#059669' }}>Paid: {fmtK(learner[t.id.toLowerCase()] || 0)}</div>
+                </div>
+              ))}
             </div>
           </div>
         )}
