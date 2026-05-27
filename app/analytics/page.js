@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
       setStaff(db.paav6_staff || []);
       setAllocations(db.paav_allocations || {});
     }
-    if (activeTab === 'performance' || activeTab === 'staff' || activeTab === 'outreach' || activeTab === 'pathways') loadPerformance();
+    if (['performance', 'staff', 'outreach', 'pathways', 'predictor'].includes(activeTab)) loadPerformance();
   }, [activeTab, profile]);
 
 
@@ -134,6 +134,7 @@ export default function AnalyticsPage() {
           <button className={`btn btn-sm ${activeTab === 'staff' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('staff')}>👨‍🏫 Staff Efficiency</button>
           <button className={`btn btn-sm ${activeTab === 'outreach' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('outreach')}>📲 Parent Outreach</button>
           <button className={`btn btn-sm ${activeTab === 'pathways' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('pathways')}>🛣️ Learner Pathways</button>
+          <button className={`btn btn-sm ${activeTab === 'predictor' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('predictor')}>🔮 Exam Predictor</button>
         </div>
       </div>
 
@@ -188,6 +189,18 @@ export default function AnalyticsPage() {
           marks={marks} 
           curriculum={profile?.curriculum || 'CBC'} 
           subjects={getDefaultSubjects(grade, profile?.curriculum || 'CBC')} 
+        />
+      ) : null}
+
+      {activeTab === 'predictor' ? (
+        <PredictorTab 
+          learners={learners}
+          marks={marks}
+          grade={grade}
+          setGrade={setGrade}
+          grades={grades}
+          curriculum={profile?.curriculum || 'CBC'}
+          subjCfg={subjCfg}
         />
       ) : null}
 
@@ -693,6 +706,178 @@ function emptyStats({ labels, curriculum, studentCount }) {
     labels,
     curriculum
   };
+}
+
+function examBand(score) {
+  if (score >= 80) return { label: 'A / Excellent', color: 'var(--green)', bg: 'var(--green-bg)' };
+  if (score >= 65) return { label: 'B / Strong', color: 'var(--blue)', bg: 'var(--blue-bg)' };
+  if (score >= 50) return { label: 'C / Secure', color: 'var(--amber)', bg: 'var(--amber-bg)' };
+  if (score >= 35) return { label: 'D / Watch', color: '#B45309', bg: '#FFF7ED' };
+  return { label: 'E / Critical', color: 'var(--red)', bg: 'var(--red-bg)' };
+}
+
+function PredictorTab({ learners, marks, grade, setGrade, grades, curriculum, subjCfg }) {
+  const [targetExam, setTargetExam] = useState('National Exam');
+
+  useEffect(() => {
+    const cur = String(curriculum || 'CBC').toUpperCase();
+    if (cur.includes('CBC')) setTargetExam('KPSEA');
+    else if (cur.includes('BRITISH') || cur.includes('CAMBRIDGE') || cur.includes('IGCSE')) setTargetExam('IGCSE');
+    else if (cur.includes('IB')) setTargetExam('IB Diploma');
+    else if (cur.includes('TVET') || cur.includes('CDACC')) setTargetExam('CDACC Finals');
+    else setTargetExam('KCSE');
+  }, [curriculum]);
+
+  const forecastData = React.useMemo(() => {
+    if (!grade) return null;
+    const learnersToForecast = learners.filter(l => l.grade === grade);
+    
+    // Resolve subjects setup by relevant school (per class/grade)
+    const tSubjCfg = subjCfg[grade] || [];
+    const subs = (tSubjCfg && tSubjCfg.length > 0)
+      ? tSubjCfg
+      : getDefaultSubjects(grade, curriculum || 'CBC');
+
+    const ASSESS_LIST = [
+      { id: 'op1', label: 'Opener' },
+      { id: 'mt1', label: 'Mid-Term' },
+      { id: 'et1', label: 'End-Term' }
+    ];
+    const NATIONAL_SERIES = ['T1', 'T2', 'T3'].flatMap(t =>
+      ASSESS_LIST.map(a => ({ term: t, assess: a.id, label: `${t} ${a.label}` }))
+    );
+
+    const rows = learnersToForecast.map(l => {
+      const series = NATIONAL_SERIES.map(point => {
+        const scores = subs
+          .map(subject => marks[`${point.term}:${grade}|${subject}|${point.assess}`]?.[l.adm])
+          .filter(v => v !== undefined && v !== null && v !== '');
+        if (!scores.length) return null;
+        const avg = scores.reduce((sum, value) => sum + Number(value), 0) / scores.length;
+        return { ...point, avg: Number(avg.toFixed(1)), entries: scores.length };
+      }).filter(Boolean);
+
+      const current = series.length ? series[series.length - 1].avg : 0;
+      const baseline = series.length ? series[0].avg : 0;
+      
+      // Calculate realistic momentum: damped momentum capped at +/- 10% change from current
+      const momentum = series.length > 1 ? (current - baseline) / (series.length - 1) : 0;
+      const dampedMomentum = momentum * 0.25; // damp to 25% of raw growth
+      
+      // Expected remaining periods out of 9 total in a school year
+      const remainingPeriods = Math.max(1, 9 - series.length);
+      let forecast = current + (dampedMomentum * remainingPeriods);
+      
+      // Cap the change to a realistic +/- 10 percentage points from current
+      if (forecast > current + 10) forecast = current + 10;
+      if (forecast < current - 10) forecast = current - 10;
+      
+      // Clamp between 10% and 99.5%
+      forecast = Math.max(10, Math.min(99.5, forecast));
+
+      const band = examBand(forecast);
+      const completion = subs.length ? Math.round(((series[series.length - 1]?.entries || 0) / subs.length) * 100) : 0;
+
+      return {
+        ...l,
+        series,
+        current: Number(current.toFixed(1)),
+        momentum: Number(momentum.toFixed(1)),
+        forecast: Number(forecast.toFixed(1)),
+        band,
+        confidence: Math.min(95, 35 + series.length * 7 + (completion >= 80 ? 10 : 0))
+      };
+    }).filter(r => r.series.length > 0).sort((a, b) => b.forecast - a.forecast);
+
+    const avgForecast = rows.length ? rows.reduce((sum, r) => sum + r.forecast, 0) / rows.length : 0;
+    return { rows, avgForecast: Number(avgForecast.toFixed(1)), candidates: learnersToForecast.length };
+  }, [learners, marks, grade, curriculum, subjCfg]);
+
+  return (
+    <div className="space-y-6">
+      <div className="page-hdr" style={{ border: 'none', marginTop: 20 }}>
+        <div>
+          <h3 style={{ fontSize: 20, fontWeight: 800 }}>🔮 Exam Performance Predictor</h3>
+          <p style={{ color: 'var(--muted)', fontSize: 13 }}>Realistic curriculum-aware projections based on termly trajectories</p>
+        </div>
+        <div className="page-hdr-acts">
+          <select value={grade} onChange={(e) => setGrade(e.target.value)} style={{ borderRadius: 8 }}>
+            {grades.map(g => <option key={g} value={g}>{g}</option>)}
+          </select>
+          <span className="badge" style={{ fontSize: 13, padding: '8px 14px', fontWeight: 800, background: '#EFF6FF', color: '#2563EB' }}>
+            🎯 Target: {targetExam}
+          </span>
+        </div>
+      </div>
+
+      <div className="sg sg2">
+        <div className="stat-card" style={{ borderLeft: '4px solid #2563eb' }}>
+          <div className="sc-inner">
+            <div style={{ flex: 1 }}>
+              <div className="sc-n" style={{ color: '#2563eb' }}>{forecastData?.avgForecast || 0}%</div>
+              <div className="sc-l">Projected Mean ({targetExam})</div>
+            </div>
+            <div style={{ fontSize: 24 }}>📈</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: '4px solid #d97706' }}>
+          <div className="sc-inner">
+            <div style={{ flex: 1 }}>
+              <div className="sc-n" style={{ color: '#d97706' }}>{forecastData?.rows?.length || 0}</div>
+              <div className="sc-l">Analyzed Learners</div>
+            </div>
+            <div style={{ fontSize: 24 }}>🎯</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-hdr">
+          <h3>{targetExam} Readiness Forecast</h3>
+        </div>
+        <div className="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Learner</th>
+                <th>Grade</th>
+                <th style={{ textAlign: 'center' }}>Current Avg</th>
+                <th style={{ textAlign: 'center' }}>Momentum</th>
+                <th style={{ textAlign: 'center' }}>Predicted ({targetExam})</th>
+                <th>Band</th>
+                <th style={{ textAlign: 'center' }}>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {forecastData?.rows.map(row => (
+                <tr key={row.adm}>
+                  <td>
+                    <div style={{ fontWeight: 700 }}>{row.name}</div>
+                    <div style={{ fontSize: 10, color: '#999' }}>ADM: {row.adm}</div>
+                  </td>
+                  <td>{row.grade}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 700 }}>{row.current}%</td>
+                  <td style={{ textAlign: 'center', color: row.momentum >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 800 }}>
+                    {row.momentum > 0 ? '+' : ''}{row.momentum}
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 900, fontSize: 15 }}>{row.forecast}%</td>
+                  <td><span className="badge" style={{ background: row.band.bg, color: row.band.color }}>{row.band.label}</span></td>
+                  <td style={{ textAlign: 'center' }}>{row.confidence}%</td>
+                </tr>
+              ))}
+              {(!forecastData || forecastData.rows.length === 0) && (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                    No trend data available to generate a forecast yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, grades }) {

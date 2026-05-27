@@ -21,6 +21,7 @@ export default function ParentHome() {
     return null;
   });
   const [children, setChildren] = useState([]); // multiple children
+  const [subjCfg, setSubjCfg] = useState({});
   const [selAdm, setSelAdm] = useState(null);   // selected child adm
   const [messages, setMessages] = useState([]);
   const [feeCfg, setFeeCfg] = useState({});
@@ -73,6 +74,8 @@ export default function ParentHome() {
       let primaryProfile = {};
       let primaryFeeCfg = {};
 
+      let allSubjCfgs = {};
+
       await Promise.all(uniqueTenants.map(async (tid) => {
         const dbRes = await fetch('/api/db', {
           method: 'POST', 
@@ -89,6 +92,7 @@ export default function ParentHome() {
             { type: 'get', key: 'paav_school_profile' },
             { type: 'get', key: 'paav_timetable' },
             { type: 'get', key: 'paav_profiles' },
+            { type: 'get', key: 'paav8_subj' },
           ]})
         });
         const db = await dbRes.json();
@@ -102,12 +106,14 @@ export default function ParentHome() {
         const profile = db.results[8]?.value || {};
         const fullTTData = db.results[9]?.value || {};
         const profiles = db.results[10]?.value || {};
+        const subjsVal = db.results[11]?.value || {};
 
-        allLearners = [...allLearners, ...learners];
+        allLearners = [...allLearners, ...learners.map(l => ({ ...l, tenantId: tid }))];
         allMarks = { ...allMarks, ...mks };
         allPaylogs = [...allPaylogs, ...payHistory];
         allMsgs = [...allMsgs, ...msgs];
         allProfiles = { ...allProfiles, ...profiles };
+        allSubjCfgs[tid] = subjsVal;
 
         if (tid === auth.user.tenantId || !primaryProfile.name) {
           primaryProfile = profile;
@@ -145,6 +151,7 @@ export default function ParentHome() {
       setFeeCfg(primaryFeeCfg);
       setMarks(allMarks);
       setPaylog(allPaylogs);
+      setSubjCfg(allSubjCfgs);
       setLoading(false);
     } catch(e) { console.error(e); } finally { setLoading(false); }
   }, [router, selAdm]);
@@ -300,7 +307,10 @@ export default function ParentHome() {
     ? TERMS_LIST.reduce((s, t) => s + (child?.[t.id.toLowerCase()] || 0), 0)
     : (child?.t1||0)+(child?.t2||0)+(child?.t3||0);
   const bal = exp + (child?.arrears || 0) - paid;
-  const subjs = getDefaultSubjects(child?.grade, child?.profile?.curriculum || 'CBC');
+  const tSubjCfg = subjCfg[child?.tenantId] || {};
+  const subjs = (tSubjCfg[child?.grade] && tSubjCfg[child?.grade].length > 0)
+    ? tSubjCfg[child?.grade]
+    : getDefaultSubjects(child?.grade, payInfo.profile?.curriculum || 'CBC');
   const unr = messages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).filter(m=>!(m.read||[]).includes(user.username)).length;
 
   const TABS = [

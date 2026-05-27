@@ -14,8 +14,7 @@ const M = '#8B1A1A', ML = '#FDF2F2';
 const PROFILE_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher', 'staff', 'parent', 'super-admin'];
 const PEOPLE_DIRECTORY_ROLES = ['admin'];
 const LEARNER_LOOKUP_ROLES = ['admin', 'teacher', 'jss_teacher', 'senior_teacher'];
-const MY_LEARNERS_ROLES = ['parent', 'teacher', 'staff', 'admin', 'jss_teacher', 'senior_teacher'];
-const PREDICTOR_ROLES = ['parent', 'teacher', 'staff', 'admin', 'jss_teacher', 'senior_teacher'];
+const MY_LEARNERS_ROLES = ['parent'];
 const BULK_ENROLL_ROLES = ['admin'];
 
 async function safeJson(response, fallback = {}) {
@@ -246,13 +245,6 @@ export default function ProfilePage() {
   const [gradCfg, setGradCfg] = useState(null);
   const [tabLoading, setTabLoading] = useState(false);
 
-  // Predictor State
-  const [predMode, setPredMode] = useState('national');
-  const [targetExam, setTargetExam] = useState('National Exam');
-  const [selPredGrade, setSelPredGrade] = useState('');
-  const [selPredTerm, setSelPredTerm] = useState('T1');
-  const [selPredAssess, setSelPredAssess] = useState('mt1');
-
   // Own profile
   const [profileData, setProfileData] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -336,7 +328,8 @@ export default function ProfilePage() {
             { type: 'get', key: 'paav6_staff' },
             { type: 'get', key: 'paav_profiles' },
             { type: 'get', key: 'paav6_marks' },
-            { type: 'get', key: 'paav8_grad' }
+            { type: 'get', key: 'paav8_grad' },
+            { type: 'get', key: 'paav6_learners' }
           ]})
         })
       ]);
@@ -352,11 +345,13 @@ export default function ProfilePage() {
       const profiles = db.results[1]?.value || {};
       const marks = db.results[2]?.value || {};
       const grad = db.results[3]?.value || null;
+      const learners = db.results[4]?.value || [];
 
       setAllStaff(staff);
       setAllProfiles(profiles);
       setAllMarks(marks);
       setGradCfg(grad);
+      setAllLearners(learners);
 
       const myStaff = staff.find(s => s.id === auth.user.id) || {};
       const myExtra = profiles[auth.user.id] || {};
@@ -371,46 +366,7 @@ export default function ProfilePage() {
 
   useEffect(() => { load(); }, [load]);
 
-  useEffect(() => {
-    if (!selPredGrade && ALL_GRADES.length > 0) setSelPredGrade(ALL_GRADES[0]);
-  }, [ALL_GRADES, selPredGrade]);
 
-  const nationalForecast = useMemo(() => {
-    if (!selPredGrade) return null;
-    const learnersToForecast = user?.role === 'parent' ? myLearners : allLearners.filter(l => l.grade === selPredGrade);
-    const subs = getDefaultSubjects(selPredGrade, school?.curriculum || 'CBC');
-    
-    const rows = learnersToForecast.map(l => {
-      const series = NATIONAL_SERIES.map(point => {
-        const scores = subs
-          .map(subject => allMarks[`${point.term}:${selPredGrade}|${subject}|${point.assess}`]?.[l.adm])
-          .filter(v => v !== undefined && v !== null && v !== '');
-        if (!scores.length) return null;
-        const avg = scores.reduce((sum, value) => sum + Number(value), 0) / scores.length;
-        return { ...point, avg: Number(avg.toFixed(1)), entries: scores.length };
-      }).filter(Boolean);
-
-      const current = series.length ? series[series.length - 1].avg : 0;
-      const baseline = series.length ? series[0].avg : 0;
-      const momentum = series.length > 1 ? (current - baseline) / (series.length - 1) : 0;
-      const latestPoint = series.length ? series[series.length - 1] : null;
-      const completion = subs.length ? Math.round(((latestPoint?.entries || 0) / subs.length) * 100) : 0;
-      const forecast = clamp(current + (momentum * Math.max(1, 9 - series.length)) + (completion >= 90 ? 1.5 : 0));
-      const band = examBand(forecast);
-      return {
-        ...l,
-        series,
-        current,
-        momentum: Number(momentum.toFixed(1)),
-        forecast: Number(forecast.toFixed(1)),
-        band,
-        confidence: Math.min(95, 35 + series.length * 7 + (completion >= 80 ? 10 : 0))
-      };
-    }).filter(r => r.series.length > 0).sort((a, b) => b.forecast - a.forecast);
-
-    const avgForecast = rows.length ? rows.reduce((sum, r) => sum + r.forecast, 0) / rows.length : 0;
-    return { rows, avgForecast: Number(avgForecast.toFixed(1)), candidates: learnersToForecast.length };
-  }, [allLearners, allMarks, selPredGrade, user, myLearners, school?.curriculum]);
 
   function handlePhotoChange(e) {
     const file = e.target.files?.[0];
@@ -732,7 +688,6 @@ export default function ProfilePage() {
     { key: 'me', label: '👤 My Profile' },
     { key: 'pw', label: '🔒 Password' },
     ...(activeRoles.some(r => MY_LEARNERS_ROLES.includes(r)) ? [{ key: 'my-learners', label: '👨‍👩‍👧 My Learners' }] : []),
-    ...(activeRoles.some(r => PREDICTOR_ROLES.includes(r)) ? [{ key: 'predictor', label: '🎯 Predictor' }] : []),
     ...(activeRoles.some(r => PEOPLE_DIRECTORY_ROLES.includes(r)) ? [{ key: 'staff', label: '👥 People Directory' }] : []),
     ...(activeRoles.some(r => LEARNER_LOOKUP_ROLES.includes(r)) ? [{ key: 'learner', label: '🎓 Learner Lookup' }] : []),
     ...(activeRoles.some(r => BULK_ENROLL_ROLES.includes(r)) ? [{ key: 'bulk', label: '📥 Bulk Enroll' }] : []),
@@ -923,98 +878,7 @@ export default function ProfilePage() {
         );
       })()}
 
-      {/* ── Predictor Tab ── */}
-      {tab === 'predictor' && (
-        <div className="predictor-view">
-          <div className="panel no-print">
-            <div className="panel-hdr">
-              <div>
-                <h3>🎯 Exam Performance Predictor</h3>
-                <p style={{fontSize:12,color:'var(--muted)',marginTop:4}}>Curriculum-aware forecasting based on termly trends.</p>
-              </div>
-              <div style={{display:'flex',gap:10}}>
-                {user.role !== 'parent' && (
-                  <select value={selPredGrade} onChange={e=>setSelPredGrade(e.target.value)} className="field" style={{margin:0, width:140}}>
-                    {ALL_GRADES.map(g=><option key={g}>{g}</option>)}
-                  </select>
-                )}
-                <select value={targetExam} onChange={e=>setTargetExam(e.target.value)} className="field" style={{margin:0, width:140}}>
-                  <option>National Exam</option><option>KPSEA</option><option>KJSEA</option><option>KCSE</option><option>IGCSE</option>
-                  <option>CDACC Finals</option><option>TVET Internal</option>
-                </select>
-              </div>
-            </div>
-            <div className="panel-body">
-              {tabLoading ? <p>Loading data…</p> : (
-                <div className="sg sg2">
-                  <div className="stat-card" style={{borderLeft:`4px solid ${M}`}}>
-                    <div className="sc-inner">
-                      <div style={{flex:1}}>
-                        <div className="sc-n" style={{color:M}}>{nationalForecast?.avgForecast || 0}%</div>
-                        <div className="sc-l">Projected Mean</div>
-                      </div>
-                      <div style={{fontSize:24}}>📈</div>
-                    </div>
-                  </div>
-                  <div className="stat-card" style={{borderLeft:`4px solid var(--gold)`}}>
-                    <div className="sc-inner">
-                      <div style={{flex:1}}>
-                        <div className="sc-n" style={{color:'var(--gold)'}}>{nationalForecast?.rows?.length || 0}</div>
-                        <div className="sc-l">Forecasted Learners</div>
-                      </div>
-                      <div style={{fontSize:24}}>🎯</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
 
-          <div className="panel">
-            <div className="panel-hdr">
-              <h3>{targetExam} Readiness Forecast</h3>
-            </div>
-            <div className="tbl-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Learner</th>
-                    <th>Grade</th>
-                    <th style={{textAlign:'center'}}>Current Avg</th>
-                    <th style={{textAlign:'center'}}>Momentum</th>
-                    <th style={{textAlign:'center'}}>Predicted</th>
-                    <th>Band</th>
-                    <th style={{textAlign:'center'}}>Confidence</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {nationalForecast?.rows.map(row => (
-                    <tr key={row.adm}>
-                      <td>
-                        <div style={{fontWeight:700}}>{row.name}</div>
-                        <div style={{fontSize:10,color:'#999'}}>ADM: {row.adm}</div>
-                      </td>
-                      <td>{row.grade}</td>
-                      <td style={{textAlign:'center', fontWeight:700}}>{row.current}%</td>
-                      <td style={{textAlign:'center', color:row.momentum >= 0 ? 'var(--green)' : 'var(--red)', fontWeight:800}}>
-                        {row.momentum > 0 ? '+' : ''}{row.momentum}
-                      </td>
-                      <td style={{textAlign:'center', fontWeight:900, fontSize:15}}>{row.forecast}%</td>
-                      <td><span className="badge" style={{background:row.band.bg, color:row.band.color}}>{row.band.label}</span></td>
-                      <td style={{textAlign:'center'}}>{row.confidence}%</td>
-                      <td><button className="btn btn-ghost btn-sm" onClick={() => { setSelectedLearner(row); setTab('my-learners'); }}>🔍 Analyze</button></td>
-                    </tr>
-                  ))}
-                  {(!nationalForecast || nationalForecast.rows.length === 0) && (
-                    <tr><td colSpan={8} style={{textAlign:'center', padding:40, color:'#999'}}>No trend data available to generate a forecast yet.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── My Learners (Parent View) ── */}
       {tab === 'my-learners' && !selectedLearner && (
