@@ -1,18 +1,20 @@
 'use client';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDefaultSubjects, calcLearnerPoints, promotionStatus, getAllGrades, gInfo } from '@/lib/cbe';
+import { getCurriculum, calcLearnerPoints, promotionStatus, gInfo, getMark } from '@/lib/cbe';
 import { useProfile } from '@/app/PortalShell';
 
-const ASSESS_LIST = [
+const DEFAULT_ASSESSMENTS = [
   { id: 'op1', label: 'Opener' },
   { id: 'mt1', label: 'Mid-Term' },
   { id: 'et1', label: 'End-Term' }
 ];
 
-const NATIONAL_SERIES = ['T1', 'T2', 'T3'].flatMap(term =>
-  ASSESS_LIST.map(a => ({ term, assess: a.id, label: `${term} ${a.label}` }))
-);
+const DEFAULT_TERMS = [
+  { id: 'T1', name: 'Term 1' },
+  { id: 'T2', name: 'Term 2' },
+  { id: 'T3', name: 'Term 3' }
+];
 
 function clamp(n, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Number.isFinite(Number(n)) ? Number(n) : 0));
@@ -139,10 +141,38 @@ function isStrongBand(band) {
   return ['EE','EE1','EE2','A*','A','A-','9','8','7','Distinction','6','M','P'].includes(band?.lv) || (band?.pts !== null && Number.isFinite(points) && points >= 7);
 }
 
+function normalizeAssessments(types = DEFAULT_ASSESSMENTS) {
+  const list = Array.isArray(types) && types.length ? types : DEFAULT_ASSESSMENTS;
+  return list.map(item => ({
+    id: item.id || item.key,
+    label: String(item.label || item.name || item.id || item.key).replace(/^[^\w]+/u, '').trim()
+  })).filter(item => item.id);
+}
+
+function normalizeTerms(terms = DEFAULT_TERMS) {
+  const list = Array.isArray(terms) && terms.length ? terms : DEFAULT_TERMS;
+  return list.map(item => ({
+    id: item.id,
+    name: item.name || item.label || item.id
+  })).filter(item => item.id);
+}
+
 export default function PredictorPage() {
   const router = useRouter();
   const { profile: school } = useProfile() || { profile: {} };
-  const ALL_GRADES = getAllGrades(school?.curriculum || 'CBC');
+  const curriculumName = school?.curriculum || 'CBC';
+  const curriculum = useMemo(() => getCurriculum(curriculumName, school?.levels), [curriculumName, school?.levels]);
+  const labels = curriculum.LABELS || { grade: 'Grade', assessment: 'Assessment' };
+  const ALL_GRADES = useMemo(() => curriculum.ALL_GRADES || [], [curriculum]);
+  const curriculumTerms = useMemo(() => normalizeTerms(curriculum.TERMS), [curriculum]);
+  const curriculumAssessments = useMemo(() => normalizeAssessments(curriculum.ASSESSMENT_TYPES), [curriculum]);
+  const forecastSeries = useMemo(() => curriculumTerms.flatMap(term =>
+    curriculumAssessments.map(assessment => ({
+      term: term.id,
+      assess: assessment.id,
+      label: `${term.name} ${assessment.label}`
+    }))
+  ), [curriculumTerms, curriculumAssessments]);
 
   const [user, setUser] = useState(null);
   const [learners, setLearners] = useState([]);
@@ -155,13 +185,25 @@ export default function PredictorPage() {
   const [selAssess, setSelAssess] = useState('mt1');
   const [selLearner, setSelLearner] = useState(null);
   const [mode, setMode] = useState('continuous');
-  const targetExamInfo = useMemo(() => getExamForGrade(selGrade, school?.curriculum), [selGrade, school?.curriculum]);
+  const targetExamInfo = useMemo(() => getExamForGrade(selGrade, curriculumName), [selGrade, curriculumName]);
 
   useEffect(() => {
     if (!selGrade && ALL_GRADES.length > 0) {
       setSelGrade(ALL_GRADES[0]);
     }
   }, [ALL_GRADES, selGrade]);
+
+  useEffect(() => {
+    if (curriculumTerms.length && !curriculumTerms.some(term => term.id === selTerm)) {
+      setSelTerm(curriculumTerms[0].id);
+    }
+  }, [curriculumTerms, selTerm]);
+
+  useEffect(() => {
+    if (curriculumAssessments.length && !curriculumAssessments.some(assessment => assessment.id === selAssess)) {
+      setSelAssess(curriculumAssessments[0].id);
+    }
+  }, [curriculumAssessments, selAssess]);
 
   const load = useCallback(async () => {
     try {
@@ -198,15 +240,15 @@ export default function PredictorPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const subjects = useMemo(() => getDefaultSubjects(selGrade, school?.curriculum || 'CBC'), [selGrade, school?.curriculum]);
+  const subjects = useMemo(() => curriculum.DEFAULT_SUBJECTS?.[selGrade] || [], [curriculum, selGrade]);
   
   const gradeLearners = useMemo(() => {
     return learners.filter(l => l.grade === selGrade).map(l => {
-      const pts = calcLearnerPoints(marks, l.adm, selGrade, selTerm, selAssess, subjects, gradCfg, school?.curriculum || 'CBC');
+      const pts = calcLearnerPoints(marks, l.adm, selGrade, selTerm, selAssess, subjects, gradCfg, curriculumName);
       const status = promotionStatus(pts.totalPts, pts.maxTotal);
       return { ...l, ...pts, status };
     }).filter(l => l.enteredCount > 0).sort((a, b) => b.totalPts - a.totalPts);
-  }, [learners, selGrade, selTerm, selAssess, subjects, gradCfg, marks, school?.curriculum]);
+  }, [learners, selGrade, selTerm, selAssess, subjects, gradCfg, marks, curriculumName]);
 
   const stats = useMemo(() => ({
     promote: gradeLearners.filter(l => l.status === 'promote').length,
@@ -217,9 +259,9 @@ export default function PredictorPage() {
   const nationalForecast = useMemo(() => {
     const classLearners = learners.filter(l => l.grade === selGrade);
     const rows = classLearners.map(l => {
-      const series = NATIONAL_SERIES.map(point => {
+      const series = forecastSeries.map(point => {
         const scores = subjects
-          .map(subject => marks[`${point.term}:${selGrade}|${subject}|${point.assess}`]?.[l.adm])
+          .map(subject => getMark(marks, point.term, selGrade, subject, point.assess, l.adm))
           .filter(v => v !== undefined && v !== null && v !== '');
         if (!scores.length) return null;
         const avg = scores.reduce((sum, value) => sum + Number(value), 0) / scores.length;
@@ -231,8 +273,8 @@ export default function PredictorPage() {
       const momentum = series.length > 1 ? (current - baseline) / (series.length - 1) : 0;
       const latestPoint = series.length ? series[series.length - 1] : null;
       const completion = subjects.length ? Math.round(((latestPoint?.entries || 0) / subjects.length) * 100) : 0;
-      const forecast = clamp(current + (momentum * Math.max(1, 9 - series.length)) + (completion >= 90 ? 1.5 : 0));
-      const band = examBand(forecast, selGrade, school?.curriculum);
+      const forecast = clamp(current + (momentum * Math.max(1, forecastSeries.length - series.length)) + (completion >= 90 ? 1.5 : 0));
+      const band = examBand(forecast, selGrade, curriculumName);
       const intervention = isInterventionBand(band);
       return {
         ...l,
@@ -263,7 +305,7 @@ export default function PredictorPage() {
       watch: rows.filter(r => isInterventionBand(r.band)).length,
       strong: rows.filter(r => isStrongBand(r.band)).length
     };
-  }, [learners, marks, selGrade, subjects, school?.curriculum]);
+  }, [learners, marks, selGrade, subjects, curriculumName, forecastSeries]);
 
   const learnerDetail = useMemo(() => {
     if (!selLearner) return null;
@@ -272,23 +314,23 @@ export default function PredictorPage() {
 
     // Subject trends
     const subTrends = subjects.map(s => {
-      const assessData = ASSESS_LIST.map(a => {
-        const score = marks[`${selTerm}:${selGrade}|${s}|${a.id}`]?.[l.adm];
+      const assessData = curriculumAssessments.map(a => {
+        const score = getMark(marks, selTerm, selGrade, s, a.id, l.adm);
         return { assess: a.label, score: score ?? 0 };
       });
-      const currentScore = marks[`${selTerm}:${selGrade}|${s}|${selAssess}`]?.[l.adm] || 0;
-      const info = gInfo(currentScore, selGrade, gradCfg, school?.curriculum || 'CBC');
+      const currentScore = getMark(marks, selTerm, selGrade, s, selAssess, l.adm) || 0;
+      const info = gInfo(currentScore, selGrade, gradCfg, curriculumName);
       return { subject: s, assessData, currentScore, level: info.lv, color: info.pts >= 3 ? 'var(--green)' : info.pts >= 2 ? 'var(--amber)' : 'var(--red)' };
     });
 
     // Overall trajectory
-    const trajectory = ASSESS_LIST.map(a => {
-      const pts = calcLearnerPoints(marks, l.adm, selGrade, selTerm, a.id, subjects, gradCfg, school?.curriculum || 'CBC');
+    const trajectory = curriculumAssessments.map(a => {
+      const pts = calcLearnerPoints(marks, l.adm, selGrade, selTerm, a.id, subjects, gradCfg, curriculumName);
       return { assess: a.label, pct: Math.round((pts.totalPts / pts.maxTotal) * 100) };
     });
 
     return { ...l, subTrends, trajectory };
-  }, [selLearner, learners, subjects, marks, selTerm, selGrade, selAssess, gradCfg, school?.curriculum]);
+  }, [selLearner, learners, subjects, marks, selTerm, selGrade, selAssess, gradCfg, curriculumName, curriculumAssessments]);
 
   if (loading || !user) return <div className="page on"><LoadingSkeleton /></div>;
 
@@ -313,7 +355,7 @@ export default function PredictorPage() {
       <div className="panel no-print">
         <div className="panel-body" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label>Grade</label>
+            <label>{labels.grade}</label>
             <select value={selGrade} onChange={e => { setSelGrade(e.target.value); setSelLearner(null); }}>
               {ALL_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
@@ -323,13 +365,13 @@ export default function PredictorPage() {
               <div className="field" style={{ marginBottom: 0 }}>
                 <label>Term</label>
                 <select value={selTerm} onChange={e => setSelTerm(e.target.value)}>
-                  <option value="T1">Term 1</option><option value="T2">Term 2</option><option value="T3">Term 3</option>
+                  {curriculumTerms.map(term => <option key={term.id} value={term.id}>{term.name}</option>)}
                 </select>
               </div>
               <div className="field" style={{ marginBottom: 0 }}>
-                <label>Assessment</label>
+                <label>{labels.assessment || 'Assessment'}</label>
                 <select value={selAssess} onChange={e => setSelAssess(e.target.value)}>
-                  {ASSESS_LIST.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+                  {curriculumAssessments.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
                 </select>
               </div>
             </>
@@ -343,7 +385,7 @@ export default function PredictorPage() {
       </div>
 
       {mode === 'national' ? (
-        <NationalExamForecast forecast={nationalForecast} grade={selGrade} curriculum={school?.curriculum} onAnalyze={adm => { setMode('continuous'); setSelLearner(adm); }} />
+        <NationalExamForecast forecast={nationalForecast} grade={selGrade} curriculum={curriculumName} onAnalyze={adm => { setMode('continuous'); setSelLearner(adm); }} />
       ) : !selLearner ? (
         <>
           <div className="sg sg3" style={{ marginBottom: '22px' }}>
