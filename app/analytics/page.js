@@ -31,6 +31,7 @@ export default function AnalyticsPage() {
   const [pStream, setPStream] = useState('');
   const [pQuery, setPQuery] = useState('');
   const [staff, setStaff] = useState([]);
+  const [allocations, setAllocations] = useState({});
 
   const grades = getAllGrades(profile?.curriculum || 'CBC');
   const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
@@ -105,12 +106,13 @@ export default function AnalyticsPage() {
   useEffect(() => {
     async function loadPerformance() {
       if (!profile?.tenantId) return;
-      const db = await getCachedDBMulti(['paav6_learners', 'paav6_marks', 'paav8_subj', 'paav8_grad', 'paav6_staff']);
+      const db = await getCachedDBMulti(['paav6_learners', 'paav6_marks', 'paav8_subj', 'paav8_grad', 'paav6_staff', 'paav_allocations']);
       setLearners(db.paav6_learners || []);
       setMarks(db.paav6_marks || {});
       setSubjCfg(db.paav8_subj || {});
       setGradCfg(db.paav8_grad || null);
       setStaff(db.paav6_staff || []);
+      setAllocations(db.paav_allocations || {});
     }
     if (activeTab === 'performance' || activeTab === 'staff' || activeTab === 'outreach' || activeTab === 'pathways') loadPerformance();
   }, [activeTab, profile]);
@@ -446,6 +448,7 @@ export default function AnalyticsPage() {
         <StaffPerformance 
           staff={staff} learners={learners} marks={marks} 
           pTerm={pTerm} pAssess={pAssess} subjCfg={subjCfg}
+          allocations={allocations}
         />
       ) : activeTab === 'outreach' ? (
         <OutreachTab 
@@ -989,46 +992,89 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
   );
 }
 
-function StaffPerformance({ staff, learners, marks, pTerm, pAssess, subjCfg }) {
+function StaffPerformance({ staff, learners, marks, pTerm, pAssess, subjCfg, allocations }) {
   const teacherStats = React.useMemo(() => {
     return staff.filter(t => {
       if (['parent', 'student'].includes(String(t.role || '').toLowerCase())) return false;
+      
+      let hasAlloc = false;
+      Object.entries(allocations || {}).forEach(([key, staffId]) => {
+        if (staffId === t.id) hasAlloc = true;
+      });
+      if (hasAlloc) return true;
+
       let areas = [];
       try { areas = Array.isArray(t.teachingAreas) ? t.teachingAreas : JSON.parse(t.teachingAreas || '[]'); } catch { areas = []; }
       return areas.length > 0;
     }).map(t => {
-      let areas = [];
-      try { areas = Array.isArray(t.teachingAreas) ? t.teachingAreas : JSON.parse(t.teachingAreas || '[]'); } catch { areas = []; }
-      
-      const tGrade = t.grade || '';
-      const subjects = areas;
-      
-      const classLearners = learners.filter(l => l.grade === tGrade);
-      if (!classLearners.length) return { ...t, avg: 0, entries: 0, completion: 0, recommendation: 'Assign a class or teaching area to activate performance tracking.' };
+      let myAllocations = [];
+      Object.entries(allocations || {}).forEach(([key, staffId]) => {
+        if (staffId === t.id) {
+          const [grade, subject] = key.split('|');
+          if (grade && subject) {
+            myAllocations.push({ grade, subject });
+          }
+        }
+      });
+
+      if (myAllocations.length === 0) {
+        let areas = [];
+        try { areas = Array.isArray(t.teachingAreas) ? t.teachingAreas : JSON.parse(t.teachingAreas || '[]'); } catch { areas = []; }
+        const tGrade = t.grade || '';
+        if (tGrade && areas.length > 0) {
+          areas.forEach(subj => {
+            myAllocations.push({ grade: tGrade, subject: subj });
+          });
+        }
+      }
+
+      if (myAllocations.length === 0) {
+        return {
+          ...t,
+          avg: 0,
+          entries: 0,
+          expected: 0,
+          completion: 0,
+          uniqueGrades: [],
+          uniqueSubjects: [],
+          subjectCount: 0,
+          studentCount: 0,
+          recommendation: 'Assign a class or teaching area to activate performance tracking.'
+        };
+      }
+
+      const uniqueGrades = Array.from(new Set(myAllocations.map(a => a.grade)));
+      const uniqueSubjects = Array.from(new Set(myAllocations.map(a => a.subject)));
 
       const scores = [];
       let entries = 0;
-      subjects.forEach(s => {
+      let expected = 0;
+
+      myAllocations.forEach(alloc => {
+        const classLearners = learners.filter(l => l.grade === alloc.grade);
+        expected += classLearners.length;
         classLearners.forEach(l => {
-          const sc = getMark(marks, pTerm, tGrade, s, pAssess, l.adm);
-          if (sc !== null) {
+          const sc = getMark(marks, pTerm, alloc.grade, alloc.subject, pAssess, l.adm);
+          if (sc !== null && sc !== undefined && sc !== '') {
             scores.push(Number(sc));
             entries++;
           }
         });
       });
 
-      const expected = classLearners.length * subjects.length;
       const completion = expected > 0 ? (entries / expected) * 100 : 0;
       const avg = scores.length ? scores.reduce((a,b) => a+b, 0) / scores.length : 0;
+
       return {
         ...t,
         avg,
         entries,
         expected,
         completion,
-        subjectCount: subjects.length,
-        studentCount: classLearners.length,
+        uniqueGrades,
+        uniqueSubjects,
+        subjectCount: uniqueSubjects.length,
+        studentCount: expected,
         recommendation: completion < 70
           ? 'Follow up on mark entry completion and evidence upload.'
           : avg < 50
@@ -1036,7 +1082,7 @@ function StaffPerformance({ staff, learners, marks, pTerm, pAssess, subjCfg }) {
             : 'Maintain documented teaching approach and mentor lower-performing teams.'
       };
     }).sort((a,b) => b.avg - a.avg);
-  }, [staff, learners, marks, pTerm, pAssess, subjCfg]);
+  }, [staff, learners, marks, pTerm, pAssess, allocations]);
 
   return (
     <div className="space-y-6">
@@ -1086,7 +1132,7 @@ function StaffPerformance({ staff, learners, marks, pTerm, pAssess, subjCfg }) {
             <thead>
               <tr>
                 <th>Teacher</th>
-                <th>Assigned Grade</th>
+                <th>Assigned Grades</th>
                 <th>Subjects</th>
                 <th>Class Avg</th>
                 <th>Entry Completion</th>
@@ -1106,8 +1152,16 @@ function StaffPerformance({ staff, learners, marks, pTerm, pAssess, subjCfg }) {
                       </div>
                     </div>
                   </td>
-                  <td><span className="badge bg-blue">{t.grade || 'Floating'}</span></td>
-                  <td>{t.subjectCount} subjects</td>
+                  <td>
+                    {t.uniqueGrades && t.uniqueGrades.length > 0 ? (
+                      t.uniqueGrades.map(g => (
+                        <span key={g} className="badge bg-blue" style={{ marginRight: 4, display: 'inline-block', marginBottom: 2 }}>{g}</span>
+                      ))
+                    ) : (
+                      <span className="badge bg-blue">Floating</span>
+                    )}
+                  </td>
+                  <td>{t.uniqueSubjects && t.uniqueSubjects.length > 0 ? t.uniqueSubjects.join(', ') : 'No subjects'}</td>
                   <td style={{ fontWeight: 800, color: t.avg >= 70 ? '#059669' : t.avg >= 50 ? '#2563eb' : '#dc2626' }}>{Math.round(t.avg)}%</td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
