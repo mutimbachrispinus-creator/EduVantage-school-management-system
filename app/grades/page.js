@@ -197,7 +197,11 @@ export default function GradesPage() {
     
     isWritingRef.current = true;
     const gsa = `${term}:${grade}|${subj}|${assess}`;
-    const score = value === '' ? undefined : Number(value);
+    let score = value === '' ? undefined : Number(value);
+    if (score !== undefined) {
+      if (score > 100) score = 100;
+      if (score < 0) score = 0;
+    }
     
     const nextMark = { gsa, adm: admNo, score };
 
@@ -747,7 +751,11 @@ const LearnerRow = memo(({
   }, [getScore, learner.adm, subject]);
 
   const handleChange = (e) => {
-    const v = e.target.value;
+    let v = e.target.value;
+    if (v !== '') {
+      if (Number(v) > 100) v = '100';
+      if (Number(v) < 0) v = '0';
+    }
     setLocalVal(v);
     // Debounce the sync to parent state to keep typing smooth
     if (window.syncTimer) clearTimeout(window.syncTimer);

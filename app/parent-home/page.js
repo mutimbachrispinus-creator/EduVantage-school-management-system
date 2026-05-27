@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDefaultSubjects, gInfo, fmtK } from '@/lib/cbe';
+import { getDefaultSubjects, gInfo, fmtK, getMark } from '@/lib/cbe';
+import { getCurriculum } from '@/lib/curriculum';
 
 const M = '#8B1A1A', M2 = '#6B1212', ML = '#FDF2F2', MB = '#F5E6E6';
 
@@ -290,8 +291,14 @@ export default function ParentHome() {
   }
 
   const cfg = feeCfg[child?.grade] || {};
-  const exp = (cfg.t1 || 0) + (cfg.t2 || 0) + (cfg.t3 || 0) || cfg.annual || 5000;
-  const paid = (child?.t1||0)+(child?.t2||0)+(child?.t3||0);
+  const curr = getCurriculum(payInfo.profile?.curriculum || 'CBC', payInfo.profile?.levels);
+  const TERMS_LIST = curr.TERMS || [];
+  const exp = TERMS_LIST.length
+    ? TERMS_LIST.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 5000
+    : (cfg.t1 || 0) + (cfg.t2 || 0) + (cfg.t3 || 0) || cfg.annual || 5000;
+  const paid = TERMS_LIST.length
+    ? TERMS_LIST.reduce((s, t) => s + (child?.[t.id.toLowerCase()] || 0), 0)
+    : (child?.t1||0)+(child?.t2||0)+(child?.t3||0);
   const bal = exp + (child?.arrears || 0) - paid;
   const subjs = getDefaultSubjects(child?.grade, child?.profile?.curriculum || 'CBC');
   const unr = messages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).filter(m=>!(m.read||[]).includes(user.username)).length;
@@ -505,7 +512,7 @@ export default function ParentHome() {
             <div style={{flex:1}}>
               <label style={{fontSize:10,fontWeight:800,color:M,textTransform:'uppercase',display:'block',marginBottom:4}}>Academic Period</label>
               <select value={term} onChange={e=>setTerm(e.target.value)} style={{width:'100%',borderRadius:8,padding:'8px 12px',border:`1.5px solid ${MB}`,fontSize:13,fontWeight:700,outline:'none',background:'#fff'}}>
-                <option value="T1">Term 1</option><option value="T2">Term 2</option><option value="T3">Term 3</option>
+                {TERMS_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             <div style={{flex:1}}>
@@ -530,8 +537,7 @@ export default function ParentHome() {
               </div>
               <div className="panel-body" style={{padding:'5px 15px'}}>
                 {subjs.map(s => {
-                  const key = `${term}:${child?.grade}|${s}|${assess}`;
-                  const sc = marks[key]?.[child?.adm];
+                  const sc = getMark(marks, term, child?.grade, s, assess, child?.adm);
                   const info = sc!=null ? gInfo(Number(sc),child?.grade) : null;
                   const isCBC = (child?.grade || '').startsWith('GRADE') || (child?.grade || '').startsWith('PP');
                   
@@ -564,7 +570,7 @@ export default function ParentHome() {
               <div className="panel-body" style={{ padding: 20 }}>
                 {(() => {
                   const scores = subjs.map(s => {
-                    const sc = marks[`${term}:${child?.grade}|${s}|${assess}`]?.[child?.adm];
+                    const sc = getMark(marks, term, child?.grade, s, assess, child?.adm);
                     return sc != null ? { s, sc: Number(sc) } : null;
                   }).filter(Boolean);
                   
@@ -627,6 +633,44 @@ export default function ParentHome() {
                          <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.8 }}>PREDICTED COMPETENCY</div>
                          <div style={{ fontSize: 18, fontWeight: 900 }}>{info.desc}</div>
                       </div>
+
+                      {(() => {
+                        const isCBC = (child?.grade || '').startsWith('GRADE') || (child?.grade || '').startsWith('PP');
+                        let pathway = 'General Education';
+                        let pathwayColor = '#3B82F6';
+                        let pathwayDesc = 'Mainstream learning path based on current competencies.';
+
+                        if (isCBC) {
+                          if (['GRADE 7','GRADE 8','GRADE 9'].includes(child?.grade)) {
+                            const stemScores = scores.filter(s => ['Math','Science','Computer','Pre-Technical'].some(x => s.s.includes(x)));
+                            const artsScores = scores.filter(s => ['Art','Music','Sports','Creative'].some(x => s.s.includes(x)));
+                            const socScores = scores.filter(s => ['Social','Language','English','Kiswahili'].some(x => s.s.includes(x)));
+                            
+                            const avgStem = stemScores.length ? stemScores.reduce((a, b) => a + b.sc, 0) / stemScores.length : 0;
+                            const avgArts = artsScores.length ? artsScores.reduce((a, b) => a + b.sc, 0) / artsScores.length : 0;
+                            const avgSoc = socScores.length ? socScores.reduce((a, b) => a + b.sc, 0) / socScores.length : 0;
+                            
+                            if (avgStem >= avgArts && avgStem >= avgSoc && avgStem > 50) { pathway = 'STEM Pathway'; pathwayColor = '#2563EB'; pathwayDesc = 'Strong aptitude in Science, Technology, Engineering, and Mathematics.'; }
+                            else if (avgArts >= avgStem && avgArts >= avgSoc && avgArts > 50) { pathway = 'Arts & Sports Pathway'; pathwayColor = '#D97706'; pathwayDesc = 'Exceptional talent in creative arts and sports disciplines.'; }
+                            else if (avgSoc > 50) { pathway = 'Social Sciences Pathway'; pathwayColor = '#059669'; pathwayDesc = 'High proficiency in languages and social sciences.'; }
+                            else { pathway = 'General / Remedial'; pathwayColor = '#DC2626'; pathwayDesc = 'Requires additional support across multiple core subjects.'; }
+                          } else {
+                             pathway = 'Progression to Next Grade';
+                             pathwayColor = '#059669';
+                          }
+                        } else {
+                          if (avg >= 60) { pathway = 'Advanced Stream'; pathwayColor = '#059669'; pathwayDesc = 'Capable of handling advanced curriculum content.'; }
+                          else { pathway = 'General Stream'; pathwayColor = '#3B82F6'; }
+                        }
+
+                        return (
+                          <div style={{ background: '#fff', border: `1.5px solid ${pathwayColor}40`, padding: 15, borderRadius: 12 }}>
+                            <div style={{ fontSize: 11, fontWeight: 800, color: pathwayColor, textTransform: 'uppercase', marginBottom: 4 }}>🛣️ Recommended Pathway</div>
+                            <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--navy)' }}>{pathway}</div>
+                            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 }}>{pathwayDesc}</div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })()}
@@ -682,14 +726,16 @@ export default function ParentHome() {
               </div>
               <div className="panel-body" style={{ padding: 25 }}>
                 {(() => {
-                  const cfg = feeCfg[child?.grade] || {};
+                  const cfg2 = feeCfg[child?.grade] || {};
                   const items = [
-                    { label: 'Term 1 Expected', val: cfg.t1 || 0 },
-                    { label: 'Term 2 Expected', val: cfg.t2 || 0 },
-                    { label: 'Term 3 Expected', val: cfg.t3 || 0 },
-                    { label: 'Annual Base Fee', val: (!cfg.t1 && !cfg.t2 && !cfg.t3) ? (cfg.annual || 0) : 0 },
-                    { label: 'Transport / Meals', val: (cfg.transport || 0) + (cfg.lunch || 0) },
-                    { label: 'Activities / Other', val: cfg.other || 0 },
+                    ...TERMS_LIST.map(t => ({ label: `${t.name} Expected`, val: cfg2[t.id.toLowerCase()] || 0 })),
+                    ...(!TERMS_LIST.length ? [
+                      { label: 'Term 1 Expected', val: cfg2.t1 || 0 },
+                      { label: 'Term 2 Expected', val: cfg2.t2 || 0 },
+                      { label: 'Term 3 Expected', val: cfg2.t3 || 0 },
+                    ] : []),
+                    { label: 'Transport / Meals', val: (cfg2.transport || 0) + (cfg2.lunch || 0) },
+                    { label: 'Activities / Other', val: cfg2.other || 0 },
                     { label: 'Previous Arrears', val: child?.arrears || 0, isRed: true },
                   ].filter(i => i.val > 0);
 
@@ -721,22 +767,41 @@ export default function ParentHome() {
                 <h3 style={{ color: '#fff' }}>📅 Termly Payment Cycle</h3>
               </div>
               <div className="panel-body" style={{ padding: 25 }}>
-                {[['Term 1',child?.t1||0],['Term 2',child?.t2||0],['Term 3',child?.t3||0]].map(([l,p], i)=>{
-                  const termKey = l.toLowerCase().replace('erm ', ''); // "Term 1" -> "t1"
-                  const due = cfg[termKey] || Math.round(exp/3);
-                  const termPct = Math.min(100, Math.round((p/due)*100));
-                  return (
-                    <div key={l} style={{ marginBottom: 20 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 8 }}>
-                        <span style={{ fontWeight: 800, color: 'var(--navy)' }}>{l}</span>
-                        <span style={{ fontWeight: 800, color: p >= due ? '#059669' : '#1E40AF' }}>KES {fmtK(p)} / {fmtK(due)}</span>
-                      </div>
-                      <div style={{ height: 10, background: '#F1F5F9', borderRadius: 5, overflow: 'hidden' }}>
-                        <div style={{ width: `${termPct}%`, height: '100%', background: p >= due ? '#059669' : '#3B82F6', borderRadius: 5, transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)' }} />
-                      </div>
-                    </div>
-                  );
-                })}
+                {TERMS_LIST.length > 0
+                  ? TERMS_LIST.map(t => {
+                      const termKey = t.id.toLowerCase();
+                      const p = child?.[termKey] || 0;
+                      const due = cfg[termKey] || Math.round(exp / TERMS_LIST.length);
+                      const termPct = Math.min(100, Math.round((p / due) * 100));
+                      return (
+                        <div key={t.id} style={{ marginBottom: 20 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 8 }}>
+                            <span style={{ fontWeight: 800, color: 'var(--navy)' }}>{t.name}</span>
+                            <span style={{ fontWeight: 800, color: p >= due ? '#059669' : '#1E40AF' }}>KES {fmtK(p)} / {fmtK(due)}</span>
+                          </div>
+                          <div style={{ height: 10, background: '#F1F5F9', borderRadius: 5, overflow: 'hidden' }}>
+                            <div style={{ width: `${termPct}%`, height: '100%', background: p >= due ? '#059669' : '#3B82F6', borderRadius: 5, transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+                          </div>
+                        </div>
+                      );
+                    })
+                  : [['Term 1',child?.t1||0],['Term 2',child?.t2||0],['Term 3',child?.t3||0]].map(([l,p], i)=>{
+                      const termKey = `t${i+1}`;
+                      const due = cfg[termKey] || Math.round(exp/3);
+                      const termPct = Math.min(100, Math.round((p/due)*100));
+                      return (
+                        <div key={l} style={{ marginBottom: 20 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 8 }}>
+                            <span style={{ fontWeight: 800, color: 'var(--navy)' }}>{l}</span>
+                            <span style={{ fontWeight: 800, color: p >= due ? '#059669' : '#1E40AF' }}>KES {fmtK(p)} / {fmtK(due)}</span>
+                          </div>
+                          <div style={{ height: 10, background: '#F1F5F9', borderRadius: 5, overflow: 'hidden' }}>
+                            <div style={{ width: `${termPct}%`, height: '100%', background: p >= due ? '#059669' : '#3B82F6', borderRadius: 5, transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+                          </div>
+                        </div>
+                      );
+                    })
+                }
               </div>
             </div>
 

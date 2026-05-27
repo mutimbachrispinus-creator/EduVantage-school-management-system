@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDefaultSubjects, isJSSGrade, maxPts, gInfo } from '@/lib/cbe';
+import { getDefaultSubjects, isJSSGrade, maxPts, gInfo, getMark } from '@/lib/cbe';
 
 export default function ParentMarksPage() {
   const router = useRouter();
@@ -75,9 +75,9 @@ export default function ParentMarksPage() {
   let enteredSubjs = 0;
   
   const rows = subjs.map(s => {
-    const mt = marks[`T1:${child.grade}|${s}|mt1`]?.[child.adm] ?? marks[`${child.grade}|${s}|mt1`]?.[child.adm];
-    const et = marks[`T1:${child.grade}|${s}|et1`]?.[child.adm] ?? marks[`${child.grade}|${s}|et1`]?.[child.adm];
-    const avg = (mt !== undefined && et !== undefined) ? Math.round((Number(mt) + Number(et)) / 2) : (mt !== undefined ? mt : et);
+    const mt = getMark(marks, 'T1', child.grade, s, 'mt1', child.adm);
+    const et = getMark(marks, 'T1', child.grade, s, 'et1', child.adm);
+    const avg = (mt !== null && et !== null) ? Math.round((mt + et) / 2) : (mt !== null ? mt : (et !== null ? et : undefined));
     
     const i = avg !== undefined ? gInfo(+avg, child.grade) : { lv: '—', pts: '—', c: 'var(--muted)', bg: '#F1F5F9' };
     
@@ -89,8 +89,8 @@ export default function ParentMarksPage() {
     return (
       <tr key={s}>
         <td>{s}</td>
-        <td style={{ textAlign: 'center' }}>{mt !== undefined ? mt : '—'}</td>
-        <td style={{ textAlign: 'center' }}>{et !== undefined ? et : '—'}</td>
+        <td style={{ textAlign: 'center' }}>{mt !== null ? mt : '—'}</td>
+        <td style={{ textAlign: 'center' }}>{et !== null ? et : '—'}</td>
         <td style={{ textAlign: 'center', fontWeight: 800, background: i.bg, color: i.c }}>{avg !== undefined ? avg : '—'}</td>
         <td style={{ textAlign: 'center' }}><span className={`badge`} style={{ background: i.bg, color: i.c, fontWeight: 800, minWidth: '40px', display: 'inline-block' }}>{i.lv}</span></td>
         <td style={{ textAlign: 'center', fontWeight: 800, color: i.c }}>{i.pts}</td>

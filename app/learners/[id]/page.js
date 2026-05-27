@@ -83,8 +83,12 @@ export default function LearnerProfilePage() {
 
   const subjects   = DEFAULT_SUBJECTS[learner.grade] || [];
   const cfg        = feeCfg[learner.grade] || {};
-  const annualFee  = (cfg.t1 || 0) + (cfg.t2 || 0) + (cfg.t3 || 0) || cfg.annual || 5000;
-  const totalPaid  = (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
+  const annualFee  = TERMS.length
+    ? TERMS.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 5000
+    : (cfg.t1 || 0) + (cfg.t2 || 0) + (cfg.t3 || 0) || cfg.annual || 5000;
+  const totalPaid  = TERMS.length
+    ? TERMS.reduce((s, t) => s + (learner[t.id.toLowerCase()] || 0), 0)
+    : (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
   const balance    = annualFee + (learner.arrears || 0) - totalPaid;
 
   const marksRows = subjects.map(subj => {

@@ -466,22 +466,52 @@ export default function PortalShell({ children }) {
   }, []);
 
 
+  const compressImage = (file, maxWidth, maxHeight, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height *= maxWidth / width));
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width *= maxHeight / height));
+              height = maxHeight;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+      };
+    });
+  };
+
   async function uploadHero(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async ev => {
-      const b64 = ev.target.result;
+    
+    try {
+      const b64 = await compressImage(file, 1200, 800, 0.8);
       setHeroUrl(b64);
-      try {
-        await fetchWithRetry('/api/db', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requests: [{ type: 'set', key: 'paav_hero_img', value: b64 }] }),
-          timeout: 15000
-        });
-      } catch {}
-    };
-    reader.readAsDataURL(file);
+      await fetchWithRetry('/api/db', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ type: 'set', key: 'paav_hero_img', value: b64 }] }),
+        timeout: 15000
+      });
+    } catch {}
   }
 
   // saveAnnouncement — single canonical definition below

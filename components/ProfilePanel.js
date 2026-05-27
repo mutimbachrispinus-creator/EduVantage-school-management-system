@@ -60,35 +60,65 @@ export default function ProfilePanel({ user, onClose }) {
 
   const F = (k,v) => setForm(f => ({...f,[k]:v}));
 
+  const compressImage = (file, maxWidth, maxHeight, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height *= maxWidth / width));
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width *= maxHeight / height));
+              height = maxHeight;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+      };
+    });
+  };
+
   async function handlePhotoPick(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     setSaving(true);
-    const reader = new FileReader();
-    reader.onload = async ev => {
-      const dataUrl = ev.target.result;
-      try {
-        const res = await fetchWithRetry('/api/auth', { 
-          method:'POST', 
-          headers:{'Content-Type':'application/json'}, 
-          body: JSON.stringify({ action: 'edit_user', id: user.id, avatar: dataUrl }),
-          timeout: 20000 // Large payload (avatar) needs more time
-        });
-        const d = await safeJson(res);
-        if (!d.ok) throw new Error(d.error || 'Failed to update photo');
+    
+    try {
+      const dataUrl = await compressImage(file, 400, 400, 0.9);
+      const res = await fetchWithRetry('/api/auth', { 
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body: JSON.stringify({ action: 'edit_user', id: user.id, avatar: dataUrl }),
+        timeout: 20000
+      });
+      const d = await safeJson(res);
+      if (!d.ok) throw new Error(d.error || 'Failed to update photo');
 
-        // Update in-memory user context + sessionStorage cache
-        setUser(u => ({ ...u, avatar: dataUrl }));
-        try { sessionStorage.setItem('paav_avatar_' + user.id, dataUrl); } catch {}
-        setMsg('✅ Photo updated!');
-      } catch(err) { 
-        setMsg('❌ Photo failed: ' + err.message); 
-      } finally { 
-        setSaving(false); 
-        setTimeout(()=>setMsg(''), 3000); 
-      }
-    };
-    reader.readAsDataURL(file);
+      // Update in-memory user context + sessionStorage cache
+      setUser(u => ({ ...u, avatar: dataUrl }));
+      try { sessionStorage.setItem('paav_avatar_' + user.id, dataUrl); } catch {}
+      setMsg('✅ Photo updated!');
+    } catch(err) { 
+      setMsg('❌ Photo failed: ' + err.message); 
+    } finally { 
+      setSaving(false); 
+      setTimeout(()=>setMsg(''), 3000); 
+    }
   }
 
   async function saveProfile() {

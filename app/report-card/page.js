@@ -88,8 +88,12 @@ function ReportCardContent() {
         {targetLearners.map((learner, idx) => {
           const subjects = (subjCfg[learner.grade] !== undefined ? subjCfg[learner.grade] : DEFAULT_SUBJECTS[learner.grade]) || [];
           const cfg = feeCfg[learner.grade] || {};
-          const annualFee = (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 0;
-          const totalPaid = (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
+          const annualFee = TERMS.length
+            ? TERMS.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 0
+            : (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 0;
+          const totalPaid = TERMS.length
+            ? TERMS.reduce((s, t) => s + (learner[t.id.toLowerCase()] || 0), 0)
+            : (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
           const balance = annualFee + (learner.arrears || 0) - totalPaid;
 
           const marksRows = subjects.map(subj => {
@@ -179,7 +183,14 @@ function ReportCardContent() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                 <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
                   <div style={{ fontWeight: 800, fontSize: 11, color: '#64748b', textTransform: 'uppercase', marginBottom: 8 }}>Fee Statement</div>
-                  {[['Annual Fee', `KES ${fmtK(annualFee)}`], ['Term 1 Paid', `KES ${fmtK(learner.t1||0)}`], ['Term 2 Paid', `KES ${fmtK(learner.t2||0)}`], ['Term 3 Paid', `KES ${fmtK(learner.t3||0)}`], ['Balance', `KES ${fmtK(Math.max(0, balance))}`]].map(([k, v]) => (
+                  {[
+                    ['Annual Fee', `KES ${fmtK(annualFee)}`],
+                    ...TERMS.map(t => [
+                      `${t.name} Paid`,
+                      `KES ${fmtK(learner[t.id.toLowerCase()] || 0)}`
+                    ]),
+                    ['Balance', `KES ${fmtK(Math.max(0, balance))}`],
+                  ].map(([k, v]) => (
                     <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CBD5E1', paddingBottom: 4, marginBottom: 4, fontSize: 12 }}>
                       <span style={{ color: '#64748b' }}>{k}</span>
                       <strong style={{ color: k === 'Balance' ? (balance <= 0 ? '#059669' : '#dc2626') : '#1e293b' }}>{v} {k === 'Balance' && balance <= 0 ? '✅' : ''}</strong>

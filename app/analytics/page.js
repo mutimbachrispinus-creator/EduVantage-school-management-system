@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LineChart, Line } from '@/components/DynamicCharts';
 import { TrendingUp, Users, BookOpen, AlertCircle, Loader2, ShieldAlert, Target, Award, Activity, ClipboardList, Gauge, Search } from 'lucide-react';
-import { buildMeritList, getAllGrades, getDefaultSubjects, getCurriculum, gInfo, getDistributionBuckets } from '@/lib/cbe';
+import { buildMeritList, getAllGrades, getDefaultSubjects, getCurriculum, gInfo, getDistributionBuckets, getMark } from '@/lib/cbe';
 import { useSchoolProfile } from '@/lib/school-profile';
 import { fetchWithRetry, getCachedDBMulti } from '@/lib/client-cache';
 
@@ -991,12 +991,17 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
 
 function StaffPerformance({ staff, learners, marks, pTerm, pAssess, subjCfg }) {
   const teacherStats = React.useMemo(() => {
-    return staff.filter(t => !['parent', 'student'].includes(String(t.role || '').toLowerCase())).map(t => {
+    return staff.filter(t => {
+      if (['parent', 'student'].includes(String(t.role || '').toLowerCase())) return false;
       let areas = [];
-      try { areas = JSON.parse(t.teachingAreas || '[]'); } catch { areas = []; }
+      try { areas = Array.isArray(t.teachingAreas) ? t.teachingAreas : JSON.parse(t.teachingAreas || '[]'); } catch { areas = []; }
+      return areas.length > 0;
+    }).map(t => {
+      let areas = [];
+      try { areas = Array.isArray(t.teachingAreas) ? t.teachingAreas : JSON.parse(t.teachingAreas || '[]'); } catch { areas = []; }
       
       const tGrade = t.grade || '';
-      const subjects = areas.length ? areas : (subjCfg[tGrade] || []);
+      const subjects = areas;
       
       const classLearners = learners.filter(l => l.grade === tGrade);
       if (!classLearners.length) return { ...t, avg: 0, entries: 0, completion: 0, recommendation: 'Assign a class or teaching area to activate performance tracking.' };
@@ -1005,8 +1010,8 @@ function StaffPerformance({ staff, learners, marks, pTerm, pAssess, subjCfg }) {
       let entries = 0;
       subjects.forEach(s => {
         classLearners.forEach(l => {
-          const sc = marks[`${pTerm}:${tGrade}|${s}|${pAssess}`]?.[l.adm];
-          if (sc !== undefined) {
+          const sc = getMark(marks, pTerm, tGrade, s, pAssess, l.adm);
+          if (sc !== null) {
             scores.push(Number(sc));
             entries++;
           }
@@ -1475,11 +1480,11 @@ function PathwaysTab({ grade, term, learners, marks, curriculum, subjects }) {
     const scores = [];
     subjects.forEach(s => {
       ['et1', 'mt1', 'op1'].forEach(assess => {
-        const score = marks[`${term}:${grade}|${s}|${assess}`]?.[l.adm];
-        if (score !== undefined && score !== null && score !== '') {
-          total += Number(score);
+        const score = getMark(marks, term, grade, s, assess, l.adm);
+        if (score !== null) {
+          total += score;
           count++;
-          scores.push({ subject: s, score: Number(score) });
+          scores.push({ subject: s, score });
         }
       });
     });
