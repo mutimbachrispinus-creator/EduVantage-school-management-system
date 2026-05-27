@@ -43,7 +43,7 @@ export default function BulkPushPage() {
     setProgress({ current: 0, total: filteredLearners.length });
 
     // Process in small batches to avoid timeouts and provide progress
-    const BATCH_SIZE = 5;
+    const BATCH_SIZE = 15;
     const allResults = [];
 
     for (let i = 0; i < filteredLearners.length; i += BATCH_SIZE) {

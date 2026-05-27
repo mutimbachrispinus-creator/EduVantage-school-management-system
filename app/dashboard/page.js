@@ -110,20 +110,34 @@ function DashboardContent() {
     setBusy(true);
     try {
       const alerts = stats.redFlags.map(rf => ({ phone: rf.phone, name: rf.name, count: rf.absent_count }));
-      const res = await fetch('/api/sms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'bulk_absenteeism_alert', alerts })
-      });
-      const data = await res.json();
-      if (data.ok) alert(`✅ SMS alerts sent to ${data.totalSent} parents!`);
-      else alert('❌ Failed to send alerts: ' + data.error);
+      const BATCH_SIZE = 10;
+      let totalSent = 0;
+      let totalFailed = 0;
+
+      for (let i = 0; i < alerts.length; i += BATCH_SIZE) {
+        const batch = alerts.slice(i, i + BATCH_SIZE);
+        const res = await fetch('/api/sms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'bulk_absenteeism_alert', alerts: batch })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          totalSent += data.totalSent || 0;
+          totalFailed += data.totalFailed || 0;
+        } else {
+          totalFailed += batch.length;
+        }
+      }
+
+      alert(`✅ SMS alerts sent to ${totalSent} parents!${totalFailed > 0 ? ` (${totalFailed} failed)` : ''}`);
     } catch (e) {
       alert('❌ SMS Error: ' + e.message);
     } finally {
       setBusy(false);
     }
   }
+
 
   if (loading) return <div className="skeleton" style={{ height: '80vh' }} />;
   if (!user) return null;
