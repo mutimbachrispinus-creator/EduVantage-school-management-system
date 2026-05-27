@@ -260,15 +260,17 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            <div className="stat-card" style={{ borderLeft: '4px solid #2563eb' }}>
+            <div className="stat-card" style={{ borderLeft: '4px solid #7c3aed' }}>
               <div className="sc-inner">
-                <div className="sc-icon" style={{ background: '#eff6ff', color: '#2563eb' }}><TrendingUp size={20} /></div>
+                <div className="sc-icon" style={{ background: '#f5f3ff', color: '#7c3aed' }}><TrendingUp size={20} /></div>
                 <div>
-                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Gender Gap</div>
-                  <div className="sc-n" style={{ fontSize: 24 }}>
-                    {Math.abs((stats.genderComparison[0]?.average || 0) - (stats.genderComparison[1]?.average || 0)).toFixed(1)}%
+                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Top Value-Add</div>
+                  <div className="sc-n" style={{ fontSize: 18, textTransform: 'uppercase' }}>
+                    {stats.subjectMastery.filter(s => s.sva > 0).sort((a,b) => b.sva - a.sva)[0]?.name || '—'}
                   </div>
-                  <div className="sc-sub" style={{ background: '#eff6ff', color: '#2563eb' }}>Performance Variance</div>
+                  <div className="sc-sub" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
+                    +{stats.subjectMastery.filter(s => s.sva > 0).sort((a,b) => b.sva - a.sva)[0]?.sva || 0}% Improvement
+                  </div>
                 </div>
               </div>
             </div>
@@ -310,31 +312,72 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="panel">
-              <div className="panel-hdr">
-                <h3 style={{ fontSize: 16, fontWeight: 900 }}>Network Benchmarking</h3>
+            <div className="panel" style={{ gridColumn: '1 / -1' }}>
+              <div className="panel-hdr" style={{ borderBottom: '1px solid var(--border)' }}>
+                <h3 style={{ fontSize: 18, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Gauge size={18} className="text-blue-600" /> Deep Subject Analytics Matrix
+                </h3>
               </div>
-              <div className="panel-body">
-                <div className="h-[400px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.subjectMastery.map(s => ({ ...s, networkAvg: Math.round(s.average * (0.9 + Math.random() * 0.2)) }))}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip />
-                      <Bar dataKey="average" name="Your School" fill="#2563EB" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="networkAvg" name="Network Average" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div style={{ marginTop: 15, padding: 12, background: '#EFF6FF', borderRadius: 10, border: '1px solid #BFDBFE', fontSize: 12, color: '#1E40AF' }}>
-                    💡 <strong>Network Insight:</strong> Your class is performing {stats.classAverage > 65 ? 'above' : 'aligned with'} the network average for {grade}. {(stats.labels || currLabels).subjects} like {stats.subjectMastery[0]?.name} are key strengths.
-                  </div>
-                </div>
+              <div className="tbl-wrap">
+                <table style={{ margin: 0 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ paddingLeft: 20 }}>{(stats.labels || currLabels).subject}</th>
+                      <th style={{ textAlign: 'center' }}>Mean</th>
+                      <th style={{ textAlign: 'center' }}>Value-Add (SVA)</th>
+                      <th style={{ textAlign: 'center' }}>Variance (StdDev)</th>
+                      <th>Grade Distribution (Count)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.subjectMastery.map((s, idx) => (
+                      <tr key={idx}>
+                        <td style={{ paddingLeft: 20, fontWeight: 800 }}>{s.name}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 900, color: s.color }}>{s.average}%</td>
+                        <td style={{ textAlign: 'center' }}>
+                          {s.sva > 0 ? <span className="badge bg-green">+{s.sva}</span> 
+                           : s.sva < 0 ? <span className="badge bg-red">{s.sva}</span> 
+                           : <span className="badge" style={{ background: '#f1f5f9' }}>—</span>}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`badge ${s.stdDev > 15 ? 'bg-amber' : 'bg-blue'}`}>{s.stdDev}</span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {stats.distBucketsTemplate && Object.keys(stats.distBucketsTemplate).map(k => (
+                              s.distribution?.[k] ? (
+                                <div key={k} style={{ fontSize: 10, padding: '2px 6px', background: 'var(--slate-50)', border: '1px solid var(--border)', borderRadius: 4 }}>
+                                  <strong style={{ color: 'var(--navy)' }}>{k}</strong>: {s.distribution[k]}
+                                </div>
+                              ) : null
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
+
             <div className="space-y-8">
               <div className="panel">
-                <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900 }}>Assessment Progression</h3></div>
+                <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900 }}>Historical Progression</h3></div>
+                <div className="panel-body">
+                  <ResponsiveContainer width="100%" height={210}>
+                    <LineChart data={[...(stats.historicalProgression || []), { name: term, average: stats.classAverage }]}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" />
+                      <YAxis domain={[0, 100]} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="average" stroke="#2563EB" strokeWidth={3} dot={{ r: 4 }} name="Average" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="panel">
+                <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900 }}>Current Term Assessments</h3></div>
                 <div className="panel-body">
                   <ResponsiveContainer width="100%" height={210}>
                     <LineChart data={stats.assessmentComparison || []}>
@@ -342,7 +385,7 @@ export default function AnalyticsPage() {
                       <XAxis dataKey="name" />
                       <YAxis domain={[0, 100]} />
                       <Tooltip />
-                      <Line type="monotone" dataKey="average" stroke="#8B1A1A" strokeWidth={3} dot={{ r: 4 }} />
+                      <Line type="monotone" dataKey="average" stroke="#8B1A1A" strokeWidth={3} dot={{ r: 4 }} name="Average" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -430,42 +473,102 @@ async function buildCachedAcademicStats({ grade, term, curriculum }) {
     };
 
     const prefixes = buildTermPrefixes(term, grade, curr);
-    const rows = [];
+    // Filter marks just for these learners
+    const learnerAdms = new Set(learners.map(l => String(l.adm)));
+    const allLearnerMarks = [];
     Object.entries(marks).forEach(([key, scores]) => {
-      if (!prefixes.some(p => key.startsWith(p))) return;
       Object.entries(scores || {}).forEach(([adm, score]) => {
-        const n = Number(score);
-        if (Number.isFinite(n)) rows.push({ key, adm, score: n });
+        if (learnerAdms.has(String(adm)) && Number.isFinite(Number(score))) {
+          allLearnerMarks.push({ key, adm: String(adm), score: Number(score) });
+        }
       });
     });
 
+    const marksForGrade = allLearnerMarks.filter(row => prefixes.some(p => row.key.startsWith(p)));
+
     if (!learners.length) return emptyStats({ labels, curriculum, studentCount: 0 });
-    if (!rows.length) return emptyStats({ labels, curriculum, studentCount: learners.length });
+    if (!marksForGrade.length) return emptyStats({ labels, curriculum, studentCount: learners.length });
 
     const learnerMap = new Map(learners.map(l => [String(l.adm), l]));
     const subjectMap = {};
     const assessmentMap = {};
     const learnerTotals = {};
+    const distBucketsTemplate = getDistributionBuckets(grade, curriculum);
 
-    rows.forEach(row => {
-      const parts = row.key.split('|');
+    marksForGrade.forEach(m => {
+      const parts = m.key.split('|');
       const subject = parts[1] || 'Unknown';
-      const assess = parts[2] || 'assessment';
-      subjectMap[subject] = subjectMap[subject] || { total: 0, count: 0 };
-      assessmentMap[assess] = assessmentMap[assess] || { total: 0, count: 0 };
-      learnerTotals[row.adm] = learnerTotals[row.adm] || { total: 0, count: 0 };
-      subjectMap[subject].total += row.score;
+      const assess  = parts[2] || 'assessment';
+
+      if (!subjectMap[subject]) subjectMap[subject] = { total: 0, count: 0, scores: [], dist: { ...distBucketsTemplate } };
+      subjectMap[subject].total += m.score;
       subjectMap[subject].count++;
-      assessmentMap[assess].total += row.score;
+      subjectMap[subject].scores.push(m.score);
+      
+      const info = gInfo(m.score, grade, null, curriculum);
+      if (info?.lv && subjectMap[subject].dist[info.lv] !== undefined) {
+        subjectMap[subject].dist[info.lv]++;
+      }
+
+      if (!assessmentMap[assess]) assessmentMap[assess] = { total: 0, count: 0 };
+      assessmentMap[assess].total += m.score;
       assessmentMap[assess].count++;
-      learnerTotals[row.adm].total += row.score;
-      learnerTotals[row.adm].count++;
+
+      if (!learnerTotals[m.adm]) learnerTotals[m.adm] = { total: 0, count: 0 };
+      learnerTotals[m.adm].total += m.score;
+      learnerTotals[m.adm].count++;
     });
 
+    // ── Value Add & Historical Progression ──
+    const historicalMap = {}; 
+    const pastSubjectMap = {}; 
+    
+    const currTerms = curr.TERMS || [];
+    const matchedIdx = currTerms.findIndex(t => t.id === term || t.name === term);
+    const prevTermObj = matchedIdx > 0 ? currTerms[matchedIdx - 1] : null;
+    const prevPrefixes = prevTermObj ? [
+      `${prevTermObj.id}:${grade}|`, `${prevTermObj.name}:${grade}|`, `T${matchedIdx}:${grade}|`, `TERM ${matchedIdx}:${grade}|`
+    ] : [];
+
+    allLearnerMarks.forEach(m => {
+      const parts = m.key.split('|');
+      const termGradePart = parts[0] || '';
+      const tName = termGradePart.split(':')[0] || 'Unknown';
+      
+      if (!historicalMap[tName]) historicalMap[tName] = { total: 0, count: 0 };
+      historicalMap[tName].total += m.score;
+      historicalMap[tName].count++;
+
+      if (prevPrefixes.some(p => m.key.startsWith(p))) {
+        const subject = parts[1] || 'Unknown';
+        if (!pastSubjectMap[subject]) pastSubjectMap[subject] = { total: 0, count: 0 };
+        pastSubjectMap[subject].total += m.score;
+        pastSubjectMap[subject].count++;
+      }
+    });
+
+    const historicalProgression = Object.entries(historicalMap).map(([tName, data]) => ({
+      name: tName,
+      average: Number((data.total / data.count).toFixed(2))
+    })).filter(h => !prefixes.some(p => p.startsWith(h.name + ':')));
+
     const subjectMastery = Object.entries(subjectMap).map(([name, data]) => {
-      const average = Number((data.total / data.count).toFixed(2));
-      const info = gInfo(average, grade, null, curriculum);
-      return { name, average, entries: data.count, level: info?.lv || '-', color: info?.c || '#64748B' };
+      const avg = Number((data.total / data.count).toFixed(2));
+      const info = gInfo(avg, grade, null, curriculum);
+      
+      const variance = data.scores.reduce((sum, score) => sum + Math.pow(score - avg, 2), 0) / data.count;
+      const stdDev = Number(Math.sqrt(variance).toFixed(2));
+      
+      let sva = 0;
+      if (pastSubjectMap[name] && pastSubjectMap[name].count > 0) {
+        const pastAvg = pastSubjectMap[name].total / pastSubjectMap[name].count;
+        sva = Number((avg - pastAvg).toFixed(2));
+      }
+
+      return { 
+        name, average: avg, entries: data.count, level: info?.lv || '-', color: info?.c || '#64748B',
+        stdDev, sva, distribution: data.dist
+      };
     }).sort((a, b) => b.average - a.average);
 
     const assessLabelMap = (curr.ASSESSMENT_TYPES || []).reduce((acc, a) => {
@@ -500,7 +603,7 @@ async function buildCachedAcademicStats({ grade, term, curriculum }) {
 
     const genderStats = { Boys: { total: 0, count: 0 }, Girls: { total: 0, count: 0 } };
     const streamMap = {};
-    rows.forEach(row => {
+    marksForGrade.forEach(row => {
       const student = learnerMap.get(String(row.adm));
       if (!student) return;
       const sex = String(student.sex || student.gender || '').toLowerCase().startsWith('f') ? 'Girls' : 'Boys';
@@ -532,15 +635,17 @@ async function buildCachedAcademicStats({ grade, term, curriculum }) {
       streamComparison,
       assessmentComparison,
       levelDistribution,
+      historicalProgression,
       studentCount: learners.length,
       enteredLearners: learnerAverages.length,
-      totalEntries: rows.length,
-      completionRate: Number(((rows.length / expectedEntries) * 100).toFixed(1)),
+      totalEntries: marksForGrade.length,
+      completionRate: Number(((marksForGrade.length / expectedEntries) * 100).toFixed(1)),
       classAverage,
       riskCount: learnerAverages.filter(l => l.average < 40).length,
       excellenceCount: learnerAverages.filter(l => l.average >= 80).length,
       labels,
-      curriculum
+      curriculum,
+      distBucketsTemplate
     };
   } catch (e) {
     console.error('Cached analytics fallback failed:', e);
@@ -574,6 +679,7 @@ function emptyStats({ labels, curriculum, studentCount }) {
     streamComparison: [],
     assessmentComparison: [],
     levelDistribution: [],
+    historicalProgression: [],
     studentCount,
     enteredLearners: 0,
     totalEntries: 0,
