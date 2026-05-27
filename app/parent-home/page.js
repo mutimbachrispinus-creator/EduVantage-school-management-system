@@ -71,8 +71,10 @@ export default function ParentHome() {
       let allPaylogs = [];
       let allMsgs = [];
       let allProfiles = {};
-      let primaryProfile = {};
-      let primaryFeeCfg = {};
+      let allEvents = {};
+      let allFullTT = {};
+      let allPayInfo = {};
+      let allFeeCfg = {};
 
       let allSubjCfgs = {};
 
@@ -99,7 +101,7 @@ export default function ParentHome() {
         if (!db.results) return;
 
         const learners = db.results[0]?.value || [];
-        const msgs = db.results[1]?.value || [];
+        const msgs = (db.results[1]?.value || []).map(m => ({...m, tenantId: tid}));
         const fees = db.results[2]?.value || {};
         const mks = db.results[3]?.value || {};
         const payHistory = db.results[7]?.value || [];
@@ -114,18 +116,15 @@ export default function ParentHome() {
         allMsgs = [...allMsgs, ...msgs];
         allProfiles = { ...allProfiles, ...profiles };
         allSubjCfgs[tid] = subjsVal;
-
-        if (tid === auth.user.tenantId || !primaryProfile.name) {
-          primaryProfile = profile;
-          primaryFeeCfg = fees;
-          setPayInfo({
-            accounts: db.results[4]?.value || [],
-            documents: db.results[6]?.value || [],
-            profile: profile
-          });
-          setEvents(db.results[5]?.value || []);
-          setFullTT(fullTTData);
-        }
+        
+        allEvents[tid] = db.results[5]?.value || [];
+        allPayInfo[tid] = {
+          accounts: db.results[4]?.value || [],
+          documents: db.results[6]?.value || [],
+          profile: profile
+        };
+        allFeeCfg[tid] = fees;
+        allFullTT[tid] = fullTTData;
       }));
 
       const admList = links.flatMap(l => (l.adm || '').split(',').map(s => s.trim()).filter(Boolean));
@@ -148,7 +147,13 @@ export default function ParentHome() {
       if (!selAdm && myKids.length > 0) setSelAdm(myKids[0].adm);
 
       setMessages(allMsgs);
-      setFeeCfg(primaryFeeCfg);
+      setFeeCfg(allFeeCfg);
+      setMarks(allMarks);
+      setPaylog(allPaylogs);
+      setSubjCfg(allSubjCfgs);
+      setPayInfo(allPayInfo);
+      setEvents(allEvents);
+      setFullTT(allFullTT);
       setMarks(allMarks);
       setPaylog(allPaylogs);
       setSubjCfg(allSubjCfgs);
@@ -256,9 +261,9 @@ export default function ParentHome() {
           <div class="receipt">
             <div class="header">
               <div class="logo">
-                <img src="${payInfo.profile?.logo || ''}" style="width:50px; height:50px; border-radius:50%;" />
+                <img src="${(payInfo[child?.tenantId] || {}).profile?.logo || ''}" style="width:50px; height:50px; border-radius:50%;" />
               </div>
-              <div class="school">${payInfo.profile?.name || 'OFFICIAL FEE RECEIPT'}</div>
+              <div class="school">${(payInfo[child?.tenantId] || {}).profile?.name || 'OFFICIAL FEE RECEIPT'}</div>
               <div class="title">No: ${p.id || 'N/A'}</div>
             </div>
             <div class="row"><span class="label">Student Name:</span> <span class="val">${child.name}</span></div>
@@ -285,6 +290,10 @@ export default function ParentHome() {
   if (!user) return null;
 
   const child = children.find(c=>c.adm===selAdm) || children[0];
+  const currentTenant = child?.tenantId || user?.tenantId;
+  const currentPayInfo = payInfo[currentTenant] || {};
+  const currentEvents = events[currentTenant] || [];
+  const currentMessages = messages.filter(m => m.tenantId === currentTenant);
 
   if (children.length === 0) {
     return (
@@ -297,8 +306,8 @@ export default function ParentHome() {
     );
   }
 
-  const cfg = feeCfg[child?.grade] || {};
-  const curr = getCurriculum(payInfo.profile?.curriculum || 'CBC', payInfo.profile?.levels);
+  const cfg = (feeCfg[currentTenant] || {})[child?.grade] || {};
+  const curr = getCurriculum(currentPayInfo.profile?.curriculum || 'CBC', currentPayInfo.profile?.levels);
   const TERMS_LIST = curr.TERMS || [];
   const exp = TERMS_LIST.length
     ? TERMS_LIST.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 5000
@@ -310,8 +319,8 @@ export default function ParentHome() {
   const tSubjCfg = subjCfg[child?.tenantId] || {};
   const subjs = (tSubjCfg[child?.grade] && tSubjCfg[child?.grade].length > 0)
     ? tSubjCfg[child?.grade]
-    : getDefaultSubjects(child?.grade, payInfo.profile?.curriculum || 'CBC');
-  const unr = messages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).filter(m=>!(m.read||[]).includes(user.username)).length;
+    : getDefaultSubjects(child?.grade, currentPayInfo.profile?.curriculum || 'CBC');
+  const unr = currentMessages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).filter(m=>!(m.read||[]).includes(user.username)).length;
 
   const TABS = [
     { id:'child',    label:'🏠 Home',         icon:'🏠' },
@@ -325,7 +334,7 @@ export default function ParentHome() {
     { id:'addchild', label:'➕ Add Child',    icon:'➕' },
   ];
 
-  const upcomingEvents = events
+  const upcomingEvents = currentEvents
     .filter(e=>e.date >= new Date().toISOString().split('T')[0])
     .sort((a,b)=>a.date.localeCompare(b.date))
     .slice(0,10);
@@ -343,17 +352,17 @@ export default function ParentHome() {
             <div className="photo-upload-btn">📷</div>
             <input ref={fileRef} type="file" accept="image/*" capture="user" style={{display:'none'}} onChange={uploadPhoto} />
           </div>
-          {payInfo.profile?.logo && (
+          {currentPayInfo.profile?.logo && (
             <div style={{ width: 60, height: 60, borderRadius: 12, background: '#fff', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.4)' }}>
-               <img src={payInfo.profile.logo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="School Logo" />
+               <img src={currentPayInfo.profile.logo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="School Logo" />
             </div>
           )}
         </div>
         <div style={{flex:1}}>
           <h2 style={{fontSize:20,margin:0}}>Welcome, {user?.name}</h2>
           <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2, fontWeight: 700 }}>
-            {payInfo.profile?.name || 'EduVantage School'}
-            {payInfo.profile?.curriculum && ` (${payInfo.profile.curriculum})`}
+            {currentPayInfo.profile?.name || 'EduVantage School'}
+            {currentPayInfo.profile?.curriculum && ` (${currentPayInfo.profile.curriculum})`}
           </div>
           {children.length > 1 && (
             <div style={{marginTop:6,display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -736,7 +745,7 @@ export default function ParentHome() {
               </div>
               <div className="panel-body" style={{ padding: 25 }}>
                 {(() => {
-                  const cfg2 = feeCfg[child?.grade] || {};
+                  const cfg2 = (feeCfg[currentTenant] || {})[child?.grade] || {};
                   const items = [
                     ...TERMS_LIST.map(t => ({ label: `${t.name} Expected`, val: cfg2[t.id.toLowerCase()] || 0 })),
                     ...(!TERMS_LIST.length ? [
@@ -821,9 +830,9 @@ export default function ParentHome() {
                 <h3 style={{ color: '#fff' }}>💳 Institutional Payment Gateway</h3>
               </div>
               <div className="panel-body" style={{ padding: 25 }}>
-                {(payInfo.accounts?.length > 0 || payInfo.profile?.bankAccounts?.length > 0) ? (
+                {(currentPayInfo.accounts?.length > 0 || currentPayInfo.profile?.bankAccounts?.length > 0) ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                    {payInfo.accounts?.map(acc => (
+                    {currentPayInfo.accounts?.map(acc => (
                       <div key={acc.id} style={{ background: '#fff', border: `1.5px solid #E2E8F0`, borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, transition: '0.2s' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <div>
@@ -870,7 +879,7 @@ export default function ParentHome() {
           </div>
           <div className="panel-body">
             {(() => {
-              const gradeTT = fullTT[child?.grade] || {};
+              const gradeTT = (fullTT[currentTenant] || {})[child?.grade] || {};
               const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
               if (Object.keys(gradeTT).length === 0) return <div style={{textAlign:'center',padding:40,color:'var(--muted)'}}>Timetable not yet published for {child?.grade}.</div>;
               return (
@@ -996,7 +1005,7 @@ export default function ParentHome() {
             <h3 style={{color:'#fff'}}>💬 School Messages</h3>
           </div>
           <div className="panel-body">
-            {messages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username||m.from===user.username)
+            {currentMessages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username||m.from===user.username)
               .slice(-20).reverse().map((m,i)=>(
               <div key={i} style={{padding:'12px 0',borderBottom:'1px solid var(--border)'}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
@@ -1006,7 +1015,7 @@ export default function ParentHome() {
                 <div style={{fontSize:13,color:'#334155'}}>{m.text}</div>
               </div>
             ))}
-            {messages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).length===0&&(
+            {currentMessages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).length===0&&(
               <div style={{color:'var(--muted)',fontSize:12,textAlign:'center',padding:30}}>No messages yet</div>
             )}
           </div>
@@ -1019,12 +1028,12 @@ export default function ParentHome() {
             <h3 style={{color:'#fff'}}>📂 School Documents</h3>
           </div>
           <div className="panel-body">
-            {(payInfo.documents || [])
+            {(currentPayInfo.documents || [])
               .filter(d => d.target === 'ALL' || d.target === 'parent')
               .length === 0 ? (
                 <div style={{textAlign:'center',padding:40,color:'var(--muted)'}}>No documents available for download.</div>
               ) : (
-                (payInfo.documents || [])
+                (currentPayInfo.documents || [])
                 .filter(d => d.target === 'ALL' || d.target === 'parent')
                 .map(d => (
                   <div key={d.id} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0',borderBottom:'1px solid var(--border)'}}>
@@ -1173,7 +1182,7 @@ export default function ParentHome() {
           const phone = mpesaForm.phone || user.phone;
           if (!phone) return setMpesaMsg('❌ Please enter your M-Pesa phone number.');
           if (!mpesaForm.amount || Number(mpesaForm.amount) < 1) return setMpesaMsg('❌ Enter a valid amount.');
-          const accounts = payInfo.accounts || [];
+          const accounts = currentPayInfo.accounts || [];
           const acct = accounts.find(a => String(a.id) === String(mpesaForm.paybillId)) || accounts[0] || {};
           setMpesaBusy(true); setMpesaMsg('');
           try {
@@ -1242,12 +1251,12 @@ export default function ParentHome() {
                   />
                   <div style={{ fontSize: 10, color: '#6B7280', marginTop: 4 }}>A KES 50 platform convenience fee will be added.</div>
                 </div>
-                {(payInfo.accounts?.length > 1) && (
+                {(currentPayInfo.accounts?.length > 1) && (
                   <div>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Pay To</label>
                     <select value={mpesaForm.paybillId} onChange={e => setMpesaForm(f => ({ ...f, paybillId: e.target.value }))}
                       style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #D1FAE5', fontSize: 14, fontWeight: 700, outline: 'none' }}>
-                      {payInfo.accounts.map(a => <option key={a.id} value={a.id}>{a.name} — {a.shortcode || a.accNo}</option>)}
+                      {currentPayInfo.accounts.map(a => <option key={a.id} value={a.id}>{a.name} — {a.shortcode || a.accNo}</option>)}
                     </select>
                   </div>
                 )}
