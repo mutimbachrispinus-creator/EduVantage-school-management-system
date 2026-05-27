@@ -355,12 +355,11 @@ export default function EducationHubPage() {
                     </div>
                   )}
                 </div>
-                </div>
               </div>
             </div>
 
             <div className="sidebar" style={{ width: 320, flexShrink: 0 }}>
-              {officialRes.length > 0 && (
+              {officialRes.length !== 0 && (
                 <div className="panel" style={{ marginBottom: 20 }}>
                   <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #0369A1, #075985)', color: '#fff' }}>
                     <h3 style={{ color: '#fff' }}>🌐 {curr.name} Portals</h3>
@@ -378,7 +377,7 @@ export default function EducationHubPage() {
                   </div>
                 </div>
               )}
-              {otherRes.length > 0 && (
+              {otherRes.length !== 0 && (
                 <div className="panel">
                   <div className="panel-hdr"><h3>📚 Learning Links</h3></div>
                   <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
