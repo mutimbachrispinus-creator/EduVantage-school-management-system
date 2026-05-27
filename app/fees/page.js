@@ -649,81 +649,100 @@ function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
 
   return (
     <ModalOverlay title="⚙ Fee Configuration" onClose={onClose}>
-      {/* Summary bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14,
-        padding: '10px 14px', borderRadius: 10, background: configuredCount > 0 ? 'rgba(5,150,105,0.08)' : '#FFF7ED',
-        border: `1px solid ${configuredCount > 0 ? 'rgba(5,150,105,0.2)' : '#FDE68A'}` }}>
-        <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-          Set expected fees per {TERMS.length === 2 ? 'semester' : 'term'} for each grade level.
-          Annual total is calculated automatically.
+      {/* Wrap in flex column so footer always sticks at bottom */}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+
+        {/* Summary bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14,
+          padding: '10px 14px', borderRadius: 10, background: configuredCount > 0 ? 'rgba(5,150,105,0.08)' : '#FFF7ED',
+          border: `1px solid ${configuredCount > 0 ? 'rgba(5,150,105,0.2)' : '#FDE68A'}`,
+          flexShrink: 0 }}>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+            Set expected fees per {TERMS.length === 2 ? 'semester' : 'term'} for each grade level.
+            Annual total is calculated automatically.
+          </div>
+          <span className={`badge ${configuredCount > 0 ? 'bg-green' : 'bg-amber'}`} style={{ fontSize: 10, whiteSpace: 'nowrap' }}>
+            {configuredCount} / {(grades||[]).length} configured
+          </span>
         </div>
-        <span className={`badge ${configuredCount > 0 ? 'bg-green' : 'bg-amber'}`} style={{ fontSize: 10, whiteSpace: 'nowrap' }}>
-          {configuredCount} / {(grades||[]).length} configured
-        </span>
-      </div>
 
-      {/* Grade search */}
-      <input
-        placeholder="🔍 Filter grades…"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        style={{ width: '100%', marginBottom: 10, padding: '8px 12px', border: '1.5px solid var(--border)',
-          borderRadius: 8, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
-      />
+        {/* Grade search */}
+        <input
+          placeholder="🔍 Filter grades…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: '100%', marginBottom: 10, padding: '8px 12px', border: '1.5px solid var(--border)',
+            borderRadius: 8, fontSize: 12, outline: 'none', boxSizing: 'border-box', flexShrink: 0 }}
+        />
 
-      <div style={{ maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
-        {displayGrades.length === 0 && (
-          <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>No grades match your filter.</p>
-        )}
-        {displayGrades.map(g => {
-          const annual = annualFor(g);
-          const configured = isConfigured(g);
-          return (
-            <div key={g} style={{ padding: 12, border: `1.5px solid ${configured ? 'rgba(5,150,105,0.35)' : 'var(--border)'}`,
-              borderRadius: 10, marginBottom: 10,
-              background: configured ? 'rgba(5,150,105,0.04)' : '#FAFBFF',
-              transition: 'border-color 0.2s' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 12 }}>{g}</span>
-                {configured
-                  ? <span className="badge bg-green" style={{ fontSize: 9 }}>✓ Configured — {fmtK(annual)}/yr</span>
-                  : <span className="badge bg-amber" style={{ fontSize: 9 }}>Not set</span>}
-              </div>
-              <div className="field-row">
-                {TERMS.map((t, idx) => (
-                  <div className="field" key={t.id}>
-                    <label style={{ fontSize: 10 }}>{t.name}</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={cfg[g]?.[t.id.toLowerCase()] || ''}
-                      onChange={e => updateFee(g, t.id, e.target.value)}
-                      placeholder={idx === 0 ? 'e.g. 15000' : idx === 1 ? 'e.g. 12000' : 'e.g. 10000'}
-                      style={{ borderColor: configured ? 'rgba(5,150,105,0.4)' : undefined }}
-                    />
-                  </div>
-                ))}
-              </div>
-              {configured && (
-                <div style={{ fontSize: 10, color: '#059669', marginTop: 4, textAlign: 'right', fontWeight: 700 }}>
-                  Annual Total: {fmtK(annual)}
+        {/* Scrollable grades list — takes remaining space */}
+        <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4, minHeight: 0 }}>
+          {displayGrades.length === 0 && (
+            <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>No grades match your filter.</p>
+          )}
+          {displayGrades.map(g => {
+            const annual = annualFor(g);
+            const configured = isConfigured(g);
+            return (
+              <div key={g} style={{ padding: 12, border: `1.5px solid ${configured ? 'rgba(5,150,105,0.35)' : 'var(--border)'}`,
+                borderRadius: 10, marginBottom: 10,
+                background: configured ? 'rgba(5,150,105,0.04)' : '#FAFBFF',
+                transition: 'border-color 0.2s' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 12 }}>{g}</span>
+                  {configured
+                    ? <span className="badge bg-green" style={{ fontSize: 9 }}>✓ Configured — {fmtK(annual)}/yr</span>
+                    : <span className="badge bg-amber" style={{ fontSize: 9 }}>Not set</span>}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                <div className="field-row">
+                  {TERMS.map((t, idx) => (
+                    <div className="field" key={t.id}>
+                      <label style={{ fontSize: 10 }}>{t.name}</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={cfg[g]?.[t.id.toLowerCase()] || ''}
+                        onChange={e => updateFee(g, t.id, e.target.value)}
+                        placeholder={idx === 0 ? 'e.g. 15000' : idx === 1 ? 'e.g. 12000' : 'e.g. 10000'}
+                        style={{ borderColor: configured ? 'rgba(5,150,105,0.4)' : undefined }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {configured && (
+                  <div style={{ fontSize: 10, color: '#059669', marginTop: 4, textAlign: 'right', fontWeight: 700 }}>
+                    Annual Total: {fmtK(annual)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-      <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:14 }}>
-        <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Cancel</button>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={save}
-          disabled={busy}
-          style={{ width: 'auto', opacity: busy ? 0.7 : 1, background: saved ? '#059669' : undefined }}
-        >
-          {saved ? '✅ Saved!' : busy ? '⏳ Saving…' : '💾 Save Fee Config'}
-        </button>
+        {/* ─── Sticky Save Footer — always visible ─── */}
+        <div style={{
+          flexShrink: 0,
+          display: 'flex', justifyContent: 'flex-end', gap: 8,
+          marginTop: 14, paddingTop: 12,
+          borderTop: '1.5px solid var(--border)',
+          background: 'var(--card, #fff)',
+          position: 'sticky', bottom: 0,
+          zIndex: 10
+        }}>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Cancel</button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={save}
+            disabled={busy}
+            style={{
+              width: 'auto', opacity: busy ? 0.7 : 1,
+              background: saved ? '#059669' : undefined,
+              minWidth: 160, fontWeight: 800
+            }}
+          >
+            {saved ? '✅ Saved!' : busy ? '⏳ Saving…' : '💾 Save Fee Config'}
+          </button>
+        </div>
       </div>
     </ModalOverlay>
   );
@@ -764,12 +783,14 @@ function SCard({ icon, label, value, bg }) {
 function ModalOverlay({ title, onClose, children }) {
   return (
     <div className="modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-lg">
-        <div className="modal-hdr">
+      <div className="modal modal-lg" style={{ display: 'flex', flexDirection: 'column', maxHeight: '90dvh' }}>
+        <div className="modal-hdr" style={{ flexShrink: 0 }}>
           <h3>{title}</h3>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {children}
+        </div>
       </div>
     </div>
   );
