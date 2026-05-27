@@ -20,9 +20,10 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { kvGet, kvSet } from '@/lib/db';
 import { findLearner, getTenantId } from '@/lib/learner-lookup';
+import { getCurriculum } from '@/lib/curriculum';
 import {
   sendSMS, sendBulkSMS, sendCredentialsSMS, sendFeeReminderSMS,
-  smsLogEntry, normaliseKenyanNumber,
+  getAbsenteeismAlertMessage, smsLogEntry, normaliseKenyanNumber,
 } from '@/lib/sms-client';
 
 function err(msg, status = 400) {
@@ -133,15 +134,24 @@ export async function POST(request) {
       const learner   = findLearner(learners, admNo);
       if (!learner) return err(`Learner ${admNo} not found`);
 
-      const cfg       = feeCfg[learner.grade] || {};
-      const annualFee = (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 5000;
-      const paid      = (learner.t1 || 0) + (learner.t2 || 0) + (learner.t3 || 0);
-      const balance   = annualFee - paid;
+      const cfg        = feeCfg[learner.grade] || {};
+      const profile    = await kvGet('paav_school_profile', null, tid);
+      const schoolName = profile?.name || '';
+
+      // Curriculum-aware fee calculation
+      const curr       = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
+      const TERMS      = curr.TERMS || [];
+      const periodWord = TERMS.length === 2 ? 'semester' : 'term';
+      const annualFee  = TERMS.length
+        ? TERMS.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 5000
+        : (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 5000;
+      const paid       = TERMS.length
+        ? TERMS.reduce((s, t) => s + (learner[t.id.toLowerCase()] || 0), 0)
+        : (learner.t1 || 0) + (learner.t2 || 0) + (learner.t3 || 0);
+      const balance    = annualFee - paid;
+
       const accounts  = (await kvGet('paav_paybill_accounts', [], tid)) || [];
       const paybill   = accounts[0]?.shortcode || (await kvGet('paav_paybill', '', tid)) || '';
-
-      const profile   = await kvGet('paav_school_profile', null, tid);
-      const schoolName = profile?.name || '';
 
       result = await sendFeeReminderSMS({
         parentPhone: learner.phone,
@@ -150,6 +160,7 @@ export async function POST(request) {
         paybill,
         admNo: learner.adm,
         schoolName,
+        periodWord,
       }, creds);
 
       logEntry = smsLogEntry({
@@ -178,7 +189,7 @@ export async function POST(request) {
       const results = [];
       for (const a of alerts) {
         if (!a.phone) continue;
-        const msg = `Attendance Alert: ${a.name} has missed ${a.count} days recently. Please contact the school office.`;
+        const msg = getAbsenteeismAlertMessage(a.name, a.pct ?? 0, a.count ?? 0, schoolName);
         const r = await sendSMS({ to: a.phone, message: msg, schoolName, ...creds });
         results.push(r);
       }

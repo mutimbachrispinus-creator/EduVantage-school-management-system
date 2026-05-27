@@ -4,6 +4,7 @@ import { sendFeeReminderSMS } from '@/lib/sms-client';
 import { kvGet, kvSet } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { findLearner, getTenantId } from '@/lib/learner-lookup';
+import { getCurriculum } from '@/lib/curriculum';
 
 export async function POST(req) {
   try {
@@ -15,13 +16,21 @@ export async function POST(req) {
 
     if (!adm) return NextResponse.json({ error: 'Admission number required' }, { status: 400 });
 
-    const [learners, accounts, savedCreds] = await Promise.all([
+    const [learners, accounts, savedCreds, feeCfg, profile] = await Promise.all([
       kvGet('paav6_learners', [], tid),
       kvGet('paav_paybill_accounts', [], tid),
-      kvGet('paav_at_creds', {}, 'platform-master')
+      kvGet('paav_at_creds', {}, 'platform-master'),
+      kvGet('paav6_feecfg', {}, tid),
+      kvGet('paav_school_profile', null, tid),
     ]);
 
     const paybill = accounts?.[0]?.shortcode || accounts?.[0]?.value || (await kvGet('paav_paybill', '', tid)) || '';
+    const schoolName = profile?.name || '';
+
+    // Curriculum-aware fee and period
+    const curr       = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
+    const TERMS      = curr.TERMS || [];
+    const periodWord = TERMS.length === 2 ? 'semester' : 'term';
 
     const learner = findLearner(learners, adm);
 
@@ -30,18 +39,33 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Parent phone number not set' }, { status: 400 });
     }
 
+    // Compute live balance if not passed
+    const cfg = (feeCfg || {})[learner.grade] || {};
+    const resolvedBalance = balance ?? (() => {
+      const annual = TERMS.length
+        ? TERMS.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 0
+        : (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 0;
+      const paid = TERMS.length
+        ? TERMS.reduce((s, t) => s + (learner[t.id.toLowerCase()] || 0), 0)
+        : (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
+      return annual + (learner.arrears || 0) - paid;
+    })();
+
     const creds = {
       username: savedCreds?.username || process.env.AT_USERNAME || 'sandbox',
       apiKey:   savedCreds?.apiKey   || process.env.AT_API_KEY  || '',
       senderId: savedCreds?.senderId || process.env.AT_SENDER_ID || '',
+      schoolName,
     };
 
     const result = await sendFeeReminderSMS({
       parentPhone: learner.phone,
       learnerName: learner.name,
-      balance,
+      balance: resolvedBalance,
       paybill: paybill || '',
-      admNo: learner.adm
+      admNo: learner.adm,
+      schoolName,
+      periodWord,
     }, creds);
 
     if (!result.success) {

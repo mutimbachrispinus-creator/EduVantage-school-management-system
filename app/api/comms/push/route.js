@@ -3,9 +3,10 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { kvGet, kvSet } from '@/lib/db';
-import { sendSMS, sendFeeReminderSMS, getResultNotificationMessage } from '@/lib/sms-client';
+import { sendSMS, sendFeeReminderSMS, getResultNotificationMessage, getAbsenteeismAlertMessage } from '@/lib/sms-client';
 import { sendEmail, getReportCardTemplate, getFeeBalanceTemplate } from '@/lib/mail';
 import { calcLearnerReportData, getDefaultSubjects } from '@/lib/cbe';
+import { getCurriculum } from '@/lib/curriculum';
 import { findLearner, getTenantId } from '@/lib/learner-lookup';
 
 export async function POST(request) {
@@ -33,6 +34,9 @@ export async function POST(request) {
     ]);
 
     const schoolName = profile?.name || '';
+    const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
+    const TERMS = curr.TERMS || [];
+    const periodWord = TERMS.length === 2 ? 'semester' : 'term';
 
     const creds = {
       username: savedCreds?.username || process.env.AT_USERNAME || 'sandbox',
@@ -55,8 +59,13 @@ export async function POST(request) {
 
     if (type === 'balance') {
       const cfg = feecfg[learner.grade] || {};
-      const annual = (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 5000;
-      const paid = (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
+      // Curriculum-aware totals
+      const annual = TERMS.length
+        ? TERMS.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 5000
+        : (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 5000;
+      const paid = TERMS.length
+        ? TERMS.reduce((s, t) => s + (learner[t.id.toLowerCase()] || 0), 0)
+        : (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
       const arrears = learner.arrears || 0;
       const balance = annual + arrears - paid;
       const currentTermBal = Math.max(0, annual - paid);
@@ -71,10 +80,10 @@ export async function POST(request) {
             balance,
             paybill: pb,
             admNo: learner.adm,
-            schoolName
+            schoolName,
+            periodWord,
           }, creds);
           results.push({ adm: learner.adm, channel: 'sms', ...res });
-          // Log to DB
           const recipient = res.recipients?.[0] || null;
           await logComms({
             to: parentPhone,
@@ -119,18 +128,21 @@ export async function POST(request) {
       
       if (!gradeSubjects.length) continue;
       
-      const report = calcLearnerReportData(marks, learner.adm, learner.grade, term, gradeSubjects, null, 'CBC', weights);
+      const report = calcLearnerReportData(marks, learner.adm, learner.grade, term, gradeSubjects, null, profile?.curriculum || 'CBC', weights);
       const totalPts = report.totalAvgPts;
       const maxPts = gradeSubjects.length * (['GRADE 7', 'GRADE 8', 'GRADE 9'].includes(learner.grade) ? 8 : 4);
       const pct = maxPts > 0 ? Math.round((totalPts / maxPts) * 100) : 0;
+
+      // Resolve full curriculum term label (e.g. "Term 1" or "Semester 2")
+      const termLabel = TERMS.find(t => t.id === term)?.name || `Term ${term.replace(/^T/, '')}`;
 
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portal.eduvantage.app';
       const portalLink = `${baseUrl}/parent-home?adm=${learner.adm}`;
 
       if (channel === 'sms' || channel === 'both') {
         if (parentPhone) {
-          const message = getResultNotificationMessage(learner.name, term.replace('T', ''), totalPts, maxPts, schoolName);
-          const res = await sendSMS({ to: parentPhone, message, ...creds });
+          const message = getResultNotificationMessage(learner.name, termLabel, totalPts, maxPts, schoolName);
+          const res = await sendSMS({ to: parentPhone, message, schoolName, ...creds });
           results.push({ adm: learner.adm, channel: 'sms', ...res });
           const recipient = res.recipients?.[0] || null;
           await logComms({
@@ -150,7 +162,7 @@ export async function POST(request) {
         if (parentEmail) {
           const html = getReportCardTemplate({
             learnerName: learner.name,
-            term: term.replace('T', ''),
+            term: termLabel,
             year: new Date().getFullYear(),
             totalPts,
             maxPts,
@@ -160,7 +172,7 @@ export async function POST(request) {
           });
           const res = await sendEmail({
             to: parentEmail,
-            subject: `Term ${term.replace('T', '')} Progress Report - ${learner.name}`,
+            subject: `[${schoolName}] ${termLabel} Progress Report - ${learner.name}`,
             html
           });
           results.push({ adm: learner.adm, channel: 'email', ...res });
@@ -169,12 +181,11 @@ export async function POST(request) {
     }
 
     if (type === 'absenteeism') {
-      const { pct, absences } = target; // Passed from UI
+      const { pct, absences } = target;
       if (channel === 'sms' || channel === 'both') {
         if (parentPhone) {
-          const { getAbsenteeismAlertMessage } = await import('@/lib/sms-client');
-          const message = getAbsenteeismAlertMessage(learner.name, pct, absences);
-          const res = await sendSMS({ to: parentPhone, message, ...creds });
+          const message = getAbsenteeismAlertMessage(learner.name, pct, absences, schoolName);
+          const res = await sendSMS({ to: parentPhone, message, schoolName, ...creds });
           results.push({ adm: learner.adm, channel: 'sms', ...res });
           const recipient = res.recipients?.[0] || null;
           await logComms({

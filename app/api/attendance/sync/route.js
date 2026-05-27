@@ -62,8 +62,14 @@ export async function POST(req) {
     if (userType === 'student' && punch_type === 'Check-In' && parentPhone) {
       const formattedPhone = normaliseKenyanNumber(parentPhone);
       if (formattedPhone) {
-        const msg = `Dear Parent, ${dbUser.name} has safely arrived at school at ${timeStr}.`;
-        // Fire and forget SMS so it doesn't block device response
+        // Load school name so the SMS is attributed to the right school
+        let schoolPrefix = '';
+        try {
+          const { kvGet } = await import('@/lib/db');
+          const profile = await kvGet('paav_school_profile', null, tenant_id);
+          if (profile?.name) schoolPrefix = `[${profile.name}] `;
+        } catch (_) {}
+        const msg = `${schoolPrefix}${dbUser.name} has safely arrived at school at ${timeStr}.`;
         sendSMS({ to: formattedPhone, message: msg }).catch(e => console.error('[SMS Error]', e));
       }
     }
