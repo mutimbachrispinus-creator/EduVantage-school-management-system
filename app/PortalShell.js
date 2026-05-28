@@ -517,15 +517,15 @@ export default function PortalShell({ children }) {
   /* PWA Update Detection — avoid stale UI */
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      // Periodically check for updates if tab is left open
-      const interval = setInterval(() => {
-        navigator.serviceWorker.getRegistration().then(reg => {
-          if (reg) reg.update();
-        });
-      }, 60 * 60 * 1000); // Check every hour
-
-      navigator.serviceWorker.getRegistration().then(reg => {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
         if (!reg) return;
+
+        // Periodically check for updates if tab is left open
+        const interval = setInterval(() => {
+          reg.update();
+        }, 60 * 60 * 1000); // Check every hour
+
+        // Listen for updates
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           if (!newWorker) return;
@@ -535,9 +535,13 @@ export default function PortalShell({ children }) {
             }
           });
         });
-      });
 
-      return () => clearInterval(interval);
+        window._pwaInterval = interval;
+      }).catch(err => console.warn('[PWA] SW Reg failed:', err));
+
+      return () => {
+        if (window._pwaInterval) clearInterval(window._pwaInterval);
+      };
     }
   }, []);
 
