@@ -232,9 +232,13 @@ export default function TemplatesPage() {
       <div className="print-container" style={{ position: 'relative' }}>
         {/* Universal Watermark for Printing */}
         <div className="print-watermark" style={{ display: 'none' }}>
-           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.05, pointerEvents: 'none', zIndex: 0 }}>
-             <img src={LOGO || "/eduvantage-logo.png"} alt="" style={{ width: 350, height: 350, objectFit: 'contain', marginBottom: 20 }} />
-             <div style={{ transform: 'rotate(-15deg)', fontSize: 130, fontWeight: 900, fontFamily: 'Sora, sans-serif', color: '#1E293B', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>EDUVANTAGE</div>
+           <div style={{ position: 'fixed', top: '-20%', left: '-20%', width: '140%', height: '140%', display: 'flex', flexWrap: 'wrap', overflow: 'hidden', opacity: 0.05, pointerEvents: 'none', zIndex: 0, alignContent: 'flex-start', justifyContent: 'flex-start' }}>
+             {Array.from({ length: 180 }).map((_, i) => (
+               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '30px 40px', transform: 'rotate(-30deg)' }}>
+                 <img src="/eduvantage-logo.png" alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                 <span style={{ fontSize: 18, fontWeight: 900, fontFamily: 'Sora, sans-serif', color: '#1E293B', textTransform: 'uppercase' }}>EDUVANTAGE</span>
+               </div>
+             ))}
            </div>
         </div>
         <style>{`

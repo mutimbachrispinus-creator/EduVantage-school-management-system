@@ -9,7 +9,7 @@ export default function BudgetingPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [budgets, setBudgets] = useState([]);
-  const [ledger, setLedger] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [newBudget, setNewBudget] = useState({ head: '', amount: '', term: 'T1' });
@@ -19,9 +19,9 @@ export default function BudgetingPage() {
     if (!u || !['admin', 'super-admin'].includes(u.role)) { router.push('/'); return; }
     setUser(u);
 
-    const db = await getCachedDBMulti(['paav_finance_budgets', 'paav_finance_ledger']);
+    const db = await getCachedDBMulti(['paav_finance_budgets', 'paav_finance_expenses']);
     setBudgets(db.paav_finance_budgets || []);
-    setLedger(db.paav_finance_ledger || []);
+    setExpenses(db.paav_finance_expenses || []);
     setLoading(false);
   }, [router]);
 
@@ -29,11 +29,11 @@ export default function BudgetingPage() {
 
   const stats = useMemo(() => {
     const heads = {};
-    // Calculate consumption from ledger based on description or vote-head tags (if we had them, using description for now)
+    // Calculate consumption from recorded expenses
     budgets.forEach(b => {
-      const consumption = ledger
-        .filter(tx => tx.description.toLowerCase().includes(b.head.toLowerCase()) || tx.debitAcc === b.head)
-        .reduce((sum, tx) => sum + tx.amount, 0);
+      const consumption = expenses
+        .filter(ex => ex.head === b.head)
+        .reduce((sum, ex) => sum + Number(ex.amount), 0);
       heads[b.head] = { 
         head: b.head, 
         budget: b.amount, 
@@ -43,7 +43,7 @@ export default function BudgetingPage() {
       };
     });
     return Object.values(heads);
-  }, [budgets, ledger]);
+  }, [budgets, expenses]);
 
   async function saveBudget() {
     if (!newBudget.head || !newBudget.amount) return;
