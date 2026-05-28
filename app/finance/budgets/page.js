@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti, invalidateDB } from '@/lib/client-cache';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from '@/components/DynamicCharts';
+import FinanceNav from '@/components/FinanceNav';
 
 export default function BudgetingPage() {
   const router = useRouter();
@@ -62,6 +63,7 @@ export default function BudgetingPage() {
 
   return (
     <div className="page on">
+      <FinanceNav />
       <div className="page-hdr">
         <div>
           <h2>📊 Budgeting & Variance Analysis</h2>

@@ -18,6 +18,7 @@ import { usePersistedState } from '@/components/TabState';
 import { useProfile } from '@/app/PortalShell';
 import { Search, Plus, Settings, CreditCard, Clock, CheckCircle, XCircle, Printer, AlertCircle } from 'lucide-react';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
+import FinanceNav from '@/components/FinanceNav';
 
 const METHODS = ['Cash','M-Pesa','Bank','Cheque','Bursary'];
 
@@ -159,6 +160,7 @@ export default function FeesPage() {
   return (
     <>
       <div className="page on">
+        <FinanceNav />
         <div className="page-hdr no-print" style={{ marginBottom: 25 }}>
           <div>
             <h2 className="gradient-text" style={{ fontSize: 28, fontWeight: 900 }}>Collections Hub</h2>

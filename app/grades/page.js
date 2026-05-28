@@ -160,7 +160,17 @@ export default function GradesPage() {
   /* ── Derived ── */
   const classLearners = learners.filter(l => l.grade === grade && (!stream || (l.stream || 'Default') === stream))
     .sort((a, b) => a.name.localeCompare(b.name));
-  const gradeStreams = streams.filter(s => s.grade === grade);
+  // Derive streams from BOTH the formal streams config AND from learner records
+  // This ensures stream filtering always works even without Streams module setup
+  const gradeStreams = (() => {
+    const formal = streams.filter(s => s.grade === grade);
+    const fromLearners = [...new Set(
+      learners.filter(l => l.grade === grade && l.stream && l.stream !== 'Default').map(l => l.stream)
+    )].map(name => ({ name, grade }));
+    // Merge — formal takes priority, then add any from learners not already listed
+    const names = new Set(formal.map(s => s.name));
+    return [...formal, ...fromLearners.filter(s => !names.has(s.name))];
+  })();
   const allSubjects = (subjCfg[grade] && subjCfg[grade].length > 0) ? subjCfg[grade] : (DEFAULT_SUBJECTS[grade] || []);
 
   // For teachers: filter to only their assigned subjects for this grade, 
@@ -579,15 +589,23 @@ export default function GradesPage() {
               {ALL_GRADES.map(g => <option key={g}>{g}</option>)}
             </select>
           </div>
-          {gradeStreams.length > 0 && (
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>Stream</label>
-              <select value={stream} onChange={e => setStream(e.target.value)}>
-                <option value="">All Streams</option>
-                {gradeStreams.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-              </select>
-            </div>
-          )}
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>Stream</label>
+            <select value={stream} onChange={e => setStream(e.target.value)}>
+              <option value="">All Streams</option>
+              {gradeStreams.length > 0
+                ? gradeStreams.map(s => <option key={s.name} value={s.name}>{s.name}</option>)
+                : learners.filter(l => l.grade === grade)
+                    .reduce((acc, l) => {
+                      const s = l.stream || 'Default';
+                      if (!acc.includes(s)) acc.push(s);
+                      return acc;
+                    }, [])
+                    .filter(s => s !== 'Default')
+                    .map(s => <option key={s} value={s}>{s}</option>)
+              }
+            </select>
+          </div>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Term</label>
             <select value={term} onChange={e => setTerm(e.target.value)}>

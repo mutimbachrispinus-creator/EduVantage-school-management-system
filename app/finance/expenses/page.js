@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti, invalidateDB } from '@/lib/client-cache';
 import { logAction } from '@/lib/audit';
+import FinanceNav from '@/components/FinanceNav';
 
 export default function ExpensesPage() {
   const router = useRouter();
@@ -66,6 +67,7 @@ export default function ExpensesPage() {
 
   return (
     <div className="page on">
+      <FinanceNav />
       <div className="page-hdr no-print">
         <div>
           <h2>🧾 Enterprise Expenditure Hub</h2>

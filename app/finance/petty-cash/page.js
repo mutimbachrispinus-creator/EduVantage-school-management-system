@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti, invalidateDB } from '@/lib/client-cache';
 import { logAction } from '@/lib/audit';
+import FinanceNav from '@/components/FinanceNav';
 
 export default function PettyCashPage() {
   const router = useRouter();
@@ -50,6 +51,7 @@ export default function PettyCashPage() {
 
   return (
     <div className="page on">
+      <FinanceNav />
       <div className="page-hdr">
         <div>
           <h2>💵 Petty Cash Management</h2>

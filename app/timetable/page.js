@@ -3,7 +3,7 @@
  * app/timetable/page.js — School Timetable (CBC Rules)
  * Tabs: Calendar | Grade View | My Timetable | Generate (admin)
  */
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti, fetchWithRetry, invalidateDB } from '@/lib/client-cache';
 import { getAllGrades, getCurriculum } from '@/lib/cbe';
@@ -392,7 +392,7 @@ export default function TimetablePage() {
                   {Array.from({length: maxPeriods}, (_,pi) => {
                     const brk = (cfg.breaks||[]).find(b => b.after === (pi + 1));
                     return (
-                    <React.Fragment key={pi}>
+                    <Fragment key={pi}>
                     <tr>
                       <td style={{fontWeight:700,textAlign:'center',fontSize:12,background:'#F8FAFF'}}>
                         <div>{pi+1}</div>
@@ -435,7 +435,7 @@ export default function TimetablePage() {
                         </td>
                       </tr>
                     )}
-                    </React.Fragment>
+                    </Fragment>
                   )})}
                 </tbody>
               </table>
@@ -697,7 +697,7 @@ function EditTimetablePanel({ timetable, staff, allocs, codes, selGrade, setSelG
             {Array.from({length: maxPeriods}, (_,pi) => {
               const brk = (cfg.breaks||[]).find(b => b.after === (pi + 1));
               return (
-              <React.Fragment key={pi}>
+              <Fragment key={pi}>
               <tr>
                 <td style={{fontWeight:700,textAlign:'center',fontSize:12,background:'#F8FAFF'}}>
                   <div>{pi+1}</div>
@@ -751,7 +751,7 @@ function EditTimetablePanel({ timetable, staff, allocs, codes, selGrade, setSelG
                   </td>
                 </tr>
               )}
-              </React.Fragment>
+              </Fragment>
             )})}
           </tbody>
         </table>

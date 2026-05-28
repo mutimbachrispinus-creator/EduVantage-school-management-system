@@ -9,6 +9,7 @@ import QuickReceipt from '@/components/nexed/QuickReceipt';
 import ExpenseVoucher from '@/components/nexed/ExpenseVoucher';
 import { addSupplier, getSuppliers } from '@/lib/actions/ledger';
 import { Search, Plus, User, Tag, Truck } from 'lucide-react';
+import FinanceNav from '@/components/FinanceNav';
 
 export default function NexedPage() {
   const router = useRouter();
@@ -105,6 +106,7 @@ export default function NexedPage() {
 
   return (
     <div className="page on">
+      <FinanceNav />
       <div className="page-hdr" style={{ marginBottom: 30 }}>
         <div>
           <h2 className="gradient-text" style={{ fontSize: 32, fontWeight: 900 }}>Financial Dashboard</h2>

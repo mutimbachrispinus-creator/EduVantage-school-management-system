@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti, invalidateDB } from '@/lib/client-cache';
 import { logAction } from '@/lib/audit';
+import FinanceNav from '@/components/FinanceNav';
 
 export default function TransactionsPage() {
   const router = useRouter();
@@ -50,6 +51,7 @@ export default function TransactionsPage() {
 
   return (
     <div className="page on">
+      <FinanceNav />
       <div className="page-hdr">
         <div>
           <h2>📜 Financial Ledger</h2>

@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
+import FinanceNav from '@/components/FinanceNav';
 
 export default function ReconcilePage() {
   const router = useRouter();
@@ -62,6 +63,7 @@ export default function ReconcilePage() {
 
   return (
     <div className="page on">
+      <FinanceNav />
       <div className="page-hdr">
         <div>
           <h2>🏦 Smart Bank Reconciliation</h2>

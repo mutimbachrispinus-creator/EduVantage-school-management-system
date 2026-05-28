@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   Cell, PieChart, Pie 
 } from '@/components/DynamicCharts';
+import FinanceNav from '@/components/FinanceNav';
 
 export default function FinanceDashboardPage() {
   const router = useRouter();
@@ -85,6 +86,7 @@ export default function FinanceDashboardPage() {
 
   return (
     <div className="page on">
+      <FinanceNav />
       <div className="page-hdr">
         <div>
           <h2>💎 Enterprise Finance Hub</h2>
