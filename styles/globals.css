@@ -577,15 +577,17 @@ tr:hover td{background:#F8FAFF}
     overflow: hidden !important;
     page-break-after: always !important;
     page-break-inside: avoid !important;
-    border: 2px solid #8B1A1A !important;
+    border: 4px double #8B1A1A !important;
+    outline: 1px solid #8B1A1A !important;
+    outline-offset: -8px !important;
     box-shadow: none !important;
     background: #fff !important;
     display: block !important;
   }
   /* Inner content wrapper — zoom scales all inline-styled children */
   .rc-page-inner {
-    zoom: 0.78 !important;
-    width: calc(100% / 0.78) !important;
+    zoom: 0.73 !important;
+    width: calc(100% / 0.73) !important;
     transform-origin: top left !important;
   }
   .rc-page:last-child { page-break-after: avoid !important; }
@@ -639,7 +641,7 @@ tr:hover td{background:#F8FAFF}
 
 /* ── TEMPLATES PRINT CONTAINER ── */
 .print-container{background:#fff;padding:20px;border-radius:var(--r);border:1.5px solid var(--border);min-height:600px}
-.rc-page{background:#fff;border:3px solid #8B1A1A;margin:0 auto 32px;position:relative;min-height:277mm;width:210mm;box-sizing:border-box;page-break-after:always;overflow:hidden}
+.rc-page{background:#fff;border:4px double #8B1A1A;outline:1px solid #8B1A1A;outline-offset:-8px;margin:0 auto 32px;position:relative;min-height:277mm;width:210mm;box-sizing:border-box;page-break-after:always;overflow:hidden}
 .rc-page:last-child{page-break-after:avoid;margin-bottom:0}
 .rc-page-inner{padding:12mm 14mm;box-sizing:border-box}
 .templates-print-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
