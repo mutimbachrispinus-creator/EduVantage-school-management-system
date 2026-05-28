@@ -4,9 +4,11 @@ import { usePathname, useRouter } from 'next/navigation';
 const FINANCE_TABS = [
   { label: '💎 Finance Hub',    href: '/finance',              short: 'Hub' },
   { label: '💰 Fees & Payments',href: '/fees',                 short: 'Fees' },
+  { label: '💳 Billing',        href: '/billing',              short: 'Billing' },
   { label: '🏛️ Fee Ledger',     href: '/nexed',                short: 'Nexed' },
   { label: '📊 Budgets',        href: '/finance/budgets',      short: 'Budgets' },
   { label: '💵 Petty Cash',     href: '/finance/petty-cash',   short: 'Petty Cash' },
+  { label: '💸 Payroll',        href: '/finance/payroll',      short: 'Payroll' },
   { label: '📜 Transactions',   href: '/finance/transactions', short: 'Transactions' },
   { label: '🧾 Expenses',       href: '/finance/expenses',     short: 'Expenses' },
   { label: '🔁 Reconcile',      href: '/finance/reconcile',    short: 'Reconcile' },

@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { useProfile } from '@/app/PortalShell';
+import FinanceNav from '@/components/FinanceNav';
 
 const M = 'var(--primary)', M2 = 'var(--accent)', ML = 'var(--primary-low)', MB = '#F8FAFC';
 
@@ -294,6 +295,7 @@ export default function UnifiedPayrollPage() {
 
   return (
     <div className="page on">
+      <FinanceNav />
       <div className="page-hdr">
         <div>
           <h2>💵 Staff Payroll & Compliance</h2>

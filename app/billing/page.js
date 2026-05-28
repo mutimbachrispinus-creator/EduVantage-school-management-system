@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import FinanceNav from '@/components/FinanceNav';
 
 const M = '#4F46E5', SLATE = '#64748B', NAVY = '#0F172A', EMERALD = '#10B981';
 
@@ -202,6 +203,7 @@ export default function BillingPage() {
 
   return (
     <div className="page on billing-page" style={{ background: '#F8FAFC', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
+      <FinanceNav />
       <div className="blob-bg" style={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(79,70,229,0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
       
       <div style={{ position: 'relative', zIndex: 1, marginBottom: 40 }}>
