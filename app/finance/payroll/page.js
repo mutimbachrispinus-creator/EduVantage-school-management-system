@@ -15,26 +15,25 @@ function money(value) {
   return Math.round(moneyValue(value)).toLocaleString('en-KE');
 }
 
-function calcPayrollForStaff(staffMember, oneOffDeductions = []) {
+function calcPayrollForStaff(staffMember, oneOffDeductions = [], toggles = { nssf: true, levy: true, shif: true, paye: true }) {
   const gross = moneyValue(staffMember?.salary);
-  const nssf = Math.min(2160, gross * 0.06);
-  const levy = gross * 0.015;
-  const shif = gross * 0.0275;
+  const nssf = toggles.nssf ? Math.min(2160, gross * 0.06) : 0;
+  const levy = toggles.levy ? gross * 0.015 : 0;
+  const shif = toggles.shif ? gross * 0.0275 : 0;
   let taxable = gross - nssf;
   let paye = 0;
-  if (taxable > 24000) {
+  if (toggles.paye && taxable > 24000) {
     if (taxable <= 32333) paye = (taxable - 24000) * 0.1;
     else if (taxable <= 500000) paye = (32333 - 24000) * 0.1 + (taxable - 32333) * 0.25;
     else paye = (32333 - 24000) * 0.1 + (500000 - 32333) * 0.25 + (taxable - 500000) * 0.3;
   }
-  paye = Math.max(0, paye - 2400);
+  if (toggles.paye) paye = Math.max(0, paye - 2400);
 
-  const statutoryItems = [
-    { label: 'NSSF Contribution', amount: nssf },
-    { label: 'Housing Levy (1.5%)', amount: levy },
-    { label: 'SHIF / Health Insurance', amount: shif },
-    { label: 'P.A.Y.E Tax', amount: paye },
-  ];
+  const statutoryItems = [];
+  if (toggles.nssf) statutoryItems.push({ label: 'NSSF Contribution', amount: nssf });
+  if (toggles.levy) statutoryItems.push({ label: 'Housing Levy (1.5%)', amount: levy });
+  if (toggles.shif) statutoryItems.push({ label: 'SHIF / Health Insurance', amount: shif });
+  if (toggles.paye) statutoryItems.push({ label: 'P.A.Y.E Tax', amount: paye });
 
   const recurring = [
     { label: 'SACCO Loan', amount: staffMember?.saccoLoan },
@@ -106,6 +105,8 @@ export default function UnifiedPayrollPage() {
   const [selStaffId, setSelStaffId] = useState('');
   const [printSlip, setPrintSlip] = useState(null);
   const [oneOffDeductions, setOneOffDeductions] = useState([{ label: '', amount: '' }]);
+  const [statToggles, setStatToggles] = useState({ nssf: true, levy: true, shif: true, paye: true });
+  const [inlineSalary, setInlineSalary] = useState('');
 
   const load = useCallback(async () => {
     const u = await getCachedUser();
@@ -120,7 +121,11 @@ export default function UnifiedPayrollPage() {
   }, [router]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setOneOffDeductions([{ label: '', amount: '' }]); }, [selStaffId]);
+  useEffect(() => { 
+    setOneOffDeductions([{ label: '', amount: '' }]); 
+    const s = staff.find(st => st.username === selStaffId);
+    setInlineSalary(s ? s.salary : '');
+  }, [selStaffId, staff]);
 
   const selStaff = useMemo(() => staff.find(s => s.username === selStaffId), [staff, selStaffId]);
 
@@ -128,8 +133,10 @@ export default function UnifiedPayrollPage() {
   const currentPay = useMemo(() => {
     if (!selStaff) return null;
     const manual = oneOffDeductions.filter(d => moneyValue(d.amount) > 0).map(d => ({ label: d.label || 'Other Deduction', amount: d.amount }));
-    return calcPayrollForStaff(selStaff, manual);
-  }, [selStaff, oneOffDeductions]);
+    // Use inline salary if edited, otherwise fallback to selStaff.salary
+    const effectiveStaff = { ...selStaff, salary: inlineSalary !== '' ? inlineSalary : selStaff.salary };
+    return calcPayrollForStaff(effectiveStaff, manual, statToggles);
+  }, [selStaff, oneOffDeductions, statToggles, inlineSalary]);
 
   const schoolSummary = useMemo(() => {
     const activeMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -164,14 +171,27 @@ export default function UnifiedPayrollPage() {
 
     try {
       const updated = [rec, ...payroll];
+      const reqs = [{ type: 'set', key: 'paav7_salary', value: updated }];
+      
+      // Auto-save the salary to staff profile if it was edited
+      if (inlineSalary !== '' && moneyValue(inlineSalary) !== moneyValue(selStaff.salary)) {
+        const staffList = [...staff];
+        const idx = staffList.findIndex(s => s.username === selStaff.username);
+        if (idx >= 0) {
+          staffList[idx].salary = moneyValue(inlineSalary);
+          reqs.push({ type: 'set', key: 'paav6_staff', value: staffList });
+        }
+      }
+
       await fetch('/api/db', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [{ type: 'set', key: 'paav7_salary', value: updated }] })
+        body: JSON.stringify({ requests: reqs })
       });
       setPayroll(updated);
       setTab('history');
       alert('✅ Payroll record saved!');
+      load(); // reload staff to get updated salaries
     } catch (e) {
       alert('❌ Save failed: ' + e.message);
     } finally {
@@ -326,12 +346,27 @@ export default function UnifiedPayrollPage() {
                 <div style={{ marginTop: 20, padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
                   <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
                      <div style={{ width: 50, height: 50, borderRadius: 25, background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 900 }}>{selStaff.name[0]}</div>
-                     <div>
+                     <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 800, fontSize: 16 }}>{selStaff.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selStaff.role.toUpperCase()} • Base: KSH {money(selStaff.salary)}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selStaff.role.toUpperCase()}</div>
+                     </div>
+                     <div>
+                        <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--slate)' }}>BASIC SALARY (KSH)</label>
+                        <input type="number" className="field" style={{ margin: 0, padding: '6px 12px', width: 140, fontWeight: 900, color: 'var(--primary)', fontSize: 16 }} value={inlineSalary} onChange={e => setInlineSalary(e.target.value)} placeholder="0.00" />
                      </div>
                   </div>
-                  <div style={{ marginTop: 18 }}>
+                  <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px dashed #E2E8F0' }}>
+                    <label style={{ fontWeight: 700, fontSize: 13, color: 'var(--slate)', display: 'block', marginBottom: 10 }}>Statutory Deductions (Toggle to Levy)</label>
+                    <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap' }}>
+                       {Object.keys(statToggles).map(k => (
+                         <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: statToggles[k] ? 'var(--primary-low)' : '#F1F5F9', padding: '6px 12px', borderRadius: 8, color: statToggles[k] ? 'var(--primary)' : '#64748B' }}>
+                           <input type="checkbox" checked={statToggles[k]} onChange={e => setStatToggles(prev => ({ ...prev, [k]: e.target.checked }))} style={{ margin: 0 }} />
+                           {k.toUpperCase()}
+                         </label>
+                       ))}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px dashed #E2E8F0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                       <label style={{ fontWeight: 700, fontSize: 13, color: 'var(--slate)' }}>Additional Deductions</label>
                       <button className="btn btn-ghost btn-sm" onClick={() => setOneOffDeductions(d => [...d, { label: '', amount: '' }])}>+ Add Deduction</button>

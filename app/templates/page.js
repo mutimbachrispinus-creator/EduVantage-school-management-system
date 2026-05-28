@@ -111,7 +111,7 @@ export default function TemplatesPage() {
     const pageRule = landscape
       ? '@page { size: A4 landscape; margin: 8mm; }'
       : '@page { size: A4 portrait; margin: 10mm 12mm; }';
-    const showRule = '@media print { .print-container > div { display: none !important; } .print-container > div.print-me { display: block !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative; } body::after { content: "EDUVANTAGE"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 140px; color: rgba(0,0,0,0.03); font-weight: 900; pointer-events: none; z-index: 9999; } }';
+    const showRule = '@media print { .print-container > div.print-content { display: none !important; } .print-container > div.print-me { display: block !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative; } }';
     style.innerHTML = pageRule + '\n' + showRule;
     document.head.appendChild(style);
 
@@ -229,7 +229,20 @@ export default function TemplatesPage() {
       </div>
 
       {/* Instant tab switching — all tabs rendered to load data, only active is shown */}
-      <div className="print-container">
+      <div className="print-container" style={{ position: 'relative' }}>
+        {/* Universal Watermark for Printing */}
+        <div className="print-watermark" style={{ display: 'none' }}>
+           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.05, pointerEvents: 'none', zIndex: 0 }}>
+             <img src={LOGO || "/eduvantage-logo.png"} alt="" style={{ width: 350, height: 350, objectFit: 'contain', marginBottom: 20 }} />
+             <div style={{ transform: 'rotate(-15deg)', fontSize: 130, fontWeight: 900, fontFamily: 'Sora, sans-serif', color: '#1E293B', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>EDUVANTAGE</div>
+           </div>
+        </div>
+        <style>{`
+          @media print {
+            .print-watermark { display: block !important; }
+          }
+        `}</style>
+        
         <div id="pct-merit" className={`print-content ${tab === 'merit' ? 'print-me' : ''}`} style={{ display: tab === 'merit' ? 'block' : 'none' }}>
           <MeritListTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} />
         </div>
@@ -586,10 +599,6 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
     <div className="rc-batch">
       {rankedData.map(l => (
         <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'hidden', padding: '15mm', border: `8px double ${themeColor}22` }}>
-          {/* EduVantage Watermark */}
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-45deg)', fontSize: 130, color: `${themeColor}05`, fontWeight: 900, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 0, textTransform: 'uppercase' }}>
-            EDUVANTAGE
-          </div>
           
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ position: 'absolute', top: 10, right: 10, textAlign: 'center' }}>
