@@ -603,6 +603,7 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
     <div className="rc-batch">
       {rankedData.map(l => (
         <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
+          <div className="watermark-overlay"></div>
           <div className="rc-page-inner">
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ position: 'absolute', top: 5, right: 10, textAlign: 'center', background: '#F8FAFC', padding: '6px', borderRadius: '6px', border: `1px solid ${themeColor}33`, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', zIndex: 10 }}>
