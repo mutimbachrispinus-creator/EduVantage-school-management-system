@@ -99,6 +99,16 @@ function ReportCardContent() {
           return (
             <div key={learner.adm} className={`rc-page${idx < targetLearners.length-1 ? ' rc-page-break' : ''}`}>
 
+              {/* ── Repeating Angled Brand Watermark ── */}
+              <div className="rc-watermark">
+                {Array.from({ length: 48 }).map((_, i) => (
+                  <div key={i} className="rc-watermark-item">
+                    <img src="/eduvantage-logo.png" alt="" className="rc-watermark-img" />
+                    <span className="rc-watermark-text">EDUVANTAGE</span>
+                  </div>
+                ))}
+              </div>
+
               {/* ── OUTER BORDER (double-line Kenyan style) ── */}
               <div className="rc-outer-border">
                 <div className="rc-inner-border">
@@ -278,9 +288,11 @@ function ReportCardContent() {
 
         /* ── Page container (A4 preview on screen) ── */
         .rc-pages { padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+        
         .rc-page {
+          position: relative;
           width: 210mm;
-          min-height: 297mm;
+          height: 297mm;
           background: #fff;
           box-shadow: 0 8px 30px rgba(0,0,0,.18);
           box-sizing: border-box;
@@ -288,33 +300,62 @@ function ReportCardContent() {
           font-family: 'Times New Roman', Times, serif;
           font-size: 11pt;
           color: #0a0a0a;
+          overflow: hidden;
         }
+        
         .rc-page-break { page-break-after: always; }
+
+        /* ── Repeating Angled Watermark ── */
+        .rc-watermark {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          display: flex; flex-wrap: wrap;
+          overflow: hidden; opacity: 0.04;
+          pointer-events: none; z-index: 0;
+          align-content: flex-start; justify-content: flex-start;
+        }
+        .rc-watermark-item {
+          display: flex; align-items: center; gap: 6px;
+          padding: 24px 32px; transform: rotate(-25deg);
+          transform-origin: center;
+        }
+        .rc-watermark-img {
+          width: 22px; height: 22px; object-fit: contain;
+        }
+        .rc-watermark-text {
+          font-size: 13px; font-weight: 900;
+          font-family: 'Sora', sans-serif; color: #1E293B;
+          text-transform: uppercase; letter-spacing: 0.5px;
+        }
 
         /* ── Double border (Kenyan style) ── */
         .rc-outer-border {
-          border: 3px solid #0f172a;
+          border: 3px double #0f172a;
           padding: 4px;
-          min-height: 281mm;
+          height: 281mm;
           box-sizing: border-box;
+          position: relative;
+          z-index: 1;
         }
         .rc-inner-border {
           border: 1.5px solid #0f172a;
-          padding: 8px 10px;
-          min-height: 272mm;
+          padding: 10px 12px;
+          height: 271mm;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
+          justify-content: space-between;
+          position: relative;
+          z-index: 1;
         }
 
         /* ── Header ── */
         .rc-header {
           text-align: center;
           border-bottom: 2.5px solid #0f172a;
-          padding-bottom: 8px;
-          margin-bottom: 8px;
+          padding-bottom: 6px;
         }
-        .rc-logo { height: 72px; border-radius: 50%; margin-bottom: 4px; }
+        .rc-logo { height: 58px; border-radius: 50%; margin-bottom: 2px; }
         .rc-school-name { font-size: 17pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
         .rc-tagline { font-size: 9pt; color: #475569; margin-top: 2px; }
         .rc-address { font-size: 8.5pt; color: #475569; margin-top: 1px; }
@@ -330,32 +371,29 @@ function ReportCardContent() {
         /* ── Student info table ── */
         .rc-info-table {
           width: 100%; border-collapse: collapse;
-          margin-bottom: 8px;
           border: 1.5px solid #0f172a;
-          font-size: 10pt;
+          font-size: 9.5pt;
         }
-        .rc-info-table td { padding: 4px 8px; border: 1px solid #cbd5e1; }
+        .rc-info-table td { padding: 3px 6px; border: 1px solid #cbd5e1; }
         .rc-info-label { color: #475569; font-size: 9pt; width: 18%; white-space: nowrap; }
         .rc-info-value { font-size: 10pt; width: 32%; }
 
         /* ── Marks table ── */
         .rc-marks-table {
           width: 100%; border-collapse: collapse;
-          margin-bottom: 8px;
           border: 2px solid #0f172a;
-          font-size: 10pt;
-          flex: 1;
+          font-size: 9.5pt;
         }
         .rc-marks-thead { background: #0f172a; color: #fff; }
-        .rc-marks-thead th { padding: 6px 8px; text-align: left; font-size: 9pt; border: 1px solid #334155; }
+        .rc-marks-thead th { padding: 4px 6px; text-align: left; font-size: 8.5pt; border: 1px solid #334155; }
         .rc-th-subj { width: 28%; text-align: left; }
         .rc-th-center { text-align: center; width: 11%; }
         .rc-th-remarks { text-align: left; }
         .rc-row-even { background: #fff; }
         .rc-row-odd  { background: #f8fafc; }
-        .rc-td-subj  { padding: 5px 8px; font-weight: 700; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
-        .rc-td-center { padding: 5px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
-        .rc-td-remarks { padding: 5px 8px; font-size: 9pt; color: #374151; border-bottom: 1px solid #e2e8f0; }
+        .rc-td-subj  { padding: 4px 6px; font-weight: 700; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
+        .rc-td-center { padding: 4px 6px; text-align: center; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
+        .rc-td-remarks { padding: 4px 6px; font-size: 8.5pt; color: #374151; border-bottom: 1px solid #e2e8f0; }
         .rc-score { font-weight: 800; font-size: 12pt; }
         .rc-pts   { font-weight: 900; }
         .rc-grade-pill {
@@ -363,89 +401,126 @@ function ReportCardContent() {
           font-size: 9pt; font-weight: 800;
         }
         .rc-totals-row { background: #0f172a; color: #fff; }
-        .rc-totals-row td { padding: 7px 8px; border-top: 2px solid #0f172a; }
+        .rc-totals-row td { padding: 5px 6px; border-top: 2px solid #0f172a; }
         .rc-totals-label { font-weight: 800; font-size: 9pt; }
-        .rc-totals-score { text-align: center; color: #fcd34d; font-weight: 900; font-size: 13pt; }
-        .rc-totals-grade { text-align: center; font-weight: 900; font-size: 12pt; }
-        .rc-totals-desc  { font-size: 9pt; font-weight: 700; }
+        .rc-totals-score { text-align: center; color: #fcd34d; font-weight: 900; font-size: 12pt; }
+        .rc-totals-grade { text-align: center; font-weight: 900; font-size: 11pt; }
+        .rc-totals-desc  { font-size: 8.5pt; font-weight: 700; }
 
         /* ── Bottom grid: Fee + Overall ── */
         .rc-bottom-grid {
           display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-          margin-bottom: 8px;
         }
         .rc-fee-box, .rc-overall-box {
-          border: 1.5px solid #0f172a; border-radius: 4px; padding: 7px 9px;
+          border: 1.5px solid #0f172a; border-radius: 4px; padding: 6px 8px;
         }
         .rc-box-title {
           font-size: 8pt; font-weight: 800; text-transform: uppercase;
           letter-spacing: 0.6px; color: #475569;
           border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 5px;
         }
-        .rc-fee-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
-        .rc-fee-table td { padding: 3px 2px; border-bottom: 1px dashed #cbd5e1; }
+        .rc-fee-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+        .rc-fee-table td { padding: 2px 2px; border-bottom: 1px dashed #cbd5e1; }
         .rc-fee-table td:last-child { text-align: right; }
-        .rc-fee-balance td { padding-top: 5px; font-size: 10pt; border-top: 1.5px solid #0f172a; border-bottom: none; }
+        .rc-fee-balance td { padding-top: 4px; font-size: 9.5pt; border-top: 1.5px solid #0f172a; border-bottom: none; }
+        
         .rc-overall-box { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .rc-overall-grade { font-size: 38pt; font-weight: 900; line-height: 1; }
-        .rc-overall-pct   { font-size: 22pt; font-weight: 900; color: #0f172a; margin-top: 2px; }
-        .rc-overall-desc  { font-size: 9.5pt; color: #475569; margin-top: 3px; }
-        .rc-overall-sub   { font-size: 8.5pt; color: #94a3b8; margin-top: 2px; }
+        .rc-overall-grade { font-size: 32pt; font-weight: 900; line-height: 1; }
+        .rc-overall-pct   { font-size: 18pt; font-weight: 900; color: #0f172a; margin-top: 1px; }
+        .rc-overall-desc  { font-size: 9pt; color: #475569; margin-top: 1px; }
+        .rc-overall-sub   { font-size: 8pt; color: #94a3b8; margin-top: 1px; }
 
         /* ── Comments ── */
         .rc-comments-row {
           display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-          margin-bottom: 8px;
         }
-        .rc-comment-box { border: 1px solid #0f172a; padding: 5px 8px; border-radius: 3px; }
-        .rc-comment-label { font-size: 8.5pt; font-weight: 800; color: #374151; margin-bottom: 6px; }
-        .rc-comment-line { border-bottom: 1px solid #94a3b8; margin-bottom: 8px; height: 14px; }
+        .rc-comment-box { border: 1px solid #0f172a; padding: 4px 6px; border-radius: 3px; }
+        .rc-comment-label { font-size: 8pt; font-weight: 800; color: #374151; margin-bottom: 2px; }
+        .rc-comment-line { border-bottom: 1px dashed #94a3b8; margin-bottom: 4px; height: 12px; }
 
         /* ── Signatures ── */
         .rc-sigs {
-          display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
-          border-top: 2px solid #0f172a; padding-top: 10px; margin-bottom: 8px;
+          display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+          border-top: 1.5px solid #0f172a; padding-top: 8px;
         }
         .rc-sig-block { text-align: center; }
-        .rc-sig-line  { height: 36px; border-bottom: 1.5px solid #374151; margin-bottom: 4px; }
-        .rc-sig-label { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
-        .rc-sig-date  { font-size: 8pt; color: #64748b; margin-top: 3px; }
+        .rc-sig-line  { height: 26px; border-bottom: 1.5px solid #374151; margin-bottom: 2px; }
+        .rc-sig-label { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .rc-sig-date  { font-size: 7.5pt; color: #64748b; margin-top: 2px; }
 
         /* ── Footer ── */
         .rc-footer {
           display: flex; justify-content: space-between;
-          font-size: 8pt; color: #94a3b8;
-          border-top: 1px solid #e2e8f0; padding-top: 5px; margin-top: auto;
+          font-size: 7.5pt; color: #94a3b8;
+          border-top: 1px solid #cbd5e1; padding-top: 4px;
         }
 
         /* ══════════════ PRINT STYLES ══════════════ */
         @media print {
           @page {
             size: A4 portrait;
-            margin: 8mm;
+            margin: 0 !important;
           }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-          body { margin: 0; padding: 0; background: #fff !important; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            width: 210mm !important;
+            height: 297mm !important;
+          }
           .no-print { display: none !important; }
           .rc-root { background: #fff !important; }
           .rc-pages { padding: 0 !important; gap: 0 !important; background: #fff !important; }
           .rc-page {
-            width: 100% !important;
-            min-height: 0 !important;
-            padding: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            padding: 8mm !important;
             margin: 0 !important;
             box-shadow: none !important;
-            page-break-inside: avoid;
+            page-break-inside: avoid !important;
+            page-break-after: always !important;
+            box-sizing: border-box !important;
+            position: relative !important;
+            overflow: hidden !important;
+            background: #fff !important;
           }
           .rc-page-break { page-break-after: always !important; }
-          .rc-outer-border { border: 3px solid #0f172a !important; min-height: 0 !important; }
-          .rc-inner-border { border: 1.5px solid #0f172a !important; min-height: 0 !important; }
+          
+          .rc-watermark {
+            position: absolute !important;
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            display: flex !important; flex-wrap: wrap !important;
+            overflow: hidden !important; opacity: 0.04 !important;
+            pointer-events: none !important; zIndex: 0 !important;
+            align-content: flex-start !important; justify-content: flex-start !important;
+          }
+          .rc-watermark-item {
+            display: flex !important; align-items: center !important; gap: 6px !important;
+            padding: 24px 32px !important; transform: rotate(-25deg) !important;
+            transform-origin: center !important;
+          }
+          .rc-watermark-img {
+            width: 22px !important; height: 22px !important; object-fit: contain !important;
+          }
+          .rc-watermark-text {
+            font-size: 13px !important; font-weight: 900 !important;
+            font-family: 'Sora', sans-serif !important; color: #1E293B !important;
+            text-transform: uppercase !important; letter-spacing: 0.5px !important;
+          }
+
+          .rc-outer-border { border: 3px double #0f172a !important; height: 281mm !important; box-sizing: border-box !important; }
+          .rc-inner-border { border: 1.5px solid #0f172a !important; height: 271mm !important; box-sizing: border-box !important; }
           .rc-marks-thead { background: #0f172a !important; color: #fff !important; }
           .rc-totals-row  { background: #0f172a !important; color: #fff !important; }
           .rc-card-title  { background: #0f172a !important; color: #fff !important; }
           .rc-school-name, .rc-card-title, .rc-totals-row, .rc-marks-thead { color: #fff !important; }
           .rc-score, .rc-pts { font-weight: 800 !important; }
-          .rc-overall-grade { font-size: 36pt !important; }
+          .rc-overall-grade { font-size: 32pt !important; }
         }
       `}</style>
     </div>
