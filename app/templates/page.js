@@ -602,8 +602,8 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
   return (
     <div className="rc-batch">
       {rankedData.map(l => (
-        <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'visible', padding: '12mm 14mm', border: `3px solid ${themeColor}`, boxSizing: 'border-box' }}>
-          
+        <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
+          <div className="rc-page-inner">
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ position: 'absolute', top: 10, right: 10, textAlign: 'center' }}>
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`https://eduvantage.app/verify/${profile?.tenantId || 'demo'}/${encodeURIComponent(l.adm)}`)}`} alt="QR Verification" style={{ width: 60, height: 60, border: '1px solid #ddd', padding: 2, background: '#fff' }} />
@@ -836,6 +836,7 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
             <div>{new Date().toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
             <div style={{ fontWeight: 800 }}>Page {rankedData.indexOf(l) + 1} of {rankedData.length}</div>
           </div>
+          </div>{/* end rc-page-inner */}
         </div>
       ))}
     </div>

@@ -560,32 +560,45 @@ tr:hover td{background:#F8FAFF}
 
   .merit-list-container { max-height:none!important; overflow:visible!important; }
 
-  /* ── AUTHORITATIVE rc-page A4 rule ──
-     A4 = 297mm tall, 210mm wide.
-     With 8mm margins: usable = 194mm x 281mm.
-     We set width to 194mm (full usable width) and let height be auto.
-     The border provides clear visible edges on-screen & in print preview.
-     overflow: visible ensures NO content is clipped at the bottom.         */
+  /* ── AUTHORITATIVE rc-page A4 rule — SINGLE PAGE FIT ──
+     A4 = 297mm x 210mm. With 8mm margins: usable 281mm x 194mm.
+     The rc-page box occupies the full A4 column.
+     The inner .rc-page-inner wrapper is zoomed to 78% so all inline-styled
+     content (which CSS cannot easily override) scales down proportionally.
+     Direct !important overrides handle the rest.                          */
   .rc-page {
     width: 194mm !important;
-    min-height: 277mm !important;
-    max-height: none !important;
-    height: auto !important;
-    padding: 10mm 12mm !important;
+    height: 277mm !important;
+    min-height: unset !important;
+    max-height: 277mm !important;
+    padding: 5mm 7mm !important;
     margin: 0 auto !important;
     box-sizing: border-box !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     page-break-after: always !important;
     page-break-inside: avoid !important;
     border: 2px solid #8B1A1A !important;
     box-shadow: none !important;
-    font-size: 9pt !important;
     background: #fff !important;
+    display: block !important;
+  }
+  /* Inner content wrapper — zoom scales all inline-styled children */
+  .rc-page-inner {
+    zoom: 0.78 !important;
+    width: calc(100% / 0.78) !important;
+    transform-origin: top left !important;
   }
   .rc-page:last-child { page-break-after: avoid !important; }
-  .rc-page table { font-size: 8pt !important; border-collapse: collapse !important; }
-  .rc-page th, .rc-page td { padding: 4px 6px !important; }
-  .rc-page h1 { font-size: 13pt !important; margin: 2px 0 !important; }
+  /* Images */
+  .rc-page img[alt="School Logo"] { width: 52px !important; height: 52px !important; margin-bottom: 3px !important; }
+  .rc-page img[alt="QR Verification"] { width: 44px !important; height: 44px !important; }
+  /* Typography */
+  .rc-page h1 { font-size: 10pt !important; margin: 1px 0 !important; }
+  .rc-page p  { margin: 1px 0 !important; font-size: 7.5pt !important; }
+  /* Tables */
+  .rc-page table { font-size: 7pt !important; border-collapse: collapse !important; margin-bottom: 5px !important; }
+  .rc-page th   { padding: 3px 4px !important; font-size: 6.5pt !important; }
+  .rc-page td   { padding: 2px 4px !important; }
 
   .print-container { padding:0!important; border:none!important; background:#fff!important; }
   .templates-print-area { width:210mm; margin:0 auto; }
@@ -626,8 +639,9 @@ tr:hover td{background:#F8FAFF}
 
 /* ── TEMPLATES PRINT CONTAINER ── */
 .print-container{background:#fff;padding:20px;border-radius:var(--r);border:1.5px solid var(--border);min-height:600px}
-.rc-page{background:#fff;padding:12mm 14mm;border:3px solid #8B1A1A;margin:0 auto 32px;position:relative;min-height:277mm;width:210mm;box-sizing:border-box;page-break-after:always;overflow:visible}
+.rc-page{background:#fff;border:3px solid #8B1A1A;margin:0 auto 32px;position:relative;min-height:277mm;width:210mm;box-sizing:border-box;page-break-after:always;overflow:hidden}
 .rc-page:last-child{page-break-after:avoid;margin-bottom:0}
+.rc-page-inner{padding:12mm 14mm;box-sizing:border-box}
 .templates-print-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
 /* ══ V7 ADDITIONS ══ */
