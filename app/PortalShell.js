@@ -23,21 +23,27 @@ export const useProfile = () => useContext(ProfileContext);
 
 function BootSplash() {
   const [stage, setStage] = useState(0);
+  // stage 0: initial black
+  // stage 1: logo + title appear
+  // stage 2: loading dots
+  // stage 3: fade out
+  // stage 4: unmount
   
   useEffect(() => {
-    const t1 = setTimeout(() => setStage(1), 300);
-    const t2 = setTimeout(() => setStage(2), 1400);
-    const t3 = setTimeout(() => setStage(3), 2800);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t1 = setTimeout(() => setStage(1), 300);   // logo appear
+    const t2 = setTimeout(() => setStage(2), 1600);  // loading dots
+    const t3 = setTimeout(() => setStage(3), 4200);  // begin fade
+    const t4 = setTimeout(() => setStage(4), 5400);  // unmount
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, []);
 
-  if (stage === 3) return null;
+  if (stage === 4) return null;
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 999999, background: '#000',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      opacity: stage === 2 ? 0 : 1, transition: 'opacity 1.2s cubic-bezier(0.25, 0.1, 0.25, 1)', pointerEvents: 'none'
+      opacity: stage === 3 ? 0 : 1, transition: 'opacity 1.2s cubic-bezier(0.25, 0.1, 0.25, 1)', pointerEvents: 'none'
     }}>
       {/* Background ambient glow */}
       <div style={{
@@ -63,7 +69,7 @@ function BootSplash() {
             animation: 'spinGlow 2s linear infinite', filter: 'blur(20px)', opacity: 0.6
           }}></div>
           
-          <img src="/eduvantage-logo.png" alt="Boot" style={{ width: 120, height: 120, objectFit: 'contain', position: 'relative', zIndex: 2, filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.4))' }} />
+          <img src="/eduvantage-logo.png" alt="Boot" style={{ width: 120, height: 120, objectFit: 'contain', borderRadius: '50%', position: 'relative', zIndex: 2, filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.4))' }} />
         </div>
 
         {/* Text Wipe */}
@@ -81,10 +87,28 @@ function BootSplash() {
             EDUVANTAGE
           </div>
         </div>
+
+        {/* Samsung-style loading dots */}
+        <div style={{
+          display: 'flex', gap: 8, marginTop: 40,
+          opacity: stage >= 2 ? 1 : 0,
+          transition: 'opacity 0.6s ease'
+        }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{
+              width: 8, height: 8, borderRadius: '50%', background: '#3B82F6',
+              animation: `bootDot 1.4s ease-in-out ${i * 0.2}s infinite`
+            }} />
+          ))}
+        </div>
       </div>
       <style>{`
         @keyframes spinGlow { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
         @keyframes shine { to { background-position: 200% center; } }
+        @keyframes bootDot {
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+          40% { transform: scale(1.2); opacity: 1; }
+        }
       `}</style>
     </div>
   );
@@ -182,7 +206,7 @@ export default function PortalShell({ children }) {
 
   useEffect(() => {
     // End the internal tracking of booting so children can load logic, but BootSplash handles its own visual unmount
-    const t = setTimeout(() => setIsBooting(false), 2000);
+    const t = setTimeout(() => setIsBooting(false), 4500);
     return () => clearTimeout(t);
   }, []);
 
