@@ -159,8 +159,6 @@ export async function POST(req) {
 
       console.log(`[National Exams] Submitting ${learners.length} candidates to ${examSyncData.examBody} via ${examSyncData.endpoint} for Tenant ${tenantId}`);
       
-      // The architecture for the real fetch call (currently simulated to avoid hitting real endpoints during demo):
-      /*
       const apiRes = await fetch(examSyncData.endpoint, {
         method: 'POST',
         headers: {
@@ -170,11 +168,15 @@ export async function POST(req) {
         },
         body: JSON.stringify(examSyncData.payload)
       });
-      if (!apiRes.ok) throw new Error('National Exam Body API rejected the payload');
-      */
-
-      // Simulate API Delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      if (!apiRes.ok) {
+        let errMsg = 'National Exam Body API rejected the payload';
+        try {
+          const errBody = await apiRes.json();
+          errMsg = errBody.message || errBody.error || errMsg;
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
 
       return NextResponse.json({
         success: true,

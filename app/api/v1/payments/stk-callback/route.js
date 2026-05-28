@@ -10,18 +10,19 @@ export async function POST(req) {
     const body = await req.json();
     const { stkCallback } = body.Body;
 
-    // 1. Validate Callback (Mocking Daraja validation or API Secret check)
-    // In production, you might check a custom header or a pre-shared token in the query params
+    // 1. Validate Callback via Daraja Secret
     const authHeader = req.headers.get('x-daraja-token');
     if (process.env.DARAJA_SECRET && authHeader !== process.env.DARAJA_SECRET) {
       return new Response('Unauthorized', { status: 401 });
     }
 
+    const checkoutRequestId = stkCallback.CheckoutRequestID;
+
     // 2. Parse M-Pesa Metadata
-    const metadata = stkCallback.CallbackMetadata.Item;
+    const metadata = stkCallback.CallbackMetadata?.Item || [];
     const getValue = (name) => metadata.find(i => i.Name === name)?.Value;
 
-    const amount = getValue('Amount');
+    const amount = getValue('Amount') || 0;
     const receipt = getValue('MpesaReceiptNumber');
     const phone = getValue('PhoneNumber')?.toString();
 
@@ -40,15 +41,27 @@ export async function POST(req) {
       return new Response('Callback received (Failed Transaction)', { status: 200 });
     }
 
-    // 3. Find Student
-    // Try matching by phone or a custom metadata field (e.g., account number in description)
-    const foundStudent = await db.query.students.findFirst({
-      where: or(
-        eq(students.phone, phone),
-        // This is a simplified lookup, ideally you'd have an account mapping
-        like(students.metadata, `%${phone}%`)
-      )
-    });
+    // 3. Find Student via Strict STK Push mapping in KV
+    let foundStudent = null;
+    let tenantId = 'platform-master';
+    try {
+      const { query } = await import('@/lib/db');
+      const rows = await query(`SELECT tenant_id, value FROM kv WHERE key = 'paav_mpesa_pending'`, []);
+      for (const row of rows) {
+        let pending = {};
+        try { pending = JSON.parse(row.value); } catch { continue; }
+        if (pending[checkoutRequestId]) {
+          const rec = pending[checkoutRequestId];
+          tenantId = rec.tenantId || row.tenant_id;
+          foundStudent = await db.query.students.findFirst({
+            where: (students, { eq, and }) => and(eq(students.adm, rec.adm), eq(students.tenantId, tenantId))
+          });
+          break;
+        }
+      }
+    } catch (e) {
+      console.error('[STK Callback] Pending lookup error:', e);
+    }
 
     if (foundStudent) {
       // 4. Record Transaction

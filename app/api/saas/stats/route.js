@@ -46,11 +46,30 @@ export async function GET() {
         }
       } catch (e) {}
 
-      // Mock revenue logic (In real life, sum up successful paylog entries)
-      const revenueRes = await db.execute({
-        sql: "SELECT SUM(amount) as total FROM paylog WHERE tenant_id = ? AND status = 'approved'",
-        args: [s.tenant_id]
-      });
+      // Actualised Revenue logic: Sum up successful paylog entries and double-entry finance ledgers
+      let totalRevenue = 0;
+      try {
+        const revenueRes = await db.execute({
+          sql: "SELECT SUM(amount) as total FROM paylog WHERE tenant_id = ? AND status = 'approved'",
+          args: [s.tenant_id]
+        });
+        totalRevenue += Number(revenueRes.rows[0]?.total || 0);
+
+        // Also aggregate directly from the KV finance ledger
+        const ledgerRes = await db.execute({
+          sql: "SELECT value FROM kv WHERE key = 'paav_finance_ledger' AND tenant_id = ?",
+          args: [s.tenant_id]
+        });
+        if (ledgerRes.rows.length > 0) {
+          const ledger = JSON.parse(ledgerRes.rows[0].value);
+          const ledgerTotal = ledger
+            .filter(entry => entry.creditAcc === '4001-FEES')
+            .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+          totalRevenue += ledgerTotal;
+        }
+      } catch (e) {
+        console.error('[SAAS Stats] Failed to parse revenue for tenant:', s.tenant_id, e);
+      }
 
       // Get unique students in marks table for pattern analysis (anti-fraud)
       const activityRes = await db.execute({
@@ -78,7 +97,7 @@ export async function GET() {
         students: studentsCount,
         activityCount: activityCount,
         learnerLimit: Number(s.learner_limit || 0), // 0 means unlimited
-        revenue: Number(revenueRes.rows[0]?.total || 0),
+        revenue: totalRevenue,
         lastSync: s.updated_at ? new Date(s.updated_at * 1000).toLocaleString() : 'Never'
       };
     }));
