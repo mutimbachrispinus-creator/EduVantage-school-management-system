@@ -784,48 +784,61 @@ export default function PortalShell({ children }) {
         </div>
       )}
 
-      {/* ── Mobile Bottom Nav ── */}
-      {showNav && user && (
-        <div className="mobile-bottom-nav no-print">
-          <div className="mbn-bell">
-            <NotificationBell userId={user.id || user.username} />
-          </div>
-          <Link href="/dashboard" className={pathname === '/dashboard' ? 'active' : ''}>
-            <span className="icon">📊</span>
-            <span className="label">Home</span>
-          </Link>
-          <Link href="/messages" className={pathname.startsWith('/messages') ? 'active' : ''}>
-            <span className="icon">💬</span>
-            <span className="label">Inbox</span>
-            {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}
-          </Link>
-          {mobileNavItems.map(n => {
-              const b = (n.key === 'sms') ? unreadCount :
-                        (n.key === 'duties') ? (pendingDuties + (user.role === 'admin' ? pendingReqs : 0)) : 0;
+      {/* ── Mobile Bottom Nav (Seesaw-style: 5 role-specific tabs) ── */}
+      {showNav && user && (() => {
+        const role = user.role;
+        const isParent = role === 'parent';
+        const isTeacher = ['teacher','senior_teacher','jss_teacher'].includes(role);
+        const isAdmin = role === 'admin' || role?.startsWith('admin_') || role === 'super-admin';
+
+        // Define 5 focused tabs per role
+        const tabs = isParent ? [
+          { href: '/parent-home',  icon: '🏠',  label: 'Home',     match: '/parent-home' },
+          { href: '/parent-marks', icon: '📊',  label: 'Progress', match: '/parent-marks' },
+          { href: '/messages',     icon: '💬',  label: 'Messages', match: '/messages', badge: unreadCount },
+          { href: '/diary',        icon: '📓',  label: 'Diary',    match: '/diary' },
+          { href: '/profile',      icon: '👤',  label: 'Profile',  match: '/profile' },
+        ] : isTeacher ? [
+          { href: '/dashboard',    icon: '🏠',  label: 'Home',      match: '/dashboard' },
+          { href: '/grades',       icon: '📝',  label: labels.assessments || 'Marks', match: '/grades' },
+          { href: '/attendance',   icon: '📅',  label: 'Attendance',match: '/attendance' },
+          { href: '/messages',     icon: '💬',  label: 'Messages',  match: '/messages', badge: unreadCount },
+          { href: '/timetable',    icon: '🗓️', label: 'Timetable', match: '/timetable' },
+        ] : isAdmin ? [
+          { href: '/dashboard',    icon: '🏠',  label: 'Home',      match: '/dashboard' },
+          { href: '/learners',     icon: '👥',  label: labels.learners || 'Learners', match: '/learners' },
+          { href: '/grades',       icon: '📝',  label: 'Grades',    match: '/grades' },
+          { href: '/messages',     icon: '💬',  label: 'Messages',  match: '/messages', badge: unreadCount },
+          { href: '/fees',         icon: '💰',  label: 'Finance',   match: '/fees' },
+        ] : [
+          { href: '/dashboard',    icon: '🏠',  label: 'Home',      match: '/dashboard' },
+          { href: '/messages',     icon: '💬',  label: 'Messages',  match: '/messages', badge: unreadCount },
+          { href: '/timetable',    icon: '🗓️', label: 'Timetable', match: '/timetable' },
+          { href: '/duties',       icon: '📋',  label: 'Duties',    match: '/duties' },
+          { href: '/profile',      icon: '👤',  label: 'Profile',   match: '/profile' },
+        ];
+
+        return (
+          <div className="mobile-bottom-nav no-print">
+            {tabs.map(t => {
+              const isActive = t.match === '/dashboard'
+                ? pathname === '/dashboard'
+                : pathname.startsWith(t.match);
               return (
                 <Link
-                  key={n.key}
-                  href={n.key === 'classes' ? '/classes' : `/${n.key}`}
-                  className={pathname.startsWith('/' + n.key) || (n.key === 'dashboard' && pathname === '/dashboard') ? 'active' : ''}
-                  onMouseEnter={() => n.prefetch && prefetchKeys(n.prefetch)}
+                  key={t.href}
+                  href={t.href}
+                  className={`mbn-tab${isActive ? ' active' : ''}`}
                 >
-                  <span className="icon">{n.icon}</span>
-                  <span className="label">{(n.key === 'grades' ? (labels.assessments || n.label) : n.key === 'learners' ? (labels.learners || n.label) : n.label)}</span>
-                  {b > 0 && <span className="nav-badge" style={{ top: 4, right: 4, transform: 'scale(0.75)' }}>{b > 9 ? '9+' : b}</span>}
+                  <span className="mbn-icon">{t.icon}</span>
+                  <span className="mbn-label">{t.label}</span>
+                  {t.badge > 0 && <span className="mbn-badge">{t.badge > 9 ? '9+' : t.badge}</span>}
                 </Link>
               );
             })}
-          {/* Logout button — always visible on mobile */}
-          <button
-            onClick={doLogout}
-            className="mbn-logout-btn"
-            aria-label="Log Out"
-          >
-            <span className="icon">🚪</span>
-            <span className="label">Log Out</span>
-          </button>
-        </div>
-      )}
+          </div>
+        );
+      })()}
 
       {showProfile && user && (
         <ProfilePanel user={user} onClose={() => setShowProfile(false)} />

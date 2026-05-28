@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { getCurriculum } from '@/lib/curriculum';
@@ -8,22 +8,17 @@ import { useProfile } from '@/app/PortalShell';
 import { fmtK, getLabels } from '@/lib/cbe';
 import { Suspense } from 'react';
 
-// Assessment mappings will be dynamic based on curriculum
-
 function ReportCardContent() {
   const router = useRouter();
   const sp = useSearchParams();
   const { profile: school } = useProfile();
-  const [user, setUser] = useState(null);
   const [learners, setLearners] = useState([]);
   const [marks, setMarks] = useState({});
   const [feeCfg, setFeeCfg] = useState({});
   const [gradCfg, setGradCfg] = useState(null);
   const [subjCfg, setSubjCfg] = useState({});
   const [loading, setLoading] = useState(true);
-  const printRef = useRef(null);
 
-  // Params: ?adm=xxx&grade=GRADE1&term=T1&assess=et1
   const admParam   = sp.get('adm')    || '';
   const gradeParam = sp.get('grade')  || '';
   const termParam  = sp.get('term')   || 'T1';
@@ -33,10 +28,9 @@ function ReportCardContent() {
     async function load() {
       const [u, db] = await Promise.all([
         getCachedUser(),
-        getCachedDBMulti(['paav6_learners', 'paav6_marks', 'paav6_feecfg', 'paav8_grad', 'paav8_subj'])
+        getCachedDBMulti(['paav6_learners','paav6_marks','paav6_feecfg','paav8_grad','paav8_subj'])
       ]);
       if (!u) { router.push('/login'); return; }
-      setUser(u);
       setLearners(db.paav6_learners || []);
       setMarks(db.paav6_marks || {});
       setFeeCfg(db.paav6_feecfg || {});
@@ -47,54 +41,46 @@ function ReportCardContent() {
     load();
   }, [router]);
 
-  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Generating report card…</div>;
+  if (loading) return <div style={{padding:60,textAlign:'center',color:'#64748b'}}>Generating report card…</div>;
 
   const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const labels = getLabels(school?.curriculum || 'CBC');
   const { gInfo, maxPts, DEFAULT_SUBJECTS } = curr;
-  const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
+  const TERMS = curr.TERMS || [{id:'T1',name:'Term 1'},{id:'T2',name:'Term 2'},{id:'T3',name:'Term 3'}];
   const assessments = curr.ASSESSMENT_TYPES || [];
-  const assessMap = assessments.reduce((acc, a) => ({ ...acc, [a.key]: a.label }), {});
+  const assessMap = assessments.reduce((acc,a) => ({...acc,[a.key]:a.label}),{});
 
   const termLabel = TERMS.find(t => t.id === termParam)?.name || termParam;
   const assessLabel = assessMap[assessParam] || assessParam;
+  const year = new Date().getFullYear();
 
-  // Determine which learners to print
-  const targetAdms = admParam ? [admParam] : (gradeParam ? learners.filter(l => l.grade === gradeParam).map(l => l.adm) : []);
-  const targetLearners = targetAdms.length > 0
-    ? learners.filter(l => targetAdms.includes(l.adm))
-    : [];
+  const targetAdms = admParam ? [admParam] : (gradeParam ? learners.filter(l => l.grade===gradeParam).map(l=>l.adm) : []);
+  const targetLearners = targetAdms.length > 0 ? learners.filter(l => targetAdms.includes(l.adm)) : [];
 
   if (targetLearners.length === 0) return (
-    <div style={{ padding: 40, textAlign: 'center' }}>
-      <p style={{ color: '#dc2626', marginBottom: 16 }}>No learners found. Use ?adm=XXX or ?grade=GRADE1 in the URL.</p>
+    <div style={{padding:40,textAlign:'center'}}>
+      <p style={{color:'#dc2626',marginBottom:16}}>No learners found. Use ?adm=XXX or ?grade=GRADE1 in the URL.</p>
       <button onClick={() => router.back()} className="btn btn-ghost btn-sm">← Back</button>
     </div>
   );
 
   return (
-    <div>
-      {/* Print controls — hidden when printing */}
-      <div className="no-print" style={{ padding: '16px 24px', background: '#0F172A', display: 'flex', gap: 12, alignItems: 'center' }}>
-        <button onClick={() => router.back()} style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', color: '#fff', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>← Back</button>
-        <span style={{ color: 'rgba(255,255,255,.6)', fontSize: 13 }}>{targetLearners.length} report card{targetLearners.length !== 1 ? 's' : ''} · {termLabel} · {assessLabel}</span>
-        <button onClick={() => window.print()} style={{ background: '#2563EB', border: 'none', color: '#fff', padding: '8px 20px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700, marginLeft: 'auto' }}>
-          🖨️ Print / Save PDF
-        </button>
+    <div className="rc-root">
+      {/* Print controls */}
+      <div className="rc-toolbar no-print">
+        <button onClick={() => router.back()} className="rc-btn-back">← Back</button>
+        <span className="rc-info">{targetLearners.length} card{targetLearners.length!==1?'s':''} · {termLabel} · {assessLabel}</span>
+        <button onClick={() => window.print()} className="rc-btn-print">🖨️ Print / Save PDF</button>
       </div>
 
-      {/* Report Cards */}
-      <div ref={printRef}>
+      {/* Cards */}
+      <div className="rc-pages">
         {targetLearners.map((learner, idx) => {
-          const subjects = (subjCfg[learner.grade] !== undefined ? subjCfg[learner.grade] : DEFAULT_SUBJECTS[learner.grade]) || [];
+          const subjects = (subjCfg[learner.grade]?.length > 0 ? subjCfg[learner.grade] : DEFAULT_SUBJECTS[learner.grade]) || [];
           const cfg = feeCfg[learner.grade] || {};
-          const annualFee = TERMS.length
-            ? TERMS.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 0
-            : (cfg.t1||0) + (cfg.t2||0) + (cfg.t3||0) || cfg.annual || 0;
-          const totalPaid = TERMS.length
-            ? TERMS.reduce((s, t) => s + (learner[t.id.toLowerCase()] || 0), 0)
-            : (learner.t1||0) + (learner.t2||0) + (learner.t3||0);
-          const balance = annualFee + (learner.arrears || 0) - totalPaid;
+          const annualFee = TERMS.reduce((s,t) => s + (cfg[t.id.toLowerCase()]||0), 0) || cfg.annual || 0;
+          const totalPaid = TERMS.reduce((s,t) => s + (learner[t.id.toLowerCase()]||0), 0);
+          const balance = annualFee + (learner.arrears||0) - totalPaid;
 
           const marksRows = subjects.map(subj => {
             const k = `${termParam}:${learner.grade}|${subj}|${assessParam}`;
@@ -105,132 +91,361 @@ function ReportCardContent() {
           });
 
           const entered = marksRows.filter(r => r.score !== undefined);
-          const totalPts = entered.reduce((s, r) => s + (r.inf?.pts || 0), 0);
+          const totalPts = entered.reduce((s,r) => s + (r.inf?.pts||0), 0);
           const maxTotal = maxPts(learner.grade, subjects);
-          const avgPct = entered.length > 0
-            ? Math.round(entered.reduce((s, r) => s + Number(r.score), 0) / entered.length)
-            : 0;
-
+          const avgPct = entered.length > 0 ? Math.round(entered.reduce((s,r)=>s+Number(r.score),0)/entered.length) : 0;
           const overallGrade = gInfo(avgPct, learner.grade, gradCfg, null);
 
           return (
-            <div key={learner.adm} style={{ pageBreakAfter: idx < targetLearners.length - 1 ? 'always' : 'auto', padding: '32px 40px', maxWidth: 750, margin: '0 auto', fontFamily: 'Arial, sans-serif', fontSize: 13 }}>
-              {/* Header */}
-              <div style={{ textAlign: 'center', borderBottom: '3px solid #0F172A', paddingBottom: 16, marginBottom: 20 }}>
-                {school?.logo && <img src={school.logo} style={{ height: 70, marginBottom: 8, borderRadius: '50%' }} alt="logo" />}
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#0F172A', textTransform: 'uppercase', letterSpacing: 0.5 }}>{school?.name || 'School Name'}</div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{school?.tagline || ''}</div>
-                <div style={{ marginTop: 12, display: 'inline-block', background: '#0F172A', color: '#fff', padding: '4px 20px', borderRadius: 20, fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>{labels.assessment.toUpperCase()} REPORT CARD</div>
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 6 }}>{termLabel} · {assessLabel} · {new Date().getFullYear()} ACADEMIC YEAR</div>
-              </div>
+            <div key={learner.adm} className={`rc-page${idx < targetLearners.length-1 ? ' rc-page-break' : ''}`}>
 
-              {/* Learner Info */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 32px', marginBottom: 20, padding: '12px 16px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                {[['Student Name', learner.name], ['Admission No.', learner.adm], [labels.grade + ' / Class', learner.grade], ['Stream', learner.stream || '—'], ['Gender', learner.sex === 'F' ? 'Female' : learner.sex === 'M' ? 'Male' : '—'], ['Class Teacher', learner.teacher || '—']].map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CBD5E1', paddingBottom: 4 }}>
-                    <span style={{ color: '#64748b', fontSize: 11 }}>{k}</span>
-                    <strong style={{ fontSize: 12 }}>{v}</strong>
-                  </div>
-                ))}
-                {[['Term / Cycle', termLabel], [labels.assessment, assessLabel]].map(([k,v]) => (
-                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CBD5E1', paddingBottom: 4 }}>
-                    <span style={{ color: '#64748b', fontSize: 11 }}>{k}</span>
-                    <strong style={{ fontSize: 12 }}>{v}</strong>
-                  </div>
-                ))}
-              </div>
+              {/* ── OUTER BORDER (double-line Kenyan style) ── */}
+              <div className="rc-outer-border">
+                <div className="rc-inner-border">
 
-              {/* Marks Table */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
-                <thead>
-                  <tr style={{ background: '#0F172A', color: '#fff' }}>
-                    <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11 }}>{labels.subject.toUpperCase()}</th>
-                    {school?.curriculum !== 'MONTESSORI' && <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11 }}>SCORE (%)</th>}
-                    <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11 }}>{school?.curriculum === 'MONTESSORI' ? 'MASTERY' : 'LEVEL'}</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 11 }}>POINTS</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11 }}>PERFORMANCE / COMMENTS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {marksRows.map(({ subj, score, inf }, i) => (
-                    <tr key={subj} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC' }}>
-                      <td style={{ padding: '7px 12px', fontWeight: 700, borderBottom: '1px solid #E2E8F0' }}>{subj}</td>
-                      {school?.curriculum !== 'MONTESSORI' && (
-                        <td style={{ padding: '7px 12px', textAlign: 'center', fontWeight: 800, fontSize: 15, color: score !== undefined ? (score >= 70 ? '#059669' : score >= 50 ? '#2563eb' : '#dc2626') : '#94a3b8', borderBottom: '1px solid #E2E8F0' }}>
-                          {score !== undefined ? score : '—'}
-                        </td>
-                      )}
-                      <td style={{ padding: '7px 12px', textAlign: 'center', borderBottom: '1px solid #E2E8F0' }}>
-                        {inf ? <span style={{ background: inf.bg, color: inf.c, padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 800 }}>{inf.lv}</span> : '—'}
-                      </td>
-                      <td style={{ padding: '7px 12px', textAlign: 'center', fontWeight: 900, color: inf?.c || '#94a3b8', borderBottom: '1px solid #E2E8F0' }}>{inf?.pts ?? '—'}</td>
-                      <td style={{ padding: '7px 12px', fontSize: 11, color: '#64748b', borderBottom: '1px solid #E2E8F0' }}>{inf?.desc || '—'}</td>
-                    </tr>
-                  ))}
-                  {/* Totals row */}
-                  {entered.length > 0 && (
-                    <tr style={{ background: '#0F172A' }}>
-                      <td style={{ padding: '9px 12px', color: '#fff', fontWeight: 800 }}>TOTAL ({entered.length}/{subjects.length} {labels.subjects.toLowerCase()})</td>
-                      {school?.curriculum !== 'MONTESSORI' && <td style={{ padding: '9px 12px', textAlign: 'center', color: '#FCD34D', fontWeight: 900, fontSize: 16 }}>{avgPct}%</td>}
-                      <td colSpan={school?.curriculum === 'MONTESSORI' ? 2 : 2} style={{ padding: '9px 12px', textAlign: 'center', color: overallGrade.c, fontWeight: 900, fontSize: 15 }}>{overallGrade.lv} — {totalPts}/{maxTotal} pts</td>
-                      <td style={{ padding: '9px 12px', color: overallGrade.c, fontWeight: 800, fontSize: 12 }}>{overallGrade.desc}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-
-              {/* Fee Statement + Summary Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-                <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                  <div style={{ fontWeight: 800, fontSize: 11, color: '#64748b', textTransform: 'uppercase', marginBottom: 8 }}>Fee Statement</div>
-                  {[
-                    ['Annual Fee', `KES ${fmtK(annualFee)}`],
-                    ...TERMS.map(t => [
-                      `${t.name} Paid`,
-                      `KES ${fmtK(learner[t.id.toLowerCase()] || 0)}`
-                    ]),
-                    ['Balance', `KES ${fmtK(Math.max(0, balance))}`],
-                  ].map(([k, v]) => (
-                    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CBD5E1', paddingBottom: 4, marginBottom: 4, fontSize: 12 }}>
-                      <span style={{ color: '#64748b' }}>{k}</span>
-                      <strong style={{ color: k === 'Balance' ? (balance <= 0 ? '#059669' : '#dc2626') : '#1e293b' }}>{v} {k === 'Balance' && balance <= 0 ? '✅' : ''}</strong>
+                  {/* ══ HEADER ══ */}
+                  <div className="rc-header">
+                    {school?.logo && (
+                      <img src={school.logo} className="rc-logo" alt="School Logo" />
+                    )}
+                    <div className="rc-school-name">{school?.name || 'SCHOOL NAME'}</div>
+                    {school?.tagline && <div className="rc-tagline">{school.tagline}</div>}
+                    {school?.address && <div className="rc-address">{school.address}</div>}
+                    {school?.phone && <div className="rc-address">Tel: {school.phone}</div>}
+                    <div className="rc-card-title">
+                      {labels.assessment.toUpperCase()} REPORT CARD — {year}
                     </div>
-                  ))}
-                </div>
-                <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                  <div style={{ fontWeight: 800, fontSize: 11, color: '#64748b', textTransform: 'uppercase', marginBottom: 8 }}>Overall Assessment</div>
-                  <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                    <div style={{ fontSize: 36, fontWeight: 900, color: overallGrade.c }}>{overallGrade.lv}</div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{overallGrade.desc}</div>
-                    {school?.curriculum !== 'MONTESSORI' && <div style={{ fontSize: 24, fontWeight: 900, color: '#0F172A', marginTop: 8 }}>{avgPct}%</div>}
-                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{entered.length}/{subjects.length} {labels.subjects.toLowerCase()} assessed</div>
+                    <div className="rc-term-label">{termLabel} &nbsp;|&nbsp; {assessLabel}</div>
                   </div>
-                </div>
-              </div>
 
-              {/* Signatures */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, borderTop: '2px solid #E2E8F0', paddingTop: 16 }}>
-                {['Class Teacher', "Parent's Signature", "Principal's Stamp"].map(role => (
-                  <div key={role} style={{ textAlign: 'center' }}>
-                    <div style={{ height: 40, borderBottom: '1px solid #CBD5E1', marginBottom: 6 }}></div>
-                    <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>{role}</div>
+                  {/* ══ STUDENT INFO ══ */}
+                  <table className="rc-info-table">
+                    <tbody>
+                      <tr>
+                        <td className="rc-info-label">Student Name:</td>
+                        <td className="rc-info-value"><strong>{learner.name}</strong></td>
+                        <td className="rc-info-label">Admission No.:</td>
+                        <td className="rc-info-value"><strong>{learner.adm}</strong></td>
+                      </tr>
+                      <tr>
+                        <td className="rc-info-label">{labels.grade} / Class:</td>
+                        <td className="rc-info-value">{learner.grade}</td>
+                        <td className="rc-info-label">Stream:</td>
+                        <td className="rc-info-value">{learner.stream || '—'}</td>
+                      </tr>
+                      <tr>
+                        <td className="rc-info-label">Gender:</td>
+                        <td className="rc-info-value">{learner.sex==='F'?'Female':learner.sex==='M'?'Male':'—'}</td>
+                        <td className="rc-info-label">Class Teacher:</td>
+                        <td className="rc-info-value">{learner.teacher || '—'}</td>
+                      </tr>
+                      <tr>
+                        <td className="rc-info-label">Term / Cycle:</td>
+                        <td className="rc-info-value">{termLabel}</td>
+                        <td className="rc-info-label">{labels.assessment}:</td>
+                        <td className="rc-info-value">{assessLabel}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* ══ MARKS TABLE ══ */}
+                  <table className="rc-marks-table">
+                    <thead>
+                      <tr className="rc-marks-thead">
+                        <th className="rc-th-subj">{labels.subject.toUpperCase()}</th>
+                        {school?.curriculum !== 'MONTESSORI' && <th className="rc-th-center">SCORE (%)</th>}
+                        <th className="rc-th-center">GRADE / LEVEL</th>
+                        <th className="rc-th-center">POINTS</th>
+                        <th className="rc-th-remarks">REMARKS / PERFORMANCE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {marksRows.map(({subj,score,inf},i) => (
+                        <tr key={subj} className={i%2===0?'rc-row-even':'rc-row-odd'}>
+                          <td className="rc-td-subj">{subj}</td>
+                          {school?.curriculum !== 'MONTESSORI' && (
+                            <td className="rc-td-center rc-score" style={{color: score!==undefined?(score>=70?'#166534':score>=50?'#1e40af':'#991b1b'):'#94a3b8'}}>
+                              {score !== undefined ? score : '—'}
+                            </td>
+                          )}
+                          <td className="rc-td-center">
+                            {inf ? <span className="rc-grade-pill" style={{background:inf.bg,color:inf.c}}>{inf.lv}</span> : '—'}
+                          </td>
+                          <td className="rc-td-center rc-pts" style={{color:inf?.c||'#94a3b8'}}>{inf?.pts ?? '—'}</td>
+                          <td className="rc-td-remarks">{inf?.desc || '—'}</td>
+                        </tr>
+                      ))}
+                      {entered.length > 0 && (
+                        <tr className="rc-totals-row">
+                          <td className="rc-totals-label">TOTAL ({entered.length}/{subjects.length} {labels.subjects.toLowerCase()})</td>
+                          {school?.curriculum !== 'MONTESSORI' && <td className="rc-totals-score">{avgPct}%</td>}
+                          <td className="rc-totals-grade" colSpan={2}>{overallGrade.lv} — {totalPts}/{maxTotal} pts</td>
+                          <td className="rc-totals-desc">{overallGrade.desc}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+
+                  {/* ══ FEE STATEMENT + OVERALL ══ */}
+                  <div className="rc-bottom-grid">
+                    <div className="rc-fee-box">
+                      <div className="rc-box-title">FEE STATEMENT</div>
+                      <table className="rc-fee-table">
+                        <tbody>
+                          <tr><td>Annual Fee</td><td><strong>KES {fmtK(annualFee)}</strong></td></tr>
+                          {TERMS.map(t => (
+                            <tr key={t.id}>
+                              <td>{t.name} Paid</td>
+                              <td>KES {fmtK(learner[t.id.toLowerCase()]||0)}</td>
+                            </tr>
+                          ))}
+                          {learner.arrears > 0 && <tr><td>Arrears B/F</td><td style={{color:'#991b1b'}}>KES {fmtK(learner.arrears)}</td></tr>}
+                          <tr className="rc-fee-balance">
+                            <td><strong>Balance Due</strong></td>
+                            <td style={{color:balance<=0?'#166534':'#991b1b'}}>
+                              <strong>KES {fmtK(Math.max(0,balance))}{balance<=0?' ✓':''}</strong>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="rc-overall-box">
+                      <div className="rc-box-title">OVERALL ASSESSMENT</div>
+                      <div className="rc-overall-grade" style={{color:overallGrade.c||'#0f172a'}}>{overallGrade.lv || '—'}</div>
+                      {school?.curriculum !== 'MONTESSORI' && <div className="rc-overall-pct">{avgPct}%</div>}
+                      <div className="rc-overall-desc">{overallGrade.desc || '—'}</div>
+                      <div className="rc-overall-sub">{entered.length}/{subjects.length} {labels.subjects.toLowerCase()} assessed</div>
+                    </div>
                   </div>
-                ))}
-              </div>
 
-              <div style={{ textAlign: 'center', fontSize: 10, color: '#94a3b8', marginTop: 20, borderTop: '1px solid #E2E8F0', paddingTop: 10 }}>
-                Generated by EduVantage School Management System · {new Date().toLocaleDateString('en-KE')}
-              </div>
+                  {/* ══ TEACHER COMMENTS ══ */}
+                  <div className="rc-comments-row">
+                    <div className="rc-comment-box">
+                      <div className="rc-comment-label">Class Teacher&apos;s Comment:</div>
+                      <div className="rc-comment-line"></div>
+                      <div className="rc-comment-line"></div>
+                    </div>
+                    <div className="rc-comment-box">
+                      <div className="rc-comment-label">Principal&apos;s Comment:</div>
+                      <div className="rc-comment-line"></div>
+                      <div className="rc-comment-line"></div>
+                    </div>
+                  </div>
+
+                  {/* ══ SIGNATURES ══ */}
+                  <div className="rc-sigs">
+                    {['Class Teacher','Parent / Guardian','Principal'].map(role => (
+                      <div key={role} className="rc-sig-block">
+                        <div className="rc-sig-line"></div>
+                        <div className="rc-sig-label">{role}</div>
+                        <div className="rc-sig-date">Date: _______________</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ══ FOOTER ══ */}
+                  <div className="rc-footer">
+                    <span>Next Term Begins: _____________________</span>
+                    <span>Generated by EduVantage · {new Date().toLocaleDateString('en-KE')}</span>
+                  </div>
+
+                </div>{/* inner border */}
+              </div>{/* outer border */}
             </div>
           );
         })}
       </div>
 
       <style>{`
+        /* ── Root & toolbar ── */
+        .rc-root { background: #e5e7eb; min-height: 100vh; }
+        .rc-toolbar {
+          display: flex; align-items: center; gap: 12;
+          padding: 12px 24px; background: #0F172A;
+          position: sticky; top: 0; z-index: 100;
+        }
+        .rc-btn-back {
+          background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+          color: #fff; padding: 7px 16px; border-radius: 8px; cursor: pointer;
+          font-size: 13px; font-weight: 600;
+        }
+        .rc-info { color: rgba(255,255,255,.65); font-size: 12px; flex: 1; margin-left: 12px; }
+        .rc-btn-print {
+          background: #2563EB; border: none; color: #fff; padding: 8px 22px;
+          border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700;
+        }
+
+        /* ── Page container (A4 preview on screen) ── */
+        .rc-pages { padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+        .rc-page {
+          width: 210mm;
+          min-height: 297mm;
+          background: #fff;
+          box-shadow: 0 8px 30px rgba(0,0,0,.18);
+          box-sizing: border-box;
+          padding: 8mm;
+          font-family: 'Times New Roman', Times, serif;
+          font-size: 11pt;
+          color: #0a0a0a;
+        }
+        .rc-page-break { page-break-after: always; }
+
+        /* ── Double border (Kenyan style) ── */
+        .rc-outer-border {
+          border: 3px solid #0f172a;
+          padding: 4px;
+          min-height: 281mm;
+          box-sizing: border-box;
+        }
+        .rc-inner-border {
+          border: 1.5px solid #0f172a;
+          padding: 8px 10px;
+          min-height: 272mm;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* ── Header ── */
+        .rc-header {
+          text-align: center;
+          border-bottom: 2.5px solid #0f172a;
+          padding-bottom: 8px;
+          margin-bottom: 8px;
+        }
+        .rc-logo { height: 72px; border-radius: 50%; margin-bottom: 4px; }
+        .rc-school-name { font-size: 17pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
+        .rc-tagline { font-size: 9pt; color: #475569; margin-top: 2px; }
+        .rc-address { font-size: 8.5pt; color: #475569; margin-top: 1px; }
+        .rc-card-title {
+          display: inline-block;
+          margin-top: 8px;
+          background: #0f172a; color: #fff;
+          padding: 4px 22px; border-radius: 20px;
+          font-size: 11pt; font-weight: 800; letter-spacing: 1px;
+        }
+        .rc-term-label { font-size: 9pt; color: #475569; margin-top: 4px; }
+
+        /* ── Student info table ── */
+        .rc-info-table {
+          width: 100%; border-collapse: collapse;
+          margin-bottom: 8px;
+          border: 1.5px solid #0f172a;
+          font-size: 10pt;
+        }
+        .rc-info-table td { padding: 4px 8px; border: 1px solid #cbd5e1; }
+        .rc-info-label { color: #475569; font-size: 9pt; width: 18%; white-space: nowrap; }
+        .rc-info-value { font-size: 10pt; width: 32%; }
+
+        /* ── Marks table ── */
+        .rc-marks-table {
+          width: 100%; border-collapse: collapse;
+          margin-bottom: 8px;
+          border: 2px solid #0f172a;
+          font-size: 10pt;
+          flex: 1;
+        }
+        .rc-marks-thead { background: #0f172a; color: #fff; }
+        .rc-marks-thead th { padding: 6px 8px; text-align: left; font-size: 9pt; border: 1px solid #334155; }
+        .rc-th-subj { width: 28%; text-align: left; }
+        .rc-th-center { text-align: center; width: 11%; }
+        .rc-th-remarks { text-align: left; }
+        .rc-row-even { background: #fff; }
+        .rc-row-odd  { background: #f8fafc; }
+        .rc-td-subj  { padding: 5px 8px; font-weight: 700; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
+        .rc-td-center { padding: 5px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
+        .rc-td-remarks { padding: 5px 8px; font-size: 9pt; color: #374151; border-bottom: 1px solid #e2e8f0; }
+        .rc-score { font-weight: 800; font-size: 12pt; }
+        .rc-pts   { font-weight: 900; }
+        .rc-grade-pill {
+          display: inline-block; padding: 1px 9px; border-radius: 12px;
+          font-size: 9pt; font-weight: 800;
+        }
+        .rc-totals-row { background: #0f172a; color: #fff; }
+        .rc-totals-row td { padding: 7px 8px; border-top: 2px solid #0f172a; }
+        .rc-totals-label { font-weight: 800; font-size: 9pt; }
+        .rc-totals-score { text-align: center; color: #fcd34d; font-weight: 900; font-size: 13pt; }
+        .rc-totals-grade { text-align: center; font-weight: 900; font-size: 12pt; }
+        .rc-totals-desc  { font-size: 9pt; font-weight: 700; }
+
+        /* ── Bottom grid: Fee + Overall ── */
+        .rc-bottom-grid {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+          margin-bottom: 8px;
+        }
+        .rc-fee-box, .rc-overall-box {
+          border: 1.5px solid #0f172a; border-radius: 4px; padding: 7px 9px;
+        }
+        .rc-box-title {
+          font-size: 8pt; font-weight: 800; text-transform: uppercase;
+          letter-spacing: 0.6px; color: #475569;
+          border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 5px;
+        }
+        .rc-fee-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+        .rc-fee-table td { padding: 3px 2px; border-bottom: 1px dashed #cbd5e1; }
+        .rc-fee-table td:last-child { text-align: right; }
+        .rc-fee-balance td { padding-top: 5px; font-size: 10pt; border-top: 1.5px solid #0f172a; border-bottom: none; }
+        .rc-overall-box { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .rc-overall-grade { font-size: 38pt; font-weight: 900; line-height: 1; }
+        .rc-overall-pct   { font-size: 22pt; font-weight: 900; color: #0f172a; margin-top: 2px; }
+        .rc-overall-desc  { font-size: 9.5pt; color: #475569; margin-top: 3px; }
+        .rc-overall-sub   { font-size: 8.5pt; color: #94a3b8; margin-top: 2px; }
+
+        /* ── Comments ── */
+        .rc-comments-row {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+          margin-bottom: 8px;
+        }
+        .rc-comment-box { border: 1px solid #0f172a; padding: 5px 8px; border-radius: 3px; }
+        .rc-comment-label { font-size: 8.5pt; font-weight: 800; color: #374151; margin-bottom: 6px; }
+        .rc-comment-line { border-bottom: 1px solid #94a3b8; margin-bottom: 8px; height: 14px; }
+
+        /* ── Signatures ── */
+        .rc-sigs {
+          display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+          border-top: 2px solid #0f172a; padding-top: 10px; margin-bottom: 8px;
+        }
+        .rc-sig-block { text-align: center; }
+        .rc-sig-line  { height: 36px; border-bottom: 1.5px solid #374151; margin-bottom: 4px; }
+        .rc-sig-label { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .rc-sig-date  { font-size: 8pt; color: #64748b; margin-top: 3px; }
+
+        /* ── Footer ── */
+        .rc-footer {
+          display: flex; justify-content: space-between;
+          font-size: 8pt; color: #94a3b8;
+          border-top: 1px solid #e2e8f0; padding-top: 5px; margin-top: auto;
+        }
+
+        /* ══════════════ PRINT STYLES ══════════════ */
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 8mm;
+          }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+          body { margin: 0; padding: 0; background: #fff !important; }
           .no-print { display: none !important; }
-          body { margin: 0; padding: 0; }
-          @page { size: A4; margin: 10mm; }
+          .rc-root { background: #fff !important; }
+          .rc-pages { padding: 0 !important; gap: 0 !important; background: #fff !important; }
+          .rc-page {
+            width: 100% !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+          }
+          .rc-page-break { page-break-after: always !important; }
+          .rc-outer-border { border: 3px solid #0f172a !important; min-height: 0 !important; }
+          .rc-inner-border { border: 1.5px solid #0f172a !important; min-height: 0 !important; }
+          .rc-marks-thead { background: #0f172a !important; color: #fff !important; }
+          .rc-totals-row  { background: #0f172a !important; color: #fff !important; }
+          .rc-card-title  { background: #0f172a !important; color: #fff !important; }
+          .rc-school-name, .rc-card-title, .rc-totals-row, .rc-marks-thead { color: #fff !important; }
+          .rc-score, .rc-pts { font-weight: 800 !important; }
+          .rc-overall-grade { font-size: 36pt !important; }
         }
       `}</style>
     </div>
@@ -239,7 +454,7 @@ function ReportCardContent() {
 
 export default function ReportCardPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 60, textAlign: 'center' }}>Loading…</div>}>
+    <Suspense fallback={<div style={{padding:60,textAlign:'center'}}>Loading…</div>}>
       <ReportCardContent />
     </Suspense>
   );

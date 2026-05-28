@@ -360,7 +360,7 @@ function DashboardContent() {
                   
                   {teacherAllocations.length > 0 && (
                     <div style={{ marginTop: 16, textAlign: 'right' }}>
-                      <Link href="/marks" className="btn btn-primary btn-sm">Enter Marks</Link>
+                      <Link href="/grades" className="btn btn-primary btn-sm">Enter Marks</Link>
                     </div>
                   )}
                 </div>
