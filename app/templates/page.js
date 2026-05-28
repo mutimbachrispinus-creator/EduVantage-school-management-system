@@ -605,9 +605,15 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
         <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
           <div className="rc-page-inner">
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ position: 'absolute', top: 10, right: 10, textAlign: 'center' }}>
-              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`https://eduvantage.app/verify/${profile?.tenantId || 'demo'}/${encodeURIComponent(l.adm)}`)}`} alt="QR Verification" style={{ width: 60, height: 60, border: '1px solid #ddd', padding: 2, background: '#fff' }} />
-              <div style={{ fontSize: 7, fontWeight: 800, color: '#94A3B8', marginTop: 2 }}>SCAN TO VERIFY</div>
+            <div style={{ position: 'absolute', top: 5, right: 10, textAlign: 'center', background: '#F8FAFC', padding: '6px', borderRadius: '6px', border: `1px solid ${themeColor}33`, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', zIndex: 10 }}>
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`https://eduvantage.app/verify/${profile?.tenantId || 'demo'}/${encodeURIComponent(l.adm)}`)}&color=${themeColor.replace('#','')}`} 
+                alt="Verification QR" 
+                style={{ width: 48, height: 48, objectFit: 'contain', background: '#fff', padding: 2, borderRadius: 2 }} 
+                onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} 
+              />
+              <div style={{ display: 'none', width: 48, height: 48, background: '#E2E8F0', borderRadius: 2, alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94A3B8', fontWeight: 800, margin: '0 auto' }}>VERIFY</div>
+              <div style={{ fontSize: 6.5, fontWeight: 800, color: themeColor, marginTop: 4, letterSpacing: 0.5, lineHeight: 1.2 }}>OFFICIAL<br/>RECORD</div>
             </div>
             <PrintHeader title="OFFICIAL PROGRESS REPORT" grade={grade} profile={profile} />
           </div>
