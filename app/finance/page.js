@@ -179,14 +179,15 @@ export default function FinanceDashboardPage() {
 
         <div className="panel">
           <div className="panel-hdr"><h3>⚡ Finance Command Center</h3></div>
-          <div className="panel-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <button className="quick-access-btn" onClick={() => router.push('/finance/budgets')}>📊 Budgets</button>
-            <button className="quick-access-btn" onClick={() => router.push('/finance/transactions')}>📜 Transactions</button>
-            <button className="quick-access-btn" onClick={() => router.push('/finance/expenses')}>🧾 Expenses</button>
-            <button className="quick-access-btn" onClick={() => router.push('/finance/petty-cash')}>💵 Petty Cash</button>
-            <button className="quick-access-btn" onClick={() => router.push('/finance/payroll')}>💸 Payroll</button>
-            <button className="quick-access-btn" onClick={() => router.push('/finance/invoices')}>📄 Invoicing</button>
-          </div>
+         <div className="panel-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+             <button className="quick-access-btn" onClick={() => router.push('/finance/budgets')}>📊 Budgets</button>
+             <button className="quick-access-btn" onClick={() => router.push('/finance/transactions')}>📜 Transactions</button>
+             <button className="quick-access-btn" onClick={() => router.push('/finance/expenses')}>🧾 Expenses</button>
+             <button className="quick-access-btn" onClick={() => router.push('/finance/petty-cash')}>💵 Petty Cash</button>
+             <button className="quick-access-btn" onClick={() => router.push('/finance/payroll')}>💸 Payroll</button>
+             <button className="quick-access-btn" onClick={() => router.push('/finance/invoices')}>📄 Invoicing</button>
+             <button className="quick-access-btn" onClick={() => router.push('/finance/reconcile')}>🔁 Reconcile</button>
+           </div>
         </div>
       </div>
 

@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti, fetchWithRetry, invalidateDB } from '@/lib/client-cache';
 import { getAllGrades, getCurriculum } from '@/lib/cbe';
 import { getDefaultSubjectConfig, generateTimetableData } from '@/lib/timetable-gen.js';
-import { useProfile } from '@/app/PortalShell';
+import { useProfile } from '@/app/PortalShell.js';
 
 const M = '#8B1A1A';
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti, invalidateDB } from '@/lib/client-cache';
-import { useProfile } from '@/app/PortalShell';
+import { useProfile } from '@/app/PortalShell.js';
 import { fmtK } from '@/lib/cbe';
 import QuickReceipt from '@/components/nexed/QuickReceipt';
 import ExpenseVoucher from '@/components/nexed/ExpenseVoucher';
