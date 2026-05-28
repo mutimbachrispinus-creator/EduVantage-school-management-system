@@ -15,7 +15,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
-import { getAllGrades, getCurriculum, gInfo, getDefaultSubjects, maxPts, calcLearnerReportData, getMark, isJSSGrade, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled, buildMeritList, getLabels } from '@/lib/cbe';
+import { getAllGrades, getCurriculum, gInfo, getDefaultSubjects, maxPts, calcLearnerReportData, getMark, isJSSGrade, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled, buildMeritList, getLabels, getProfessionalRemarks } from '@/lib/cbe';
 import { useSchoolProfile } from '@/lib/school-profile';
 import { useProfile } from '@/app/PortalShell';
 
@@ -732,20 +732,10 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
               <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #E2E8F0' }}>
                 <div style={{ fontSize: 9, fontWeight: 800, color: '#94A3B8', marginBottom: 5 }}>PROFESSIONAL REMARKS</div>
                 <div style={{ fontSize: 11, color: '#1E293B', lineHeight: 1.4, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <strong>Class Teacher:</strong> {
-                    l.report.overallInfo.lv.startsWith('EE') ? 'An exceptional performance! You have shown mastery of the concepts. Keep it up.' : 
-                    l.report.overallInfo.lv.startsWith('ME') ? 'Good work! You meet the expectations in most areas. Aim higher next term.' :
-                    l.report.overallInfo.lv.startsWith('AE') ? 'Steady progress. You are approaching the required standards; more focus is needed in weaker areas.' : 
-                    'Performance is below expectations. You need to put in more effort and seek guidance in challenging subjects.'
-                  }
+                  <strong>Class Teacher:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'teacher')}
                 </div>
                 <div style={{ fontSize: 11, color: '#1E293B', lineHeight: 1.4, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <strong>Principal:</strong> {
-                    l.report.overallInfo.lv.startsWith('EE') ? 'Outstanding result. You are a role model for academic excellence.' : 
-                    l.report.overallInfo.lv.startsWith('ME') ? 'A commendable performance. Keep working hard to reach the top level.' :
-                    l.report.overallInfo.lv.startsWith('AE') ? 'Fair performance. With more dedication, you can achieve better results.' :
-                    'A disappointing result. Urgent intervention and parent consultation are required.'
-                  }
+                  <strong>Principal:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'principal')}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
                   <div style={{ background: '#F8FAFF', padding: 10, borderRadius: 8, border: '1px solid #E2E8F0' }}>
