@@ -110,7 +110,7 @@ export default function TemplatesPage() {
     style.id = 'paav-print-style';
     const pageRule = landscape
       ? '@page { size: A4 landscape; margin: 8mm; }'
-      : '@page { size: A4 portrait; margin: 10mm 12mm; }';
+      : '@page { size: A4 portrait; margin: 8mm; }';
     const showRule = '@media print { .print-container > div.print-content { display: none !important; } .print-container > div.print-me { display: block !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative; } }';
     style.innerHTML = pageRule + '\n' + showRule;
     document.head.appendChild(style);
@@ -602,7 +602,7 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
   return (
     <div className="rc-batch">
       {rankedData.map(l => (
-        <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'hidden', padding: '15mm', border: `8px double ${themeColor}22` }}>
+        <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'visible', padding: '12mm 14mm', border: `3px solid ${themeColor}`, boxSizing: 'border-box' }}>
           
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ position: 'absolute', top: 10, right: 10, textAlign: 'center' }}>
