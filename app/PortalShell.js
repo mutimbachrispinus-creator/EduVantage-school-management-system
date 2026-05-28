@@ -21,6 +21,75 @@ const NotificationBell = dynamic(() => import('@/components/NotificationBell'), 
 const ProfileContext = createContext();
 export const useProfile = () => useContext(ProfileContext);
 
+function BootSplash() {
+  const [stage, setStage] = useState(0);
+  
+  useEffect(() => {
+    const t1 = setTimeout(() => setStage(1), 300);
+    const t2 = setTimeout(() => setStage(2), 1400);
+    const t3 = setTimeout(() => setStage(3), 2800);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  if (stage === 3) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 999999, background: '#000',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      opacity: stage === 2 ? 0 : 1, transition: 'opacity 1.2s cubic-bezier(0.25, 0.1, 0.25, 1)', pointerEvents: 'none'
+    }}>
+      {/* Background ambient glow */}
+      <div style={{
+        position: 'absolute', width: '150vw', height: '150vh',
+        background: 'radial-gradient(circle, rgba(37,99,235,0.15) 0%, rgba(0,0,0,0) 50%)',
+        opacity: stage >= 1 ? 1 : 0, transform: stage >= 1 ? 'scale(1)' : 'scale(0.5)',
+        transition: 'all 2s ease-out'
+      }}></div>
+
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        {/* Core Logo with Glow */}
+        <div style={{
+          position: 'relative',
+          transform: stage >= 1 ? 'scale(1)' : 'scale(0.8)',
+          opacity: stage >= 1 ? 1 : 0,
+          transition: 'all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+        }}>
+          {/* Animated glow ring */}
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: '120%', height: '120%', borderRadius: '50%',
+            background: 'conic-gradient(from 0deg, transparent 0%, #3B82F6 50%, transparent 100%)',
+            animation: 'spinGlow 2s linear infinite', filter: 'blur(20px)', opacity: 0.6
+          }}></div>
+          
+          <img src="/eduvantage-logo.png" alt="Boot" style={{ width: 120, height: 120, objectFit: 'contain', position: 'relative', zIndex: 2, filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.4))' }} />
+        </div>
+
+        {/* Text Wipe */}
+        <div style={{
+          marginTop: 30, overflow: 'hidden', height: 40, position: 'relative',
+          opacity: stage >= 1 ? 1 : 0, transition: 'opacity 1s ease 0.5s'
+        }}>
+          <div style={{
+            fontSize: 28, fontWeight: 900, fontFamily: 'Sora, sans-serif', color: '#fff',
+            letterSpacing: '8px', textTransform: 'uppercase',
+            background: 'linear-gradient(90deg, #1E293B, #fff, #3B82F6, #fff, #1E293B)',
+            backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            animation: 'shine 2s linear infinite'
+          }}>
+            EDUVANTAGE
+          </div>
+        </div>
+      </div>
+      <style>{`
+        @keyframes spinGlow { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes shine { to { background-position: 200% center; } }
+      `}</style>
+    </div>
+  );
+}
+
 function SystemLockout({ profile }) {
   const router = useRouter();
   const contactWhatsApp = 'https://wa.me/254792656579?text=Hello%20EduVantage%2C%20I%20need%20to%20upgrade%20my%20school%20subscription%20plan.';
@@ -109,6 +178,13 @@ const IDLE_EVENTS      = ['mousemove','keydown','click','touchstart','scroll'];
 export default function PortalShell({ children }) {
   const router   = useRouter();
   const pathname = usePathname();
+  const [isBooting, setIsBooting] = useState(() => typeof window !== 'undefined');
+
+  useEffect(() => {
+    // End the internal tracking of booting so children can load logic, but BootSplash handles its own visual unmount
+    const t = setTimeout(() => setIsBooting(false), 2000);
+    return () => clearTimeout(t);
+  }, []);
 
   const [user, setUser] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -546,6 +622,7 @@ export default function PortalShell({ children }) {
   return (
 
     <ProfileContext.Provider value={{ profile, user, openProfile: () => setShowProfile(true), setUser, playSuccessSound, impersonateId, setImpersonateId, labels }}>
+      <BootSplash />
       <input ref={heroFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadHero} />
 
       {showNav && user && (
