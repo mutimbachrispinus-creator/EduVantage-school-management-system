@@ -43,8 +43,8 @@ export async function GET(request) {
 
 async function handleInitiate(request) {
   try {
-    const { registrationPayload, subscriptionPayload, amount, currency = 'KES' } = await request.json();
-    const config = await getPesapalConfig(kvGet);
+    const { registrationPayload, subscriptionPayload, amount, currency = 'KES', tenantId } = await request.json();
+    const config = await getPesapalConfig(kvGet, tenantId);
     const token = await getPesapalToken(config);
     
     // Determine payload and metadata
@@ -288,17 +288,25 @@ async function finalizeRegistration(orderTrackingId) {
     'active'
   ]);
 
-  // Send Zeraki-style Welcome SMS
+  // Send Zeraki-style Welcome SMS with merged credential fallback
   try {
     const { sendSMS } = await import('@/lib/sms-client');
-    const atCreds = await kvGet('paav_at_creds', null, 'platform-master');
+    const [legacyAtCreds, intKeys] = await Promise.all([
+      kvGet('paav_at_creds', null, 'platform-master').catch(() => null),
+      kvGet('paav_integration_keys', {}, 'platform-master').catch(() => ({}))
+    ]);
+    const atCreds = {
+      username: legacyAtCreds?.username || intKeys?.atUsername,
+      apiKey:   legacyAtCreds?.apiKey   || intKeys?.atApiKey,
+      senderId: legacyAtCreds?.senderId || intKeys?.atSenderId,
+    };
     const welcomeMsg = 
       `Welcome to EduVantage!\n` +
       `Hello ${payload.adminName}, your school portal for ${payload.schoolName} is ready.\n` +
       `Username: ${payload.adminUsername}\n` +
       `Login: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://eduvantage.app'}/login?tenant=${tenantId}`;
     
-    await sendSMS({ to: payload.phone, message: welcomeMsg, schoolName: payload.schoolName, ...(atCreds || {}) });
+    await sendSMS({ to: payload.phone, message: welcomeMsg, schoolName: payload.schoolName, ...atCreds });
   } catch (smsErr) {
     console.warn('[Pesapal] Welcome SMS failed:', smsErr.message);
   }

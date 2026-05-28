@@ -143,12 +143,22 @@ export async function POST(req) {
             const schoolName = profile.name || 'EduVantage';
 
             // 1. Send SMS Receipt
+            // Credential priority: paav_at_creds → paav_integration_keys → env vars
             const { sendSMS } = await import('@/lib/sms-client');
-            const atCreds = (await kvGet('paav_at_creds', null, tenantId)) || (await kvGet('paav_at_creds', null, 'platform-master'));
+            const [legacyAtCreds, intKeys] = await Promise.all([
+              kvGet('paav_at_creds', null, tenantId).catch(() => null) ||
+              kvGet('paav_at_creds', null, 'platform-master').catch(() => null),
+              kvGet('paav_integration_keys', {}, tenantId).catch(() => ({}))
+            ]);
+            const atCreds = {
+              username: legacyAtCreds?.username || intKeys?.atUsername,
+              apiKey:   legacyAtCreds?.apiKey   || intKeys?.atApiKey,
+              senderId: legacyAtCreds?.senderId || intKeys?.atSenderId,
+            };
             const msg = `✅ PAYMENT RECEIVED: KES ${result.amount.toLocaleString()} for ${l?.name || adm}. Ref: ${result.mpesaCode}. Thank you!`;
-            await sendSMS({ to: parentPhone, message: msg, schoolName, ...(atCreds || {}) });
+            await sendSMS({ to: parentPhone, message: msg, schoolName, ...atCreds });
 
-            // 2. Send HTML Email Receipt (Implementation of Finance Recommendation)
+            // 2. Send HTML Email Receipt
             if (parentEmail) {
               const { sendEmail, getReceiptTemplate } = await import('@/lib/mail');
               const receiptHtml = getReceiptTemplate({
@@ -160,11 +170,13 @@ export async function POST(req) {
                 ref: result.mpesaCode,
                 balance: l?.arrears || 0
               });
-              
+              // Use per-tenant Resend key if configured, otherwise falls back to env var inside sendEmail
               await sendEmail({
                 to: parentEmail,
                 subject: `[${schoolName}] Fee Payment Receipt - ${result.mpesaCode}`,
-                html: receiptHtml
+                html: receiptHtml,
+                resendApiKey: intKeys?.resendApiKey || undefined,
+                fromEmail:    intKeys?.resendFromEmail || undefined,
               });
               console.log(`[M-Pesa Callback] Email receipt sent successfully to ${parentEmail}`);
             }
