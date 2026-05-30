@@ -21,7 +21,6 @@ import {
   ROLE_EMOJI, ROLE_COLOR,
 } from '@/lib/auth';
 import { kvGet, kvSet, ensureSchema, query, kvDeleteStaff, logAction } from '@/lib/db';
-import { sendCredentialsSMS } from '@/lib/sms-client';
 
 const SCHEMA_REQUIRED_ACTIONS = new Set([
   'register',
@@ -43,6 +42,12 @@ function ok(data, response) {
 }
 function err(msg, status = 400) {
   return NextResponse.json({ ok: false, error: msg }, { status });
+}
+
+function generateOtp() {
+  const values = new Uint32Array(1);
+  crypto.getRandomValues(values);
+  return String(100000 + (values[0] % 900000));
 }
 
 async function getStaffList() {
@@ -256,7 +261,7 @@ async function handleRegister({ role, name, username, phone, password, links, gr
 
   if (!name || !password || !username) return err('Name, username and password are required');
   if (!phone && role === 'parent') return err('Phone number is required for verification');
-  if (password.length < 6) return err('Password must be at least 6 characters');
+  if (password.length < 8) return err('Password must be at least 8 characters');
 
   // 1.5 Verify OTP Status (Only for public self-registration)
   if (!session) {
@@ -491,6 +496,7 @@ async function handleWhoami() {
 async function handleChangePassword({ current, next }, request) {
   const session = await getSession();
   if (!session) return err('Unauthorised', 401);
+  if (!next || next.length < 8) return err('New password must be at least 8 characters');
 
   const { query, execute } = await import('@/lib/db');
   const rows = await query('SELECT password FROM staff WHERE id = ? AND tenant_id = ?', [session.id, session.tenantId]);
@@ -577,7 +583,7 @@ async function handleRequestOtp(body, request) {
     return err('No phone number linked to this account. Contact admin.');
   }
 
-  const otp = Math.floor(100000 + Math.random() * 899999).toString();
+  const otp = generateOtp();
   
   // Store OTP in global platform-master KV with 10 min expiry, including the user's real tenant_id and ID
   const otpData = { otp, expires: Date.now() + 10 * 60 * 1000, tenantId: user.tenant_id, userId: user.id };
@@ -616,6 +622,7 @@ async function handleRequestOtp(body, request) {
 
 async function handleVerifyOtpReset({ username, otp, newPassword }, request) {
   if (!username || !otp || !newPassword) return err('Missing required fields');
+  if (newPassword.length < 8) return err('New password must be at least 8 characters');
 
   // Retrieve OTP from global platform-master KV
   const stored = await kvGet(`otp_reset_${username.toLowerCase()}`, null, 'platform-master');
@@ -646,7 +653,7 @@ async function handleRequestRegOtp({ phone }, request) {
   const cleanPhone = phone.replace(/\D/g, '');
   if (cleanPhone.length < 9) return err('Invalid phone number');
 
-  const otp = Math.floor(100000 + Math.random() * 899999).toString();
+  const otp = generateOtp();
   // Store OTP in global platform-master KV with 10 min expiry
   await kvSet(`reg_otp_pending_${cleanPhone}`, { otp, expires: Date.now() + 10 * 60 * 1000 }, 'platform-master');
 
@@ -714,7 +721,10 @@ async function handleEditUser({ id, name, role, grade, phone, status, password, 
   const finalAvatar = avatar !== undefined ? avatar : existing.avatar;
   
   let hashedPassword = null;
-  if (password && password.length >= 6) {
+  if (password && password.length < 8) {
+    return err('Password must be at least 8 characters');
+  }
+  if (password) {
     hashedPassword = await hashPassword(password);
   }
 

@@ -16,6 +16,8 @@ async function safeJson(response, fallback = {}) {
 
 export default function ProfilePanel({ user, onClose }) {
   const { setUser } = useProfile();
+  const tenantId = user?.tenantId || user?.tenant_id || 'platform-master';
+  const isMasterAdmin = user?.role === 'super-admin' && tenantId === 'platform-master';
   const fileRef = useRef(null);
   const [form, setForm]     = useState({ 
     phone: user?.phone || '', newPw: '', address: '', id_num: '', 
@@ -173,7 +175,7 @@ export default function ProfilePanel({ user, onClose }) {
       style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:10000, display:'flex', justifyContent:'flex-end' }}>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoPick} />
       <div style={{ width: 360, background:'#fff', height:'100%', overflowY:'auto', boxShadow:'-8px 0 40px rgba(0,0,0,.2)', display:'flex', flexDirection:'column' }}>
-        <div style={{ background: (user.role === 'super-admin' && !user.tenantId.includes('gitombo')) ? 'linear-gradient(135deg,#4F46E5,#0F172A)' : 'linear-gradient(135deg,#8B1A1A,#6B1212)', padding:'28px 24px 20px', color:'#fff', position:'relative' }}>
+        <div style={{ background: isMasterAdmin ? 'linear-gradient(135deg,#4F46E5,#0F172A)' : 'linear-gradient(135deg,#8B1A1A,#6B1212)', padding:'28px 24px 20px', color:'#fff', position:'relative' }}>
           <button onClick={onClose} style={{ position:'absolute', top:16, right:16, background:'rgba(255,255,255,.2)', border:'none', borderRadius:'50%', width:30, height:30, color:'#fff', cursor:'pointer', fontSize:16 }}>✕</button>
           <div onClick={() => fileRef.current?.click()} 
             style={{ width:80, height:80, borderRadius:'50%', background: user.color||'#2563EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, margin:'0 auto 12px', overflow:'hidden', border:'3px solid rgba(255,255,255,.4)', cursor:'pointer' }}>
@@ -224,7 +226,7 @@ export default function ProfilePanel({ user, onClose }) {
             <div style={{marginTop:16,marginBottom:8,fontSize:12,fontWeight:700,color:'var(--navy)'}}>Security</div>
             <div className="field" style={{position:'relative'}}>
               <label>New Password <span style={{fontWeight:400,color:'var(--muted)'}}>leave blank to keep</span></label>
-              <input value={form.newPw} onChange={e=>F('newPw',e.target.value)} type={showPw?'text':'password'} placeholder="Min 6 characters" style={{paddingRight:40}} />
+              <input value={form.newPw} onChange={e=>F('newPw',e.target.value)} type={showPw?'text':'password'} placeholder="Min 8 characters" style={{paddingRight:40}} />
               <button type="button" onClick={()=>setShowPw(!showPw)} style={{position:'absolute',right:10,top:28,background:'none',border:'none',cursor:'pointer',fontSize:16}}>
                 {showPw?'🙈':'👁️'}
               </button>

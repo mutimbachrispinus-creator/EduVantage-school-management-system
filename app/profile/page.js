@@ -443,7 +443,7 @@ export default function ProfilePage() {
   async function changePassword(e) {
     e.preventDefault();
     if (pwForm.next !== pwForm.confirm) { setPwMsg({ type: 'err', text: 'New passwords do not match' }); return; }
-    if (pwForm.next.length < 6) { setPwMsg({ type: 'err', text: 'Password must be at least 6 characters' }); return; }
+    if (pwForm.next.length < 8) { setPwMsg({ type: 'err', text: 'Password must be at least 8 characters' }); return; }
     setBusy(true);
     try {
       const res = await fetch('/api/auth', {

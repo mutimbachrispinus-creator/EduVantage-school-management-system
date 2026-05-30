@@ -19,6 +19,21 @@ function LoginContent() {
 
   useEffect(() => {
     let t = searchParams.get('tenant');
+    const invitedUsername = searchParams.get('u') || searchParams.get('username');
+    const shouldReset = searchParams.get('reset') === '1';
+
+    if (invitedUsername) {
+      const normalizedUsername = invitedUsername.toLowerCase().trim();
+      setForm(f => ({ ...f, username: normalizedUsername }));
+      setResetForm(f => ({ ...f, username: normalizedUsername }));
+    }
+
+    if (shouldReset) {
+      setTab('reset');
+      setResetStep(1);
+      setOkMsg('For security, set your own password using the OTP sent to your registered phone.');
+    }
+
     if (t) {
       setTenantId(t);
       // Strict Lockdown: If we have a cached user from a different tenant, clear everything
@@ -478,7 +493,7 @@ function LoginContent() {
                   </div>
                   <div className="field">
                     <label>Set New Password</label>
-                    <input required type="password" value={resetForm.newPassword} onChange={e => RF('newPassword', e.target.value)} placeholder="Minimum 6 characters" />
+                    <input required type="password" value={resetForm.newPassword} onChange={e => RF('newPassword', e.target.value)} placeholder="Minimum 8 characters" />
                   </div>
                 </>
               )}

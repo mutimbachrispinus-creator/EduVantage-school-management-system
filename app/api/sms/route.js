@@ -10,7 +10,7 @@ export const runtime = 'edge';
  * Types:
  *   send       → single message  { to, message }
  *   bulk       → bulk blast      { phones: [], message }
- *   credentials → new-user SMS   { userId } (looks up user from DB)
+ *   credentials → secure account invite SMS { userId } (looks up user from DB)
  *   fee_reminder → { admNo }     (looks up learner fee balance)
  *
  * Auth: session cookie required; only admin can send bulk.
@@ -28,6 +28,21 @@ import {
 
 function err(msg, status = 400) {
   return NextResponse.json({ ok: false, error: msg }, { status });
+}
+
+function requestOrigin(request) {
+  const proto = request.headers.get('x-forwarded-proto') || 'https';
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  if (host) return `${proto}://${host}`;
+  return process.env.NEXT_PUBLIC_APP_URL || 'https://portal.eduvantage.app';
+}
+
+function inviteLoginUrl(request, tenantId, username) {
+  const url = new URL('/login', requestOrigin(request));
+  if (tenantId) url.searchParams.set('tenant', tenantId);
+  if (username) url.searchParams.set('u', username);
+  url.searchParams.set('reset', '1');
+  return url.toString();
 }
 
 export async function POST(request) {
@@ -109,9 +124,10 @@ export async function POST(request) {
       const profile = await kvGet('paav_school_profile', null, tid);
       const schoolName = profile?.name || 'School';
 
-      result = await sendCredentialsSMS(user, { schoolName, ...creds });
+      const portalUrl = inviteLoginUrl(request, tid, user.username);
+      result = await sendCredentialsSMS(user, { schoolName, portalUrl, ...creds });
       logEntry = smsLogEntry({
-        to: user.phone, message: `Credentials for ${user.name}`,
+        to: user.phone, message: `Secure portal invite for ${user.name}`,
         type: 'credentials',
         status: result.success ? 'submitted' : 'failed',
         sentBy: session.name,

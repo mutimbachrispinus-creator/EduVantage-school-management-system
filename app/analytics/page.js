@@ -7,6 +7,12 @@ import { TrendingUp, Users, BookOpen, AlertCircle, Loader2, ShieldAlert, Target,
 import { buildMeritList, getAllGrades, getDefaultSubjects, getCurriculum, gInfo, getDistributionBuckets, getMark } from '@/lib/cbe';
 import { useSchoolProfile } from '@/lib/school-profile';
 import { fetchWithRetry, getCachedDBMulti } from '@/lib/client-cache';
+import {
+  buildNationalForecast,
+  getExamForGrade,
+  normalizeAssessments as normalizeExamAssessments,
+  normalizeTerms as normalizeExamTerms,
+} from '@/lib/national-exam-predictor';
 
 const COLORS = ['#8B1A1A', '#2563EB', '#059669', '#D97706', '#7C3AED', '#DB2777'];
 
@@ -708,89 +714,50 @@ function emptyStats({ labels, curriculum, studentCount }) {
   };
 }
 
-function examBand(score) {
-  if (score >= 80) return { label: 'A / Excellent', color: 'var(--green)', bg: 'var(--green-bg)' };
-  if (score >= 65) return { label: 'B / Strong', color: 'var(--blue)', bg: 'var(--blue-bg)' };
-  if (score >= 50) return { label: 'C / Secure', color: 'var(--amber)', bg: 'var(--amber-bg)' };
-  if (score >= 35) return { label: 'D / Watch', color: '#B45309', bg: '#FFF7ED' };
-  return { label: 'E / Critical', color: 'var(--red)', bg: 'var(--red-bg)' };
+function PredictorLegend({ examInfo }) {
+  if (!examInfo?.scale?.length) return null;
+  return (
+    <div style={{ background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#475569', textTransform: 'uppercase', marginBottom: 10 }}>
+        {examInfo.name} grading · {examInfo.body}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {examInfo.scale.map(s => (
+          <span key={s.lv} style={{ padding: '5px 9px', borderRadius: 8, fontSize: 11, fontWeight: 800, background: s.bg, color: s.c || s.color, border: `1px solid ${(s.c || s.color)}30` }}>
+            {s.lv} <span style={{ fontWeight: 600 }}>({s.min}-{s.max ?? 100})</span> · {s.desc}
+          </span>
+        ))}
+      </div>
+      {examInfo.note && <div style={{ marginTop: 8, color: '#64748B', fontSize: 11 }}>{examInfo.note}</div>}
+    </div>
+  );
 }
 
 function PredictorTab({ learners, marks, grade, setGrade, grades, curriculum, subjCfg }) {
-  const [targetExam, setTargetExam] = useState('National Exam');
-
-  useEffect(() => {
-    const cur = String(curriculum || 'CBC').toUpperCase();
-    if (cur.includes('CBC')) setTargetExam('KPSEA');
-    else if (cur.includes('BRITISH') || cur.includes('CAMBRIDGE') || cur.includes('IGCSE')) setTargetExam('IGCSE');
-    else if (cur.includes('IB')) setTargetExam('IB Diploma');
-    else if (cur.includes('TVET') || cur.includes('CDACC')) setTargetExam('CDACC Finals');
-    else setTargetExam('KCSE');
-  }, [curriculum]);
+  const examInfo = React.useMemo(() => getExamForGrade(grade, curriculum), [grade, curriculum]);
+  const targetExam = examInfo?.name || 'National Exam';
 
   const forecastData = React.useMemo(() => {
     if (!grade) return null;
-    const learnersToForecast = learners.filter(l => l.grade === grade);
-    
+
     // Resolve subjects setup by relevant school (per class/grade)
     const tSubjCfg = subjCfg[grade] || [];
     const subs = (tSubjCfg && tSubjCfg.length > 0)
       ? tSubjCfg
       : getDefaultSubjects(grade, curriculum || 'CBC');
+    const currCtx = getCurriculum(curriculum || 'CBC');
+    const terms = normalizeExamTerms(currCtx.TERMS);
+    const assessments = normalizeExamAssessments(currCtx.ASSESSMENT_TYPES);
 
-    const ASSESS_LIST = [
-      { id: 'op1', label: 'Opener' },
-      { id: 'mt1', label: 'Mid-Term' },
-      { id: 'et1', label: 'End-Term' }
-    ];
-    const NATIONAL_SERIES = ['T1', 'T2', 'T3'].flatMap(t =>
-      ASSESS_LIST.map(a => ({ term: t, assess: a.id, label: `${t} ${a.label}` }))
-    );
-
-    const rows = learnersToForecast.map(l => {
-      const series = NATIONAL_SERIES.map(point => {
-        const scores = subs
-          .map(subject => marks[`${point.term}:${grade}|${subject}|${point.assess}`]?.[l.adm])
-          .filter(v => v !== undefined && v !== null && v !== '');
-        if (!scores.length) return null;
-        const avg = scores.reduce((sum, value) => sum + Number(value), 0) / scores.length;
-        return { ...point, avg: Number(avg.toFixed(1)), entries: scores.length };
-      }).filter(Boolean);
-
-      const current = series.length ? series[series.length - 1].avg : 0;
-      const baseline = series.length ? series[0].avg : 0;
-      
-      // Calculate realistic momentum: damped momentum capped at +/- 10% change from current
-      const momentum = series.length > 1 ? (current - baseline) / (series.length - 1) : 0;
-      const dampedMomentum = momentum * 0.25; // damp to 25% of raw growth
-      
-      // Expected remaining periods out of 9 total in a school year
-      const remainingPeriods = Math.max(1, 9 - series.length);
-      let forecast = current + (dampedMomentum * remainingPeriods);
-      
-      // Cap the change to a realistic +/- 10 percentage points from current
-      if (forecast > current + 10) forecast = current + 10;
-      if (forecast < current - 10) forecast = current - 10;
-      
-      // Clamp between 10% and 99.5%
-      forecast = Math.max(10, Math.min(99.5, forecast));
-
-      const band = examBand(forecast);
-      const completion = subs.length ? Math.round(((series[series.length - 1]?.entries || 0) / subs.length) * 100) : 0;
-
-      return {
-        ...l,
-        series,
-        current: Number(current.toFixed(1)),
-        momentum: Number(momentum.toFixed(1)),
-        forecast: Number(forecast.toFixed(1)),
-        band,
-        confidence: Math.min(95, 35 + series.length * 7 + (completion >= 80 ? 10 : 0))
-      };
-    }).filter(r => r.series.length > 0).sort((a, b) => b.forecast - a.forecast);
-
-    const avgForecast = rows.length ? rows.reduce((sum, r) => sum + r.forecast, 0) / rows.length : 0;
-    return { rows, avgForecast: Number(avgForecast.toFixed(1)), candidates: learnersToForecast.length };
+    return buildNationalForecast({
+      learners,
+      marks,
+      grade,
+      curriculum,
+      subjects: subs,
+      terms,
+      assessments,
+    });
   }, [learners, marks, grade, curriculum, subjCfg]);
 
   return (
@@ -805,12 +772,12 @@ function PredictorTab({ learners, marks, grade, setGrade, grades, curriculum, su
             {grades.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
           <span className="badge" style={{ fontSize: 13, padding: '8px 14px', fontWeight: 800, background: '#EFF6FF', color: '#2563EB' }}>
-            🎯 Target: {targetExam}
+            🎯 {targetExam} · {examInfo?.body || 'Exam Body'}
           </span>
         </div>
       </div>
 
-      <div className="sg sg2">
+      <div className="sg sg4">
         <div className="stat-card" style={{ borderLeft: '4px solid #2563eb' }}>
           <div className="sc-inner">
             <div style={{ flex: 1 }}>
@@ -818,6 +785,24 @@ function PredictorTab({ learners, marks, grade, setGrade, grades, curriculum, su
               <div className="sc-l">Projected Mean ({targetExam})</div>
             </div>
             <div style={{ fontSize: 24 }}>📈</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: '4px solid #059669' }}>
+          <div className="sc-inner">
+            <div style={{ flex: 1 }}>
+              <div className="sc-n" style={{ color: '#059669' }}>{forecastData?.strong || 0}</div>
+              <div className="sc-l">Top-Band Candidates</div>
+            </div>
+            <div style={{ fontSize: 24 }}>🏅</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: '4px solid #dc2626' }}>
+          <div className="sc-inner">
+            <div style={{ flex: 1 }}>
+              <div className="sc-n" style={{ color: '#dc2626' }}>{forecastData?.watch || 0}</div>
+              <div className="sc-l">Intervention Watch</div>
+            </div>
+            <div style={{ fontSize: 24 }}>⚠️</div>
           </div>
         </div>
         <div className="stat-card" style={{ borderLeft: '4px solid #d97706' }}>
@@ -831,9 +816,12 @@ function PredictorTab({ learners, marks, grade, setGrade, grades, curriculum, su
         </div>
       </div>
 
+      <PredictorLegend examInfo={examInfo} />
+
       <div className="panel">
         <div className="panel-hdr">
           <h3>{targetExam} Readiness Forecast</h3>
+          <span className="badge bg-blue">Model: trend + recency + coverage + volatility</span>
         </div>
         <div className="tbl-wrap">
           <table>
@@ -846,6 +834,7 @@ function PredictorTab({ learners, marks, grade, setGrade, grades, curriculum, su
                 <th style={{ textAlign: 'center' }}>Predicted ({targetExam})</th>
                 <th>Band</th>
                 <th style={{ textAlign: 'center' }}>Confidence</th>
+                <th>Action Signal</th>
               </tr>
             </thead>
             <tbody>
@@ -861,13 +850,20 @@ function PredictorTab({ learners, marks, grade, setGrade, grades, curriculum, su
                     {row.momentum > 0 ? '+' : ''}{row.momentum}
                   </td>
                   <td style={{ textAlign: 'center', fontWeight: 900, fontSize: 15 }}>{row.forecast}%</td>
-                  <td><span className="badge" style={{ background: row.band.bg, color: row.band.color }}>{row.band.label}</span></td>
-                  <td style={{ textAlign: 'center' }}>{row.confidence}%</td>
+                  <td>
+                    <span className="badge" style={{ background: row.band.bg, color: row.band.color, fontWeight: 900 }}>{row.band.lv}</span>
+                    <div style={{ fontSize: 10, color: '#64748B', marginTop: 2 }}>{row.band.desc}</div>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <div style={{ fontWeight: 800 }}>{row.confidence}%</div>
+                    <div style={{ fontSize: 10, color: '#64748B' }}>{row.coveragePct}% coverage</div>
+                  </td>
+                  <td style={{ minWidth: 240, fontSize: 11, color: '#475569' }}>{row.recommendation}</td>
                 </tr>
               ))}
               {(!forecastData || forecastData.rows.length === 0) && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: 40, color: '#999' }}>
                     No trend data available to generate a forecast yet.
                   </td>
                 </tr>

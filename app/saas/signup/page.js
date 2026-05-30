@@ -102,7 +102,7 @@ export default function SignupPage() {
     if(step===1){
       if(!form.adminName.trim()) return 'Administrator name is required';
       if(!form.adminUsername.trim()||form.adminUsername.length<4) return 'Username must be at least 4 characters';
-      if(!form.adminPassword||form.adminPassword.length<6) return 'Password must be at least 6 characters';
+      if(!form.adminPassword||form.adminPassword.length<8) return 'Password must be at least 8 characters';
       if(!form.phone) return 'Phone number is required';
       if(!otpVerified) return 'Please verify your phone number to continue';
     }
@@ -275,7 +275,7 @@ export default function SignupPage() {
                   </div>
                   <div className="su-field">
                     <label className="su-label">Password *</label>
-                    <input className="su-input" type="password" placeholder="Min 6 chars" value={form.adminPassword} onChange={e=>F('adminPassword',e.target.value)}/>
+                    <input className="su-input" type="password" placeholder="Min 8 chars" value={form.adminPassword} onChange={e=>F('adminPassword',e.target.value)}/>
                   </div>
                 </div>
                 <div className="su-field">

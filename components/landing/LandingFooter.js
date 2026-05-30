@@ -20,10 +20,10 @@ export default function LandingFooter() {
           <div className="footer-links">
             <div>
               <h4>Product Workspaces</h4>
-              <a href="/#demo">All Demos</a>
-              <a href="/demo/teacher">👩‍🏫 Teacher Portal</a>
-              <a href="/demo/parent">👨‍👩‍👧 Parent Portal</a>
-              <a href="/demo/staff">🏢 Finance & Admin</a>
+              <Link href="/#demo">All Demos</Link>
+              <Link href="/demo/teacher">👩‍🏫 Teacher Portal</Link>
+              <Link href="/demo/parent">👨‍👩‍👧 Parent Portal</Link>
+              <Link href="/demo/staff">🏢 Finance & Admin</Link>
               <Link href="/pricing">Pricing Plans</Link>
             </div>
             <div>

@@ -55,26 +55,26 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId })
   ];
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:15, overflowY:'auto' }}>
-      <div className="panel modal-content" style={{ maxWidth:520, width:'100%', borderRadius:32, boxShadow:'0 25px 50px rgba(0,0,0,0.3)', position:'relative', maxHeight:'92vh', overflowY:'auto' }}>
-        <button onClick={onClose} style={{ position:'absolute', top:20, right:20, background:'none', border:'none', fontSize:24, cursor:'pointer', color:'#64748B' }}>✕</button>
+    <div className="billing-modal-backdrop" style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'18px 15px', overflowY:'auto' }}>
+      <div className="panel modal-content" style={{ maxWidth:520, width:'100%', borderRadius:24, boxShadow:'0 25px 50px rgba(0,0,0,0.3)', position:'relative', maxHeight:'calc(100vh - 36px)', overflowY:'auto', overscrollBehavior:'contain' }}>
+        <button onClick={onClose} aria-label="Close payment modal" style={{ position:'sticky', top:0, marginLeft:'auto', display:'flex', alignItems:'center', justifyContent:'center', width:34, height:34, background:'#fff', border:'1px solid #E2E8F0', borderRadius:10, fontSize:20, cursor:'pointer', color:'#64748B', zIndex:2, boxShadow:'0 8px 18px rgba(15,23,42,.08)' }}>✕</button>
 
-        <div style={{ textAlign:'center', marginBottom:28 }}>
-          <div style={{ fontSize:42, marginBottom:10 }}>🔐</div>
-          <h2 style={{ fontSize:24, fontWeight:900, color:'#0F172A', margin:'0 0 8px' }}>Activate {plan.name}</h2>
+        <div style={{ textAlign:'center', margin:'-8px 0 18px' }}>
+          <div style={{ fontSize:34, marginBottom:8 }}>🔐</div>
+          <h2 style={{ fontSize:22, fontWeight:900, color:'#0F172A', margin:'0 0 6px' }}>Activate {plan.name}</h2>
           <p style={{ color:'#64748B', fontSize:14, margin:0 }}>Choose a payment method to upgrade your institutional license.</p>
         </div>
 
-        <div style={{ background:'linear-gradient(135deg,#EEF2FF,#F0FDF4)', padding:'18px 20px', borderRadius:16, border:'1px solid #E2E8F0', marginBottom:24, textAlign:'center' }}>
+        <div style={{ background:'linear-gradient(135deg,#EEF2FF,#F0FDF4)', padding:'14px 18px', borderRadius:14, border:'1px solid #E2E8F0', marginBottom:16, textAlign:'center' }}>
           <div style={{ fontSize:11, fontWeight:800, color:'#64748B', textTransform:'uppercase', marginBottom:6 }}>Total Amount Due</div>
-          <div style={{ fontSize:34, fontWeight:900, color:'#4F46E5' }}>KES {total.toLocaleString()}</div>
+          <div style={{ fontSize:30, fontWeight:900, color:'#4F46E5' }}>KES {total.toLocaleString()}</div>
           {plan.billingModel === 'per-learner' && (
             <div style={{ fontSize:11, color:'#94A3B8', marginTop:4 }}>({studentCount} students × KES {plan.price} / term)</div>
           )}
         </div>
 
-        <div style={{ padding:'18px 20px', background:'#F0F9FF', borderRadius:16, border:'1.5px solid #BAE6FD', marginBottom:16 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+        <div style={{ padding:'14px 16px', background:'#F0F9FF', borderRadius:14, border:'1.5px solid #BAE6FD', marginBottom:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
             <span style={{ fontSize:22 }}>📲</span>
             <div>
               <div style={{ fontWeight:800, color:'#0369A1', fontSize:14 }}>M-Pesa STK Push</div>
@@ -85,24 +85,24 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId })
             placeholder="Phone e.g. 0712345678"
             value={phone}
             onChange={e => setPhone(e.target.value)}
-            style={{ width:'100%', padding:'12px 16px', borderRadius:12, border:'1.5px solid #BAE6FD', fontSize:15, marginBottom:12, boxSizing:'border-box' }}
+            style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1.5px solid #BAE6FD', fontSize:15, marginBottom:10, boxSizing:'border-box' }}
           />
           <button disabled={loading} onClick={initiatePay}
-            style={{ width:'100%', padding:'13px', borderRadius:12, background: loading ? '#94A3B8' : '#0EA5E9', color:'#fff', fontWeight:900, border:'none', cursor:'pointer', fontSize:15 }}>
+            style={{ width:'100%', padding:'11px', borderRadius:10, background: loading ? '#94A3B8' : '#0EA5E9', color:'#fff', fontWeight:900, border:'none', cursor:'pointer', fontSize:15 }}>
             {loading ? 'Initiating...' : '📱 Pay via M-Pesa'}
           </button>
         </div>
 
-        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
           <div style={{ flex:1, height:1, background:'#E2E8F0' }} />
           <span style={{ fontSize:11, fontWeight:800, color:'#94A3B8', whiteSpace:'nowrap' }}>OR PAY WITH CARD / DIGITAL WALLET</span>
           <div style={{ flex:1, height:1, background:'#E2E8F0' }} />
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
+        <div className="billing-digital-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
           {DIGITAL.map(({ label, icon, bg, border, col, sub, hoverBorder }) => (
             <button key={label} disabled={loading} onClick={() => initiateCard(label)}
-              style={{ padding:'16px 12px', borderRadius:14, background:bg, border:`1.5px solid ${border}`, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:6, transition:'0.2s', boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}
+              style={{ padding:'13px 10px', borderRadius:12, background:bg, border:`1.5px solid ${border}`, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:5, transition:'0.2s', boxShadow:'0 2px 8px rgba(0,0,0,.04)', minHeight:86 }}
               onMouseOver={e => { e.currentTarget.style.borderColor=hoverBorder; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 20px rgba(0,0,0,.1)'; }}
               onMouseOut={e => { e.currentTarget.style.borderColor=border; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,.04)'; }}>
               <div style={{ fontSize:24, fontWeight:900, color:col }}>{icon}</div>
@@ -348,7 +348,16 @@ export default function BillingPage() {
           padding: 40px;
         }
         .modal-content {
-          padding: 40px;
+          padding: 22px 28px 28px;
+          scrollbar-width: thin;
+          scrollbar-color: #CBD5E1 transparent;
+        }
+        .modal-content::-webkit-scrollbar {
+          width: 8px;
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+          background: #CBD5E1;
+          border-radius: 999px;
         }
         @media (max-width: 800px) {
           .billing-page {
@@ -359,8 +368,15 @@ export default function BillingPage() {
             border-radius: 20px !important;
           }
           .modal-content {
-            padding: 24px 20px;
-            border-radius: 24px !important;
+            padding: 18px 16px 22px;
+            border-radius: 18px !important;
+            max-height: calc(100vh - 24px) !important;
+          }
+          .billing-modal-backdrop {
+            padding: 12px !important;
+          }
+          .billing-digital-grid {
+            grid-template-columns: 1fr !important;
           }
           h1 {
             font-size: 24px !important;

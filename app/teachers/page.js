@@ -3,7 +3,7 @@
  * app/teachers/page.js — Teacher & Staff List
  *
  * Admin view: list all staff, add/edit/deactivate accounts,
- * assign grades and teaching areas, send credentials via SMS.
+ * assign grades and teaching areas, send secure portal invites via SMS.
  */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -69,7 +69,7 @@ export default function TeachersPage() {
       body: JSON.stringify({ type: 'credentials', userId: id }),
     });
     const data = await res.json();
-    alert(data.ok ? '✅ Credentials sent via SMS!' : `❌ ${data.error}`);
+    alert(data.ok ? '✅ Secure portal invite sent via SMS!' : `❌ ${data.error}`);
   }
 
   if (loading || !user) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading staff…</div>;
@@ -136,6 +136,7 @@ export default function TeachersPage() {
                       </button>
                       {s.phone && (
                         <button className="btn btn-teal btn-sm" style={{ marginLeft: 4 }}
+                          title="Send secure portal invite"
                           onClick={() => sendCreds(s.id)}>📱</button>
                       )}
                       <button className="btn btn-danger btn-sm" style={{ marginLeft: 4 }}
@@ -209,7 +210,7 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
       setForm(f => ({ 
         ...f, 
         username: `${prefix}-${first}-${rand}`.toLowerCase(),
-        password: Math.floor(100000 + Math.random() * 899999).toString()
+        password: `Edu${Math.floor(100000 + Math.random() * 899999)}`
       }));
       setShowPw(true);
     }
@@ -220,6 +221,7 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
   async function save() {
     if (!form.name || !form.username) { setErr('Name and username are required'); return; }
     if (!isEdit && !form.password)    { setErr('Password is required for new users'); return; }
+    if (form.password && form.password.length < 8) { setErr('Password must be at least 8 characters'); return; }
     
     // Enforce admin limit
     if (form.role.startsWith('admin')) {
@@ -306,8 +308,8 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
             <label style={{ display:'flex', alignItems:'center', justifyContent: 'space-between' }}>
               <span>{isEdit ? '🔑 Reset Password' : 'Password *'}</span>
               {!isEdit && <span style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 11 }} onClick={() => {
-                const rand = Math.floor(100000 + Math.random() * 900000);
-                F('password', rand.toString());
+                const rand = `Edu${Math.floor(100000 + Math.random() * 900000)}`;
+                F('password', rand);
                 setShowPw(true);
               }}>🎲 Rand</span>}
             </label>
@@ -316,7 +318,7 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
                 value={form.password}
                 onChange={e => F('password', e.target.value)}
                 type={showPw ? 'text' : 'password'}
-                placeholder={isEdit ? 'Enter new password…' : 'Min 6 chars'}
+                placeholder={isEdit ? 'Enter new password, min 8 chars' : 'Min 8 chars'}
                 style={{ paddingRight: 40, width: '100%', boxSizing: 'border-box' }}
               />
               <button type="button" onClick={() => setShowPw(!showPw)}
@@ -324,6 +326,9 @@ function UserModal({ user, currentUser, allStaff, onClose, curr }) {
                 {showPw ? '🙈' : '👁️'}
               </button>
             </div>
+            <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--muted)', lineHeight: 1.4 }}>
+              SMS invites never include this password. Users receive a secure login link and set their own private password with OTP.
+            </p>
           </div>
 
           {isEdit && (

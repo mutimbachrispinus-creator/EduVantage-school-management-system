@@ -1,6 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function DebugRestore() {
   const [data, setData] = useState(null);
@@ -52,7 +53,7 @@ export default function DebugRestore() {
         {busy ? 'Running...' : '🚀 Run Restoration'}
       </button>
       <div style={{ marginTop: 20 }}>
-        <a href="/">← Back to Home</a>
+        <Link href="/">← Back to Home</Link>
       </div>
     </div>
   );

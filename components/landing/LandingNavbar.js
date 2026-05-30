@@ -26,7 +26,7 @@ export default function LandingNavbar() {
             <Link href="/curricula">Curricula</Link>
             <Link href="/workspaces">Workspaces</Link>
             <Link href="/features">Feature Catalog</Link>
-            <a href="/#demo" style={{ color: 'var(--lp-primary,#4F46E5)', fontWeight: 800 }}>🎥 Demo</a>
+            <Link href="/#demo" style={{ color: 'var(--lp-primary,#4F46E5)', fontWeight: 800 }}>🎥 Demo</Link>
             <Link href="/compare">Compare</Link>
             <Link href="/pricing">Pricing</Link>
           </div>
