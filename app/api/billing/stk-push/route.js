@@ -23,10 +23,21 @@ export async function POST(request) {
 
     // 1. Get Global Config (for Gateway Credentials)
     const gConf = await kvGet('paav_global_config', {}, 'platform-master');
-    const gw = gConf.mpesaGateway;
+    let gw = gConf.mpesaGateway;
 
+    // Fallback to platform-level env vars if global config is not set
     if (!gw || !gw.consumerKey || !gw.shortcode) {
-      return NextResponse.json({ error: 'M-Pesa Automation Gateway is not configured by the platform owner.' }, { status: 400 });
+      gw = {
+        consumerKey:    process.env.MPESA_CONSUMER_KEY    || '',
+        consumerSecret: process.env.MPESA_CONSUMER_SECRET || '',
+        shortcode:      process.env.MPESA_SHORTCODE      || '',
+        passkey:        process.env.MPESA_PASSKEY        || '',
+        env:            process.env.MPESA_ENV            || 'sandbox',
+      };
+    }
+
+    if (!gw.consumerKey || !gw.shortcode) {
+      return NextResponse.json({ error: 'M-Pesa Automation Gateway is not configured.' }, { status: 400 });
     }
 
     // 2. Initiate STK Push
