@@ -230,7 +230,7 @@ input,select,textarea,button{font-family:var(--font-inter),sans-serif}
 /* ── MAIN ── */
 #main{flex:1;padding:26px 22px;max-width:1380px;margin:0 auto;width:100%}
 .page{display:none;padding:24px 22px 100px;flex:1;content-visibility:auto;contain-intrinsic-size:1px 1000px;will-change:transform,opacity;backface-visibility:hidden;transform:translateZ(0)}
-.page.on{display:block;animation:pageEnter 0.2s ease-out forwards}
+.page.on{display:block;animation:pageEnter 0.2s ease-out forwards;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;pointer-events:auto}
 @keyframes pageEnter {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -2246,58 +2246,62 @@ input:focus, select:focus, textarea:focus {
 
 /* Phone Panel Fit — keep cards inside the viewport */
 @media screen and (max-width:600px){
-  html,
-  body{
-    width:100%;
-    max-width:100%;
-    overflow-x:hidden;
-  }
+   html,
+   body{
+     width:100%;
+     max-width:100%;
+     overflow-x:hidden;
+   }
 
-  #main,
-  .page{
-    width:100%;
-    max-width:100%;
-    overflow-x:hidden;
-  }
+   #main,
+   .page{
+     width:100%;
+     max-width:100%;
+     overflow-x:hidden;
+   }
 
-  .page{
-    padding-left:0 !important;
-    padding-right:0 !important;
-  }
+   .page{
+     padding-left:0 !important;
+     padding-right:0 !important;
+   }
 
-  .page > *{
-    max-width:100%;
-  }
+   .page > *{
+     max-width:100%;
+   }
 
-  .panel,
-  .stat-card,
-  .receipt-card,
-  .print-container,
-  .quick-access-btn,
-  .duty-dept-card,
-  .assign-row,
-  .fee-cfg-row,
-  .profile-card,
-  .parent-banner,
-  .hero-banner,
-  .payslip,
-  .payslip-print-wrap{
-    width:100% !important;
-    max-width:100% !important;
-    min-width:0 !important;
-    margin-left:0 !important;
-    margin-right:0 !important;
-    box-sizing:border-box;
-  }
+   .panel,
+   .stat-card,
+   .receipt-card,
+   .print-container,
+   .quick-access-btn,
+   .duty-dept-card,
+   .assign-row,
+   .fee-cfg-row,
+   .profile-card,
+   .parent-banner,
+   .hero-banner,
+   .payslip,
+   .payslip-print-wrap{
+     width:100% !important;
+     max-width:100% !important;
+     min-width:0 !important;
+     margin-left:0 !important;
+     margin-right:0 !important;
+     box-sizing:border-box;
+   }
 
-  .panel{
-    overflow:hidden;
-  }
+   .panel{
+     overflow-y:auto;
+     -webkit-overflow-scrolling:touch;
+     overscroll-behavior:contain;
+     touch-action:pan-y;
+     pointer-events:auto;
+   }
 
-  .panel-hdr{
-    align-items:flex-start;
-    gap:10px;
-  }
+   .panel-hdr{
+     align-items:flex-start;
+     gap:10px;
+   }
 
   .panel-hdr > *,
   .panel-body > *,
