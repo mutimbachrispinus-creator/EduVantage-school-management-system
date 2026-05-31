@@ -55,8 +55,8 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId })
   ];
 
   return (
-    <div className="billing-modal-backdrop" style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'18px 15px', overflowY:'auto' }}>
-      <div className="panel modal-content" style={{ maxWidth:520, width:'100%', borderRadius:24, boxShadow:'0 25px 50px rgba(0,0,0,0.3)', position:'relative', maxHeight:'calc(100vh - 36px)', overflowY:'auto', overscrollBehavior:'contain' }}>
+    <div className="billing-modal-backdrop" style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'18px 15px', overflowY:'auto', WebkitOverflowScrolling:'touch', touchAction:'pan-y' }}>
+      <div className="panel modal-content" style={{ maxWidth:520, width:'100%', borderRadius:24, boxShadow:'0 25px 50px rgba(0,0,0,0.3)', position:'relative', maxHeight:'calc(100dvh - 36px)', overflowY:'auto', WebkitOverflowScrolling:'touch', overscrollBehavior:'contain', touchAction:'pan-y', pointerEvents:'auto' }}>
         <button onClick={onClose} aria-label="Close payment modal" style={{ position:'sticky', top:0, marginLeft:'auto', display:'flex', alignItems:'center', justifyContent:'center', width:34, height:34, background:'#fff', border:'1px solid #E2E8F0', borderRadius:10, fontSize:20, cursor:'pointer', color:'#64748B', zIndex:2, boxShadow:'0 8px 18px rgba(15,23,42,.08)' }}>✕</button>
 
         <div style={{ textAlign:'center', margin:'-8px 0 18px' }}>
@@ -295,7 +295,7 @@ export default function BillingPage() {
         </div>
       </div>
 
-      <div className="panel billing-panel" style={{ marginTop: 40, background: '#fff', borderRadius: 32, boxShadow: '0 20px 50px rgba(15,23,42,0.05)', position: 'relative', zIndex: 1 }}>
+      <div className="panel billing-panel billing-upgrades-panel" style={{ marginTop: 40, background: '#fff', borderRadius: 32, boxShadow: '0 20px 50px rgba(15,23,42,0.05)', position: 'relative', zIndex: 1 }}>
         <h3 style={{ marginBottom: 32, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: SLATE }}>Available License Upgrades</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
           {data.plans.map((p, idx) => (
@@ -351,6 +351,7 @@ export default function BillingPage() {
           padding: 22px 28px 28px;
           scrollbar-width: thin;
           scrollbar-color: #CBD5E1 transparent;
+          touch-action: pan-y;
         }
         .modal-content::-webkit-scrollbar {
           width: 8px;
@@ -366,17 +367,34 @@ export default function BillingPage() {
           .billing-panel {
             padding: 24px 20px;
             border-radius: 20px !important;
+            max-height: calc(100dvh - 150px);
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            pointer-events: auto;
           }
           .modal-content {
             padding: 18px 16px 22px;
             border-radius: 18px !important;
-            max-height: calc(100vh - 24px) !important;
+            max-height: calc(100dvh - 24px) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            pointer-events: auto;
           }
           .billing-modal-backdrop {
             padding: 12px !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
           }
           .billing-digital-grid {
             grid-template-columns: 1fr !important;
+          }
+          .billing-upgrades-panel {
+            max-height: calc(100dvh - 118px);
           }
           h1 {
             font-size: 24px !important;

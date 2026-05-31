@@ -499,9 +499,21 @@ tr:hover td{background:#F8FAFF}
   .page-hdr h2{font-size:17px}
   .page-hdr-acts{width:100%;justify-content:flex-start}
   .modal{max-height:96vh;border-radius:12px 12px 0 0}
-  .panel{border-radius:10px}
+  .panel{
+    border-radius:10px;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    touch-action:pan-x pan-y;
+    pointer-events:auto;
+  }
   .panel-body{padding:10px}
-  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tbl-wrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    pointer-events:auto;
+  }
   table{min-width:480px}
   .tabs{gap:2px;padding:3px}
   .tab{padding:7px 10px;font-size:11px}
@@ -2336,6 +2348,8 @@ input:focus, select:focus, textarea:focus {
     overflow-x:auto;
     overflow-y:visible;
     -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    pointer-events:auto;
   }
 
   table{
