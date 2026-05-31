@@ -18,6 +18,10 @@ function ReportCardContent() {
   const [gradCfg, setGradCfg] = useState(null);
   const [subjCfg, setSubjCfg] = useState({});
   const [loading, setLoading] = useState(true);
+  const [outreachModal, setOutreachModal] = useState(false);
+  const [outreachTerm, setOutreachTerm] = useState('');
+  const [outreachAssess, setOutreachAssess] = useState('');
+  const [outreachGrade, setOutreachGrade] = useState('');
 
   const admParam   = sp.get('adm')    || '';
   const gradeParam = sp.get('grade')  || '';
@@ -39,16 +43,49 @@ function ReportCardContent() {
       setLoading(false);
     }
     load();
-  }, [router]);
+   }, [router]);
+   // Set initial values for the outreach form when URL parameters or learners change
+   useEffect(() => {
+     setOutreachTerm(termParam);
+     setOutreachAssess(assessParam);
+     let grade = '';
+     if (admParam) {
+       const learner = learners.find(l => l.adm === admParam);
+       if (learner) grade = learner.grade;
+     }
+     if (!grade && gradeParam) grade = gradeParam;
+     if (!grade && ALL_GRADES.length > 0) grade = ALL_GRADES[0];
+     setOutreachGrade(grade);
+   }, [termParam, assessParam, admParam, gradeParam, learners, ALL_GRADES]);
 
-  if (loading) return <div style={{padding:60,textAlign:'center',color:'#64748b'}}>Generating report card…</div>;
+   const handleOutreachSubmit = async (e) => {
+     e.preventDefault();
+     setOutreachModal(false);
+     try {
+       const res = await fetch('/api/outreach/sms', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ term: outreachTerm, assess: outreachAssess, grade: outreachGrade })
+       });
+       const data = await res.json();
+       if (data.ok) {
+         alert(`Outreach SMS sent successfully!`);
+       } else {
+         alert('Failed to send outreach SMS: ' + (data.error || 'Unknown error'));
+       }
+     } catch (err) {
+       alert('Error: ' + err.message);
+     }
+   };
 
-  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
-  const labels = getLabels(school?.curriculum || 'CBC');
-  const { gInfo, maxPts, DEFAULT_SUBJECTS } = curr;
-  const TERMS = curr.TERMS || [{id:'T1',name:'Term 1'},{id:'T2',name:'Term 2'},{id:'T3',name:'Term 3'}];
-  const assessments = curr.ASSESSMENT_TYPES || [];
-  const assessMap = assessments.reduce((acc,a) => ({...acc,[a.key]:a.label}),{});
+   if (loading) return <div style={{padding:60,textAlign:'center',color:'#64748b'}}>Generating report card…</div>;
+
+   const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
+   const labels = getLabels(school?.curriculum || 'CBC');
+   const { gInfo, maxPts, DEFAULT_SUBJECTS, ALL_GRADES } = curr;
+   const TERMS = curr.TERMS || [{id:'T1',name:'Term 1'},{id:'T2',name:'Term 2'},{id:'T3',name:'Term 3'}];
+   const assessments = curr.ASSESSMENT_TYPES || [];
+   const assessMap = assessments.reduce((acc,a) => ({...acc,[a.key]:a.label}),{});
 
   const termLabel = TERMS.find(t => t.id === termParam)?.name || termParam;
   const assessLabel = assessMap[assessParam] || assessParam;
@@ -66,12 +103,13 @@ function ReportCardContent() {
 
   return (
     <div className="rc-root">
-      {/* Print controls */}
-      <div className="rc-toolbar no-print">
-        <button onClick={() => router.back()} className="rc-btn-back">← Back</button>
-        <span className="rc-info">{targetLearners.length} card{targetLearners.length!==1?'s':''} · {termLabel} · {assessLabel}</span>
-        <button onClick={() => window.print()} className="rc-btn-print">🖨️ Print / Save PDF</button>
-      </div>
+       {/* Print controls */}
+       <div className="rc-toolbar no-print">
+         <button onClick={() => router.back()} className="rc-btn-back">← Back</button>
+         <span className="rc-info">{targetLearners.length} card{targetLearners.length!==1?'s':''} · {termLabel} · {assessLabel}</span>
+         <button onClick={() => window.print()} className="rc-btn-print">🖨️ Print / Save PDF</button>
+         <button onClick={() => setOutreachModal(true)} className="rc-btn-outreach" style={{ marginLeft: '8px' }}>📣 Outreach</button>
+       </div>
 
       {/* Cards */}
       <div className="rc-pages">
@@ -216,48 +254,116 @@ function ReportCardContent() {
                       {school?.curriculum !== 'MONTESSORI' && <div className="rc-overall-pct">{avgPct}%</div>}
                       <div className="rc-overall-desc">{overallGrade.desc || '—'}</div>
                       <div className="rc-overall-sub">{entered.length}/{subjects.length} {labels.subjects.toLowerCase()} assessed</div>
-                    </div>
-                  </div>
+</div>
+       </div>
 
-                  {/* ══ TEACHER COMMENTS ══ */}
-                  <div className="rc-comments-row">
-                    <div className="rc-comment-box">
-                      <div className="rc-comment-label">Class Teacher&apos;s Comment:</div>
-                      <div className="rc-comment-line"></div>
-                      <div className="rc-comment-line"></div>
-                    </div>
-                    <div className="rc-comment-box">
-                      <div className="rc-comment-label">Principal&apos;s Comment:</div>
-                      <div className="rc-comment-line"></div>
-                      <div className="rc-comment-line"></div>
-                    </div>
-                  </div>
+       {/* Outreach Modal */}
+       {outreachModal && (
+         <div
+           className="outreach-modal-backdrop"
+           style={{
+             position: 'fixed',
+             inset: 0,
+             zIndex: 9999,
+             background: 'rgba(15,23,42,0.85)',
+             backdropFilter: 'blur(8px)',
+             display: 'flex',
+             alignItems: 'center',
+             justifyContent: 'center',
+             padding: '12px'
+           }}
+         >
+           <div
+             className="outreach-modal-content"
+             style={{
+               background: '#fff',
+               borderRadius: 16,
+               boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+               maxWidth: 420,
+               width: '100%',
+               padding: 24
+             }}
+           >
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+               <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#0F172A' }}>Send Parent Outreach</h3>
+               <button
+                 onClick={() => setOutreachModal(false)}
+                 style={{ background: 'none', border: 'none', fontSize: 22, color: '#64748B', cursor: 'pointer' }}
+               >
+                 ✕
+               </button>
+             </div>
+             <form onSubmit={handleOutreachSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+               <div>
+                 <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
+                   Term
+                 </label>
+                 <select
+                   value={outreachTerm}
+                   onChange={e => setOutreachTerm(e.target.value)}
+                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
+                 >
+                   {TERMS.map(t => (
+                     <option key={t.id} value={t.id}>
+                       {t.name}
+                     </option>
+                   ))}
+                 </select>
+               </div>
+               <div>
+                 <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
+                   Exam
+                 </label>
+                 <select
+                   value={outreachAssess}
+                   onChange={e => setOutreachAssess(e.target.value)}
+                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
+                 >
+                   {assessments.map(a => (
+                     <option key={a.key} value={a.key}>
+                       {a.label}
+                     </option>
+                   ))}
+                 </select>
+               </div>
+               <div>
+                 <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
+                   Grade
+                 </label>
+                 <select
+                   value={outreachGrade}
+                   onChange={e => setOutreachGrade(e.target.value)}
+                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
+                 >
+                   {ALL_GRADES.map(g => (
+                     <option key={g} value={g}>
+                       {g}
+                     </option>
+                   ))}
+                 </select>
+               </div>
+               <button
+                 type="submit"
+                 style={{
+                   background: '#1E293B',
+                   color: '#fff',
+                   border: 'none',
+                   padding: '12px 24px',
+                   borderRadius: 6,
+                   fontSize: 14,
+                   fontWeight: 600,
+                   cursor: 'pointer',
+                   marginTop: 8
+                 }}
+               >
+                 Send SMS to Parents
+               </button>
+             </form>
+           </div>
+         </div>
+       )}
 
-                  {/* ══ SIGNATURES ══ */}
-                  <div className="rc-sigs">
-                    {['Class Teacher','Parent / Guardian','Principal'].map(role => (
-                      <div key={role} className="rc-sig-block">
-                        <div className="rc-sig-line"></div>
-                        <div className="rc-sig-label">{role}</div>
-                        <div className="rc-sig-date">Date: _______________</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* ══ FOOTER ══ */}
-                  <div className="rc-footer">
-                    <span>Next Term Begins: _____________________</span>
-                    <span>Generated by EduVantage · {new Date().toLocaleDateString('en-KE')}</span>
-                  </div>
-
-                </div>{/* inner border */}
-              </div>{/* outer border */}
-            </div>
-          );
-        })}
-      </div>
-
-      <style>{`
+       <style>{`
         /* ── Root & toolbar ── */
         .rc-root { background: #e5e7eb; min-height: 100vh; }
         .rc-toolbar {
