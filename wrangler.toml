@@ -14,6 +14,7 @@ pages_build_output_dir = ".vercel/output/static"
 
 [limits]
 subrequests = 100
+cpu_ms = 5000
 
 # NOTE: Set ALL secrets in Cloudflare Dashboard:
 #   Pages → eduvantage → Settings → Environment Variables
