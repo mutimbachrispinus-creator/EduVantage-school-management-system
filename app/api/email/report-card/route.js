@@ -8,7 +8,7 @@ import { getDefaultSubjects, gInfo, maxPts, promotionStatus } from '@/lib/cbe';
 
 export async function POST(req) {
   try {
-    const { adm, term } = await req.json();
+    const { adm, term, assess } = await req.json();
 
     if (!adm || !term) return NextResponse.json({ error: 'ADM and Term required' }, { status: 400 });
 
@@ -58,18 +58,21 @@ export async function POST(req) {
     const mPts = maxPts(learner.grade, subjects);
     const promoSt = promotionStatus(totalPts, mPts);
     const pct = mPts ? Math.round((totalPts / mPts) * 100) : 0;
+    const overallGrade = gInfo(pct, learner.grade, gradCfg, null); // General level
 
     // 3. Generate template
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://paav.school'; // Adjust as needed
-    const link = `${baseUrl}/grades/report-card/${adm}?term=${term}`;
+    const link = `${baseUrl}/grades/report-card/${adm}?term=${term}&assess=${assess || 'et1'}`;
 
     const html = getReportCardTemplate({
       learnerName: learner.name,
       term: term.replace('T', ''),
+      exam: assess || 'et1', // Exam type (e.g., et1, mt1, op1)
       year: new Date().getFullYear(),
       totalPts,
       maxPts: mPts,
       pct,
+      generalLevel: overallGrade?.lv || '—', // General level (e.g., Grade 4)
       promoStatus: promoSt,
       link
     });
@@ -77,9 +80,9 @@ export async function POST(req) {
     // 4. Send email
     const result = await sendEmail({
       to: learner.parentEmail,
-      subject: `Academic Report Card - ${learner.name} (Term ${term.replace('T', '')})`,
+      subject: `Academic Report Card - ${learner.name} (Term ${term.replace('T', '')} ${assess?.toUpperCase() || 'ET1'})`,
       html,
-      text: `The academic report for ${learner.name} is available. Total Points: ${totalPts}/${mPts}.`
+      text: `The academic report for ${learner.name} is available. Total Points: ${totalPts}/${mPts}. General Level: ${overallGrade?.lv || '—'}.`
     });
 
     if (result.error) {

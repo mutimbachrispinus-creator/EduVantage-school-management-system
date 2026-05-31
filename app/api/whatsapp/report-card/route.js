@@ -12,7 +12,7 @@ export async function POST(req) {
     if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     const tid = getTenantId(session);
 
-    const { adm, term } = await req.json();
+    const { adm, term, assess } = await req.json();
 
     if (!adm || !term) return NextResponse.json({ error: 'ADM and Term required' }, { status: 400 });
 
@@ -57,7 +57,14 @@ export async function POST(req) {
     });
 
     const mPts = maxPts(learner.grade, subjects);
-    const message = getResultNotificationMessage(learner.name, term.replace('T',''), totalPts, mPts, schoolName);
+    const promoSt = promotionStatus(totalPts, mPts);
+    const pct = mPts ? Math.round((totalPts / mPts) * 100) : 0;
+    const overallGrade = gInfo(pct, learner.grade, gradCfg, null); // General level
+
+    // Map assess to a label (optional, but we can use the assess directly and uppercase it)
+    const examLabel = assess?.toUpperCase() || 'ET1';
+
+    const message = getResultNotificationMessage(learner.name, term.replace('T',''), examLabel, totalPts, mPts, overallGrade?.lv || '—', schoolName);
 
     const creds = {
       username: savedCreds?.username || process.env.AT_USERNAME || 'sandbox',
