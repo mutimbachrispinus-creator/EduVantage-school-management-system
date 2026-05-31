@@ -248,120 +248,158 @@ function ReportCardContent() {
                       </table>
                     </div>
 
-                    <div className="rc-overall-box">
+<div className="rc-overall-box">
                       <div className="rc-box-title">OVERALL ASSESSMENT</div>
                       <div className="rc-overall-grade" style={{color:overallGrade.c||'#0f172a'}}>{overallGrade.lv || '—'}</div>
                       {school?.curriculum !== 'MONTESSORI' && <div className="rc-overall-pct">{avgPct}%</div>}
                       <div className="rc-overall-desc">{overallGrade.desc || '—'}</div>
                       <div className="rc-overall-sub">{entered.length}/{subjects.length} {labels.subjects.toLowerCase()} assessed</div>
-</div>
-       </div>
+                    </div>
+                  </div>
+                </div>
 
-       {/* Outreach Modal */}
-       {outreachModal && (
-         <div
-           className="outreach-modal-backdrop"
-           style={{
-             position: 'fixed',
-             inset: 0,
-             zIndex: 9999,
-             background: 'rgba(15,23,42,0.85)',
-             backdropFilter: 'blur(8px)',
-             display: 'flex',
-             alignItems: 'center',
-             justifyContent: 'center',
-             padding: '12px'
-           }}
-         >
-           <div
-             className="outreach-modal-content"
-             style={{
-               background: '#fff',
-               borderRadius: 16,
-               boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
-               maxWidth: 420,
-               width: '100%',
-               padding: 24
-             }}
-           >
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-               <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#0F172A' }}>Send Parent Outreach</h3>
-               <button
-                 onClick={() => setOutreachModal(false)}
-                 style={{ background: 'none', border: 'none', fontSize: 22, color: '#64748B', cursor: 'pointer' }}
-               >
-                 ✕
-               </button>
-             </div>
-             <form onSubmit={handleOutreachSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-               <div>
-                 <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
-                   Term
-                 </label>
-                 <select
-                   value={outreachTerm}
-                   onChange={e => setOutreachTerm(e.target.value)}
-                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
-                 >
-                   {TERMS.map(t => (
-                     <option key={t.id} value={t.id}>
-                       {t.name}
-                     </option>
-                   ))}
-                 </select>
-               </div>
-               <div>
-                 <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
-                   Exam
-                 </label>
-                 <select
-                   value={outreachAssess}
-                   onChange={e => setOutreachAssess(e.target.value)}
-                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
-                 >
-                   {assessments.map(a => (
-                     <option key={a.key} value={a.key}>
-                       {a.label}
-                     </option>
-                   ))}
-                 </select>
-               </div>
-               <div>
-                 <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
-                   Grade
-                 </label>
-                 <select
-                   value={outreachGrade}
-                   onChange={e => setOutreachGrade(e.target.value)}
-                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
-                 >
-                   {ALL_GRADES.map(g => (
-                     <option key={g} value={g}>
-                       {g}
-                     </option>
-                   ))}
-                 </select>
-               </div>
-               <button
-                 type="submit"
-                 style={{
-                   background: '#1E293B',
-                   color: '#fff',
-                   border: 'none',
-                   padding: '12px 24px',
-                   borderRadius: 6,
-                   fontSize: 14,
-                   fontWeight: 600,
-                   cursor: 'pointer',
-                   marginTop: 8
-                 }}
-               >
-                 Send SMS to Parents
-               </button>
-             </form>
-           </div>
-         </div>
-       )}
+                {/* ══ TEACHER COMMENTS ══ */}
+                <div className="rc-comments-row">
+                  <div className="rc-comment-box">
+                    <div className="rc-comment-label">Class Teacher&apos;s Comment:</div>
+                    <div className="rc-comment-line"></div>
+                    <div className="rc-comment-line"></div>
+                  </div>
+                  <div className="rc-comment-box">
+                    <div className="rc-comment-label">Principal&apos;s Comment:</div>
+                    <div className="rc-comment-line"></div>
+                    <div className="rc-comment-line"></div>
+                  </div>
+                </div>
+
+                {/* ══ SIGNATURES ══ */}
+                <div className="rc-sigs">
+                  {['Class Teacher','Parent / Guardian','Principal'].map(role => (
+                    <div key={role} className="rc-sig-block">
+                      <div className="rc-sig-line"></div>
+                      <div className="rc-sig-label">{role}</div>
+                      <div className="rc-sig-date">Date: _______________</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ══ FOOTER ══ */}
+                <div className="rc-footer">
+                  <span>Next Term Begins: _____________________</span>
+                  <span>Generated by EduVantage · {new Date().toLocaleDateString('en-KE')}</span>
+                </div>
+              </div>{/* inner border */}
+            </div>{/* outer border */}
+          </div>
+          );
+        })}
+      </div>
+
+      {/* Outreach Modal */}
+      {outreachModal && (
+        <div
+          className="outreach-modal-backdrop"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(15,23,42,0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '12px'
+          }}
+        >
+          <div
+            className="outreach-modal-content"
+            style={{
+              background: '#fff',
+              borderRadius: 16,
+              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+              maxWidth: 420,
+              width: '100%',
+              padding: 24
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#0F172A' }}>Send Parent Outreach</h3>
+              <button
+                onClick={() => setOutreachModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: 22, color: '#64748B', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleOutreachSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
+                  Term
+                </label>
+                <select
+                  value={outreachTerm}
+                  onChange={e => setOutreachTerm(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
+                >
+                  {TERMS.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
+                  Exam
+                </label>
+                <select
+                  value={outreachAssess}
+                  onChange={e => setOutreachAssess(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
+                >
+                  {assessments.map(a => (
+                    <option key={a.key} value={a.key}>
+                      {a.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
+                  Grade
+                </label>
+                <select
+                  value={outreachGrade}
+                  onChange={e => setOutreachGrade(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
+                >
+                  {ALL_GRADES.map(g => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                style={{
+                  background: '#1E293B',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  marginTop: 8
+                }}
+              >
+                Send SMS to Parents
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
        <style>{`
         /* ── Root & toolbar ── */
