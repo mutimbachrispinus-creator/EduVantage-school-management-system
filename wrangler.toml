@@ -12,6 +12,9 @@ compatibility_date = "2026-05-15"
 compatibility_flags = [ "nodejs_compat" ]
 pages_build_output_dir = ".vercel/output/static"
 
+[limits]
+subrequests = 100
+
 # NOTE: Set ALL secrets in Cloudflare Dashboard:
 #   Pages → eduvantage → Settings → Environment Variables
 #   (TURSO_URL, TURSO_TOKEN, JWT_SECRET, PASS_SALT, etc.)
