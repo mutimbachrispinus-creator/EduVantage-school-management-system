@@ -1141,10 +1141,9 @@ button {
     display: block;
     animation: pageEnter 0.2s ease-out forwards;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    touch-action: pan-y;
+    touch-action: auto;
     pointer-events: auto;
     min-height: 100%;
     height: auto;
@@ -1167,8 +1166,7 @@ button {
         padding: 14px 10px 94px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
+        touch-action: auto;
         pointer-events: auto
     }
     .page {
@@ -1176,8 +1174,7 @@ button {
         animation: none;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y
+        touch-action: auto
     }
 }
 
@@ -2238,8 +2235,7 @@ tr:hover td {
         border-radius: 10px;
         overflow: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-x pan-y;
+        touch-action: auto;
         pointer-events: auto;
     }
     .panel-body {
@@ -4389,16 +4385,14 @@ textarea:focus {
         padding: 14px 10px 94px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
+        touch-action: auto;
         pointer-events: auto;
     }
     .page {
         padding: 14px 0 92px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
+        touch-action: auto;
         pointer-events: auto;
     }
     .page-hdr {
@@ -4795,8 +4789,7 @@ textarea:focus {
     #main {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
+        touch-action: auto;
         pointer-events: auto;
     }
     .page {
@@ -4804,14 +4797,12 @@ textarea:focus {
         padding-right: 0 !important;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
+        touch-action: auto;
     }
     .page.on {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
+        touch-action: auto;
     }
     .page>* {
         max-width: 100%;
@@ -4839,8 +4830,7 @@ textarea:focus {
     .panel {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
+        touch-action: auto;
         pointer-events: auto;
     }
     .panel-hdr {

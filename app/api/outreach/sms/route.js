@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { kvGet, query } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { sendSMS } from '@/lib/sms-client';
-import { getDefaultSubjects, gInfo, maxPts } from '@/lib/cbe';
+import { getDefaultSubjects, gInfo, maxPts, getMark, calcLearnerReportData } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 
 export async function POST(request) {
@@ -30,8 +30,9 @@ export async function POST(request) {
     ]);
 
     const schoolName = profile?.name || 'School Portal';
-    const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
-    const subjects = (subjCfg[grade]?.length > 0 ? subjCfg[grade] : getDefaultSubjects(grade, profile?.curriculum || 'CBC')) || [];
+    const curriculum = profile?.curriculum || 'CBC';
+    const curr = getCurriculum(curriculum, profile?.levels);
+    const subjects = (subjCfg[grade]?.length > 0 ? subjCfg[grade] : getDefaultSubjects(grade, curriculum)) || [];
 
     // Find learners in the selected grade
     const gradeLearners = (learners || []).filter(l => l.grade === grade);
@@ -40,55 +41,79 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No learners found for the selected grade' }, { status: 400 });
     }
 
+    const assessments = curr.ASSESSMENT_TYPES || [];
+    const assessMap = assessments.reduce((acc, a) => ({ ...acc, [a.key]: a.label }), {});
+
     // Calculate totals for each learner
     const messages = [];
     for (const learner of gradeLearners) {
       let totalPts = 0;
-      let enteredCount = 0;
+      let overallLevel = '—';
+      const mPts = maxPts(grade, subjects, curriculum);
 
-      subjects.forEach(subj => {
-        const k = `${term}:${grade}|${subj}|${assess}`;
-        const k0 = `${grade}|${subj}|${assess}`;
-        const score = marks[k]?.[learner.adm] ?? marks[k0]?.[learner.adm];
-        if (score !== undefined && score !== null) {
-          const info = gInfo(Number(score), grade, gradCfg);
-          totalPts += info.pts;
-          enteredCount++;
-        }
-      });
-
-      const mPts = maxPts(grade, subjects);
-      const pct = mPts ? Math.round((totalPts / mPts) * 100) : 0;
+      if (assess === 'term') {
+        const report = calcLearnerReportData(
+          marks,
+          learner.adm,
+          grade,
+          term,
+          subjects,
+          gradCfg,
+          curriculum,
+          curr.DEFAULT_WEIGHTS
+        );
+        totalPts = report.totalAvgPts;
+        overallLevel = report.overallInfo?.lv || '—';
+      } else {
+        let scoreSum = 0;
+        let enteredCount = 0;
+        subjects.forEach(subj => {
+          const score = getMark(marks, term, grade, subj, assess, learner.adm);
+          if (score !== null && score !== undefined) {
+            scoreSum += Number(score);
+            enteredCount++;
+            const info = gInfo(Number(score), grade, gradCfg, curriculum, subj);
+            totalPts += info.pts;
+          }
+        });
+        const avgPct = enteredCount > 0 ? Math.round(scoreSum / enteredCount) : 0;
+        overallLevel = enteredCount > 0 ? gInfo(avgPct, grade, gradCfg, curriculum, null)?.lv : '—';
+      }
 
       if (learner.phone) {
-        const msg = `Results Notice\nTerm ${term.replace('T', '')} ${assess.toUpperCase()} results for ${learner.name} are now available.\nPerformance: ${totalPts}/${mPts} points.\nGeneral Level: ${gInfo(pct, grade, gradCfg, null)?.lv || '—'}.\nLog in to view the full report card.`;
+        // Strip emojis from the exam label for a clean SMS text
+        const rawLabel = assess === 'term' ? 'Term Average' : (assessMap[assess] || assess.toUpperCase());
+        const assessLabel = rawLabel.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim();
+        const msg = `Results Notice\nTerm ${term.replace('T', '')} ${assessLabel} results for ${learner.name} are now available.\nPerformance: ${totalPts}/${mPts} points.\nGeneral Level: ${overallLevel}.\nLog in to view the full report card.`;
         messages.push({ to: learner.phone, message: `[${schoolName}]\n${msg}` });
       }
     }
 
-    // Send in batches to avoid Worker limits
-    const BATCH_SIZE = 20; // Reduced from 200 to stay under limits
+    // Send individual messages in parallel batches of 5 to preserve student privacy
+    const BATCH_SIZE = 5;
     let sent = 0;
     let failed = 0;
 
     for (let i = 0; i < messages.length; i += BATCH_SIZE) {
       const batch = messages.slice(i, i + BATCH_SIZE);
-      try {
-        const result = await sendSMS({
-          to: batch.map(m => m.to),
-          message: batch[0].message, // Same message for all in batch
-          schoolName
-        });
-        if (result.success) {
-          sent += result.acceptedCount || batch.length;
-        } else {
-          failed += batch.length;
+      await Promise.all(batch.map(async (msg) => {
+        try {
+          const result = await sendSMS({
+            to: msg.to,
+            message: msg.message,
+            schoolName
+          });
+          if (result.success) {
+            sent++;
+          } else {
+            failed++;
+          }
+        } catch (err) {
+          failed++;
         }
-        // Small delay to avoid hitting subrequest limits
-        await new Promise(r => setTimeout(r, 100));
-      } catch (err) {
-        failed += batch.length;
-      }
+      }));
+      // Small delay between batches to avoid worker limits
+      await new Promise(r => setTimeout(r, 150));
     }
 
     return NextResponse.json({ ok: true, sent, failed, total: messages.length });

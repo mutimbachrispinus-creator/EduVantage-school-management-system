@@ -19,7 +19,6 @@ export async function POST(request) {
     if (lastReq && (Date.now() - lastReq.time < 60000)) {
       return NextResponse.json({ error: 'Too many requests. Please wait a minute before trying again.' }, { status: 429 });
     }
-    await kvSet(rlKey, { time: Date.now() }, 'platform-master');
 
     // 1. Get Global Config (for Gateway Credentials)
     const gConf = await kvGet('paav_global_config', {}, 'platform-master');
@@ -55,6 +54,9 @@ export async function POST(request) {
     });
 
     if (res.success) {
+      // Record rate limit key only on success
+      await kvSet(rlKey, { time: Date.now() }, 'platform-master');
+
       // 3. Log the pending transaction
       // We'll use nexed_mpesa_logs to store the metadata for activation
       const logId = `billing_${res.checkoutRequestId}`;

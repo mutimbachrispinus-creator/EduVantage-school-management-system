@@ -21,7 +21,6 @@ export async function POST(req) {
     if (lastReq && (Date.now() - lastReq.time < 60000)) {
       return NextResponse.json({ success: false, error: 'Too many requests. Please wait a minute before trying again.' }, { status: 429 });
     }
-    await kvSet(rlKey, { time: Date.now() }, 'platform-master');
 
     const session = await getSession();
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized. Please log in and try again.' }, { status: 401 });
@@ -61,6 +60,9 @@ export async function POST(req) {
     });
 
     if (stkResult.success && stkResult.checkoutRequestId) {
+      // Record rate limit key only on success
+      await kvSet(rlKey, { time: Date.now() }, 'platform-master');
+
       // Track pending payment by CheckoutRequestID so the callback can reconcile
       const pendingKey = 'paav_mpesa_pending';
       const pending = (await kvGet(pendingKey, {}, tenantId)) || {};

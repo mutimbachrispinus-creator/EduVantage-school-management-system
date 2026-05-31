@@ -5,6 +5,16 @@ import { transactions, mpesaLogs, students, pendingReconciliation } from '@/lib/
 import { eq, or, like } from 'drizzle-orm';
 // import { crypto } from 'next/dist/compiled/@edge-runtime/primitives'; // Removed to avoid resolution issues
 
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -28,7 +38,7 @@ export async function POST(req) {
 
     // Log the raw request for audit
     const [log] = await db.insert(mpesaLogs).values({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       phoneNumber: phone,
       amount: amount * 100, // to cents
       receipt: receipt,
@@ -66,7 +76,7 @@ export async function POST(req) {
     if (foundStudent) {
       // 4. Record Transaction
       await db.insert(transactions).values({
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         studentId: foundStudent.id,
         amount: amount * 100,
         type: 'credit',
@@ -80,7 +90,7 @@ export async function POST(req) {
     } else {
       // 5. Log to Pending Reconciliation
       await db.insert(pendingReconciliation).values({
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         mpesaLogId: log.id,
         amount: amount * 100,
         phoneNumber: phone,

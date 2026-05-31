@@ -361,6 +361,7 @@ function ReportCardContent() {
                       {a.label}
                     </option>
                   ))}
+                  <option value="term">📈 Whole Term (Average)</option>
                 </select>
               </div>
               <div>
