@@ -44,48 +44,48 @@ function ReportCardContent() {
     }
     load();
    }, [router]);
-   // Set initial values for the outreach form when URL parameters or learners change
-   useEffect(() => {
-     setOutreachTerm(termParam);
-     setOutreachAssess(assessParam);
-     let grade = '';
-     if (admParam) {
-       const learner = learners.find(l => l.adm === admParam);
-       if (learner) grade = learner.grade;
-     }
-     if (!grade && gradeParam) grade = gradeParam;
-     if (!grade && ALL_GRADES.length > 0) grade = ALL_GRADES[0];
-     setOutreachGrade(grade);
+
+  const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
+  const labels = getLabels(school?.curriculum || 'CBC');
+  const ALL_GRADES = curr.ALL_GRADES || [];
+  const TERMS = curr.TERMS || [{id:'T1',name:'Term 1'},{id:'T2',name:'Term 2'},{id:'T3',name:'Term 3'}];
+  const assessments = curr.ASSESSMENT_TYPES || [];
+  const assessMap = assessments.reduce((acc,a) => ({...acc,[a.key]:a.label}),{});
+
+  useEffect(() => {
+    setOutreachTerm(termParam);
+    setOutreachAssess(assessParam);
+    let grade = '';
+    if (admParam) {
+      const learner = learners.find(l => l.adm === admParam);
+      if (learner) grade = learner.grade;
+    }
+    if (!grade && gradeParam) grade = gradeParam;
+    if (!grade && ALL_GRADES.length > 0) grade = ALL_GRADES[0];
+    setOutreachGrade(grade);
    }, [termParam, assessParam, admParam, gradeParam, learners, ALL_GRADES]);
 
-   const handleOutreachSubmit = async (e) => {
-     e.preventDefault();
-     setOutreachModal(false);
-     try {
-       const res = await fetch('/api/outreach/sms', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ term: outreachTerm, assess: outreachAssess, grade: outreachGrade })
-       });
-       const data = await res.json();
-       if (data.ok) {
-         alert(`Outreach SMS sent successfully!`);
-       } else {
-         alert('Failed to send outreach SMS: ' + (data.error || 'Unknown error'));
-       }
-     } catch (err) {
-       alert('Error: ' + err.message);
-     }
-   };
+  const handleOutreachSubmit = async (e) => {
+    e.preventDefault();
+    setOutreachModal(false);
+    try {
+      const res = await fetch('/api/outreach/sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ term: outreachTerm, assess: outreachAssess, grade: outreachGrade })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        alert('Outreach SMS sent successfully!');
+      } else {
+        alert('Failed to send outreach SMS: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  };
 
-   if (loading) return <div style={{padding:60,textAlign:'center',color:'#64748b'}}>Generating report card…</div>;
-
-   const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
-   const labels = getLabels(school?.curriculum || 'CBC');
-   const { gInfo, maxPts, DEFAULT_SUBJECTS, ALL_GRADES } = curr;
-   const TERMS = curr.TERMS || [{id:'T1',name:'Term 1'},{id:'T2',name:'Term 2'},{id:'T3',name:'Term 3'}];
-   const assessments = curr.ASSESSMENT_TYPES || [];
-   const assessMap = assessments.reduce((acc,a) => ({...acc,[a.key]:a.label}),{});
+  if (loading) return <div style={{padding:60,textAlign:'center',color:'#64748b'}}>Generating report card…</div>;
 
   const termLabel = TERMS.find(t => t.id === termParam)?.name || termParam;
   const assessLabel = assessMap[assessParam] || assessParam;
@@ -114,7 +114,7 @@ function ReportCardContent() {
       {/* Cards */}
       <div className="rc-pages">
         {targetLearners.map((learner, idx) => {
-          const subjects = (subjCfg[learner.grade]?.length > 0 ? subjCfg[learner.grade] : DEFAULT_SUBJECTS[learner.grade]) || [];
+          const subjects = (subjCfg[learner.grade]?.length > 0 ? subjCfg[learner.grade] : curr.DEFAULT_SUBJECTS?.[learner.grade]) || [];
           const cfg = feeCfg[learner.grade] || {};
           const annualFee = TERMS.reduce((s,t) => s + (cfg[t.id.toLowerCase()]||0), 0) || cfg.annual || 0;
           const totalPaid = TERMS.reduce((s,t) => s + (learner[t.id.toLowerCase()]||0), 0);
@@ -124,24 +124,24 @@ function ReportCardContent() {
             const k = `${termParam}:${learner.grade}|${subj}|${assessParam}`;
             const k0 = `${learner.grade}|${subj}|${assessParam}`;
             const sc = marks[k]?.[learner.adm] ?? marks[k0]?.[learner.adm];
-            const inf = sc !== undefined ? gInfo(Number(sc), learner.grade, gradCfg, subj) : null;
+            const inf = sc !== undefined ? curr.gInfo(Number(sc), learner.grade, gradCfg, subj) : null;
             return { subj, score: sc, inf };
           });
 
           const entered = marksRows.filter(r => r.score !== undefined);
           const totalPts = entered.reduce((s,r) => s + (r.inf?.pts||0), 0);
-          const maxTotal = maxPts(learner.grade, subjects);
+          const maxTotal = curr.maxPts ? curr.maxPts(learner.grade, subjects) : 0;
           const avgPct = entered.length > 0 ? Math.round(entered.reduce((s,r)=>s+Number(r.score),0)/entered.length) : 0;
-          const overallGrade = gInfo(avgPct, learner.grade, gradCfg, null);
+          const overallGrade = curr.gInfo ? curr.gInfo(avgPct, learner.grade, gradCfg, null) : null;
 
           return (
             <div key={learner.adm} className={`rc-page${idx < targetLearners.length-1 ? ' rc-page-break' : ''}`}>
 
-              {/* ── OUTER BORDER (double-line Kenyan style) ── */}
+              {/* OUTER BORDER (double-line Kenyan style) */}
               <div className="rc-outer-border">
                 <div className="rc-inner-border">
 
-                  {/* ══ HEADER ══ */}
+                  {/* HEADER */}
                   <div className="rc-header">
                     {school?.logo && (
                       <img src={school.logo} className="rc-logo" alt="School Logo" />
@@ -156,7 +156,7 @@ function ReportCardContent() {
                     <div className="rc-term-label">{termLabel} &nbsp;|&nbsp; {assessLabel}</div>
                   </div>
 
-                  {/* ══ STUDENT INFO ══ */}
+                  {/* STUDENT INFO */}
                   <table className="rc-info-table">
                     <tbody>
                       <tr>
@@ -186,7 +186,7 @@ function ReportCardContent() {
                     </tbody>
                   </table>
 
-                  {/* ══ MARKS TABLE ══ */}
+                  {/* MARKS TABLE */}
                   <table className="rc-marks-table">
                     <thead>
                       <tr className="rc-marks-thead">
@@ -217,14 +217,14 @@ function ReportCardContent() {
                         <tr className="rc-totals-row">
                           <td className="rc-totals-label">TOTAL ({entered.length}/{subjects.length} {labels.subjects.toLowerCase()})</td>
                           {school?.curriculum !== 'MONTESSORI' && <td className="rc-totals-score">{avgPct}%</td>}
-                          <td className="rc-totals-grade" colSpan={2}>{overallGrade.lv} — {totalPts}/{maxTotal} pts</td>
-                          <td className="rc-totals-desc">{overallGrade.desc}</td>
+                          <td className="rc-totals-grade" colSpan={2}>{overallGrade?.lv || '—'} — {totalPts}/{maxTotal} pts</td>
+                          <td className="rc-totals-desc">{overallGrade?.desc || '—'}</td>
                         </tr>
                       )}
                     </tbody>
                   </table>
 
-                  {/* ══ FEE STATEMENT + OVERALL ══ */}
+                  {/* FEE STATEMENT + OVERALL */}
                   <div className="rc-bottom-grid">
                     <div className="rc-fee-box">
                       <div className="rc-box-title">FEE STATEMENT</div>
@@ -248,49 +248,48 @@ function ReportCardContent() {
                       </table>
                     </div>
 
-<div className="rc-overall-box">
+                    <div className="rc-overall-box">
                       <div className="rc-box-title">OVERALL ASSESSMENT</div>
-                      <div className="rc-overall-grade" style={{color:overallGrade.c||'#0f172a'}}>{overallGrade.lv || '—'}</div>
+                      <div className="rc-overall-grade" style={{color:overallGrade?.c||'#0f172a'}}>{overallGrade?.lv || '—'}</div>
                       {school?.curriculum !== 'MONTESSORI' && <div className="rc-overall-pct">{avgPct}%</div>}
-                      <div className="rc-overall-desc">{overallGrade.desc || '—'}</div>
+                      <div className="rc-overall-desc">{overallGrade?.desc || '—'}</div>
                       <div className="rc-overall-sub">{entered.length}/{subjects.length} {labels.subjects.toLowerCase()} assessed</div>
                     </div>
                   </div>
-                </div>
 
-                {/* ══ TEACHER COMMENTS ══ */}
-                <div className="rc-comments-row">
-                  <div className="rc-comment-box">
-                    <div className="rc-comment-label">Class Teacher&apos;s Comment:</div>
-                    <div className="rc-comment-line"></div>
-                    <div className="rc-comment-line"></div>
-                  </div>
-                  <div className="rc-comment-box">
-                    <div className="rc-comment-label">Principal&apos;s Comment:</div>
-                    <div className="rc-comment-line"></div>
-                    <div className="rc-comment-line"></div>
-                  </div>
-                </div>
-
-                {/* ══ SIGNATURES ══ */}
-                <div className="rc-sigs">
-                  {['Class Teacher','Parent / Guardian','Principal'].map(role => (
-                    <div key={role} className="rc-sig-block">
-                      <div className="rc-sig-line"></div>
-                      <div className="rc-sig-label">{role}</div>
-                      <div className="rc-sig-date">Date: _______________</div>
+                  {/* TEACHER COMMENTS */}
+                  <div className="rc-comments-row">
+                    <div className="rc-comment-box">
+                      <div className="rc-comment-label">Class Teacher&apos;s Comment:</div>
+                      <div className="rc-comment-line"></div>
+                      <div className="rc-comment-line"></div>
                     </div>
-                  ))}
-                </div>
+                    <div className="rc-comment-box">
+                      <div className="rc-comment-label">Principal&apos;s Comment:</div>
+                      <div className="rc-comment-line"></div>
+                      <div className="rc-comment-line"></div>
+                    </div>
+                  </div>
 
-{/* ══ FOOTER ══ */}
-                <div className="rc-footer">
-                  <span>Next Term Begins: _____________________</span>
-                  <span>Generated by EduVantage · {new Date().toLocaleDateString('en-KE')}</span>
+                  {/* SIGNATURES */}
+                  <div className="rc-sigs">
+                    {['Class Teacher','Parent / Guardian','Principal'].map(role => (
+                      <div key={role} className="rc-sig-block">
+                        <div className="rc-sig-line"></div>
+                        <div className="rc-sig-label">{role}</div>
+                        <div className="rc-sig-date">Date: _______________</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="rc-footer">
+                    <span>Next Term Begins: _____________________</span>
+                    <span>Generated by EduVantage · {new Date().toLocaleDateString('en-KE')}</span>
+                  </div>
                 </div>
-              </div>{/* inner border */}
-            </div>{/* outer border */}
-          </div>
+              </div>
+            </div>
           );
         })}
       </div>
