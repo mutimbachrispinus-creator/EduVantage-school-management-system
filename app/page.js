@@ -32,6 +32,7 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [stats, setStats] = useState({ schools: 0, learners: 0 });
   const [plans, setPlans] = useState([]);
+  const [nativeAppMode, setNativeAppMode] = useState(null);
 
   // Interactive UI states
   const [expandedFaq, setExpandedFaq] = useState(null);
@@ -44,6 +45,14 @@ export default function LandingPage() {
   ];
 
   useEffect(() => {
+    const ua = window.navigator.userAgent || '';
+    const capacitorNative = window.Capacitor?.isNativePlatform?.() === true;
+    const nativeHint = window.location.search.includes('native=1') || window.location.search.includes('app=1');
+    const mobileWebView = /; wv\)/.test(ua) && /Android/.test(ua);
+    const isNativeAppMode = capacitorNative || nativeHint || mobileWebView;
+    setNativeAppMode(isNativeAppMode);
+    if (isNativeAppMode) return undefined;
+
     const handleScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll, { passive: true });
 
@@ -78,6 +87,26 @@ export default function LandingPage() {
   const toggleFaq = (index) => {
     setExpandedFaq(expandedFaq === index ? null : index);
   };
+
+  if (nativeAppMode === null) {
+    return null;
+  }
+
+  if (nativeAppMode) {
+    return (
+      <div className="app-auth-gate">
+        <div className="app-auth-panel">
+          <img src="/eduvantage-logo.png" alt="EduVantage" />
+          <h1>EduVantage</h1>
+          <p>Sign in to your school portal or register as a parent to link your child.</p>
+          <div className="app-auth-actions">
+            <Link href="/login" className="btn btn-xl btn-primary btn-glow">Login</Link>
+            <Link href="/login?tab=register" className="btn btn-xl btn-outline">Parent Register</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="landing-wrap">
@@ -210,6 +239,10 @@ export default function LandingPage() {
                 <span>Seamlessly synchronize student data and exam identifiers with external examination bodies like KNEC through our scalable and secure API integration.</span>
               </div>
               <div className="tech-check-item" style={{ marginTop: 24 }}>
+                <strong>📣 Admin-Controlled Parent Outreach</strong>
+                <span>School administrators can broadcast targeted result notices by grade, term, and exam, with custom message wording for openers, midterms, end terms, or whole-term reports.</span>
+              </div>
+              <div className="tech-check-item" style={{ marginTop: 24 }}>
                 <strong>📈 Advanced Academic Analytics</strong>
                 <span>Drive student success with real-time, data-driven insights. Our performance monitoring dashboards provide index-optimized reporting across diverse curriculums.</span>
               </div>
@@ -220,6 +253,10 @@ export default function LandingPage() {
               <div className="tech-check-item" style={{ marginTop: 24 }}>
                 <strong>💸 Automated M-Pesa Reconciliation</strong>
                 <span>Real-time fee payment tracking and automatic ledger updates via direct M-Pesa integration, completely eliminating manual financial data entry.</span>
+              </div>
+              <div className="tech-check-item" style={{ marginTop: 24 }}>
+                <strong>📱 Android &amp; iOS Parent Access</strong>
+                <span>The mobile app opens directly to login and parent registration, while the public landing page remains dedicated to the website experience.</span>
               </div>
               <div className="tech-check-item" style={{ marginTop: 24 }}>
                 <strong>📋 Comprehensive Audit Trails</strong>
@@ -354,4 +391,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

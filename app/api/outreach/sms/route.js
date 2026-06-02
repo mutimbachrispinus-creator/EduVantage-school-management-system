@@ -9,16 +9,17 @@ import { getCurriculum } from '@/lib/curriculum';
 export async function POST(request) {
   try {
     const session = await getSession();
-    if (!session) {
+    if (!session || !['admin', 'super-admin'].includes(session.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const tenantId = session.tenantId;
 
-    const { term, assess, grade } = await request.json();
+    const { term, assess, grade, message } = await request.json();
 
     if (!term || !assess || !grade) {
       return NextResponse.json({ error: 'Term, assessment, and grade are required' }, { status: 400 });
     }
+    const adminMessage = String(message || '').trim().slice(0, 320);
 
     // Fetch learners and marks
     const [learners, marks, profile, subjCfg, gradCfg] = await Promise.all([
@@ -84,7 +85,8 @@ export async function POST(request) {
         // Strip emojis from the exam label for a clean SMS text
         const rawLabel = assess === 'term' ? 'Term Average' : (assessMap[assess] || assess.toUpperCase());
         const assessLabel = rawLabel.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim();
-        const msg = `Results Notice\nTerm ${term.replace('T', '')} ${assessLabel} results for ${learner.name} are now available.\nPerformance: ${totalPts}/${mPts} points.\nGeneral Level: ${overallLevel}.\nLog in to view the full report card.`;
+        const defaultMsg = `Term ${term.replace('T', '')} ${assessLabel} results are now available. Log in to view the full report card.`;
+        const msg = `${adminMessage || defaultMsg}\nLearner: ${learner.name}\nPerformance: ${totalPts}/${mPts} points.\nGeneral Level: ${overallLevel}.`;
         messages.push({ to: learner.phone, message: `[${schoolName}]\n${msg}` });
       }
     }

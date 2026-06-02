@@ -22,6 +22,7 @@ function ReportCardContent() {
   const [outreachTerm, setOutreachTerm] = useState('');
   const [outreachAssess, setOutreachAssess] = useState('');
   const [outreachGrade, setOutreachGrade] = useState('');
+  const [outreachMessage, setOutreachMessage] = useState('');
 
   const admParam   = sp.get('adm')    || '';
   const gradeParam = sp.get('grade')  || '';
@@ -63,6 +64,9 @@ function ReportCardContent() {
     if (!grade && gradeParam) grade = gradeParam;
     if (!grade && ALL_GRADES.length > 0) grade = ALL_GRADES[0];
     setOutreachGrade(grade);
+    const termName = TERMS.find(t => t.id === termParam)?.name || termParam;
+    const examName = assessParam === 'term' ? 'Whole Term Average' : (assessMap[assessParam] || assessParam);
+    setOutreachMessage(`Dear parent, ${termName} ${examName} results are now available. Please log in to the parent portal for the full report card.`);
    }, [termParam, assessParam, admParam, gradeParam, learners, ALL_GRADES]);
 
   const handleOutreachSubmit = async (e) => {
@@ -72,7 +76,7 @@ function ReportCardContent() {
       const res = await fetch('/api/outreach/sms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ term: outreachTerm, assess: outreachAssess, grade: outreachGrade })
+        body: JSON.stringify({ term: outreachTerm, assess: outreachAssess, grade: outreachGrade, message: outreachMessage })
       });
       const data = await res.json();
       if (data.ok) {
@@ -379,6 +383,21 @@ function ReportCardContent() {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
+                  Message
+                </label>
+                <textarea
+                  value={outreachMessage}
+                  onChange={e => setOutreachMessage(e.target.value)}
+                  rows={4}
+                  placeholder="Write the message parents should receive..."
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14, resize: 'vertical', lineHeight: 1.5 }}
+                />
+                <div style={{ marginTop: 4, fontSize: 11, color: '#64748B' }}>
+                  School admin controls this message. Learner performance details are appended privately per learner.
+                </div>
               </div>
               <button
                 type="submit"

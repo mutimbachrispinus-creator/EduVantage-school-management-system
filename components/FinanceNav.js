@@ -22,12 +22,17 @@ export default function FinanceNav() {
     <div style={{
       display: 'flex',
       gap: 6,
-      flexWrap: 'wrap',
+      flexWrap: 'nowrap',
       background: 'linear-gradient(135deg,#0F172A,#1E293B)',
       borderRadius: 14,
       padding: '10px 14px',
       marginBottom: 20,
       alignItems: 'center',
+      overflowX: 'auto',
+      overflowY: 'hidden',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarGutter: 'stable',
+      maxWidth: '100%',
     }}>
       <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginRight: 6, whiteSpace: 'nowrap' }}>
         💼 Finance
@@ -49,6 +54,7 @@ export default function FinanceNav() {
               color: active ? '#fff' : '#CBD5E1',
               transition: 'all 0.15s',
               whiteSpace: 'nowrap',
+              flex: '0 0 auto',
             }}
             onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
             onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}

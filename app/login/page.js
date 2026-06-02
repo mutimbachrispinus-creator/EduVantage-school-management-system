@@ -21,6 +21,11 @@ function LoginContent() {
     let t = searchParams.get('tenant');
     const invitedUsername = searchParams.get('u') || searchParams.get('username');
     const shouldReset = searchParams.get('reset') === '1';
+    const requestedTab = searchParams.get('tab');
+
+    if (requestedTab === 'register') {
+      setTab('register');
+    }
 
     if (invitedUsername) {
       const normalizedUsername = invitedUsername.toLowerCase().trim();
