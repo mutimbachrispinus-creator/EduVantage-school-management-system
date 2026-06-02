@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { ALL_GRADES } from '@/lib/cbe';
+import FinanceNav from '@/components/FinanceNav';
 
 export default function InvoicesPage() {
   const router = useRouter();
@@ -52,7 +53,8 @@ export default function InvoicesPage() {
   if (loading) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading Invoicing Hub…</div>;
 
   return (
-    <div className="page on">
+    <div className="page on finance-page">
+      <FinanceNav />
       <div className="page-hdr no-print">
         <div>
           <h2>📄 Enterprise Invoicing Center</h2>

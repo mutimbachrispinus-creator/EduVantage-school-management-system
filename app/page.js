@@ -2,6 +2,7 @@
 import '@/styles/landing.css';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Capacitor } from '@capacitor/core';
 import LandingNavbar from '@/components/landing/LandingNavbar';
 import LandingFooter from '@/components/landing/LandingFooter';
 
@@ -46,9 +47,9 @@ export default function LandingPage() {
 
   useEffect(() => {
     const ua = window.navigator.userAgent || '';
-    const capacitorNative = window.Capacitor?.isNativePlatform?.() === true;
+    const capacitorNative = Capacitor.isNativePlatform?.() === true || window.Capacitor?.isNativePlatform?.() === true;
     const nativeHint = window.location.search.includes('native=1') || window.location.search.includes('app=1');
-    const mobileWebView = /; wv\)/.test(ua) && /Android/.test(ua);
+    const mobileWebView = (/; wv\)/.test(ua) && /Android/.test(ua)) || /\bCapacitor\b/i.test(ua);
     const isNativeAppMode = capacitorNative || nativeHint || mobileWebView;
     setNativeAppMode(isNativeAppMode);
     if (isNativeAppMode) return undefined;

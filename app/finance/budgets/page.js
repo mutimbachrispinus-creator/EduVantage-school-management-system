@@ -62,7 +62,7 @@ export default function BudgetingPage() {
   if (loading) return <div style={{ padding: 40 }}>Loading Budget Hub...</div>;
 
   return (
-    <div className="page on">
+    <div className="page on finance-page">
       <FinanceNav />
       <div className="page-hdr">
         <div>

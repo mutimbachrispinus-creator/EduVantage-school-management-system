@@ -50,7 +50,7 @@ export default function PettyCashPage() {
   if (loading) return <div style={{ padding: 40 }}>Loading Petty Cashbook...</div>;
 
   return (
-    <div className="page on">
+    <div className="page on finance-page">
       <FinanceNav />
       <div className="page-hdr">
         <div>

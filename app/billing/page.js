@@ -26,7 +26,8 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId })
       if (data.success) {
         setMsg({ type: 'success', text: 'Prompt sent! Enter your M-Pesa PIN on your phone. Your portal activates automatically once paid.' });
       } else {
-        setMsg({ type: 'error', text: data.error || 'Failed to initiate payment' });
+        const hint = data.darajaTestUrl ? ` Daraja sandbox: ${data.darajaTestUrl}` : '';
+        setMsg({ type: 'error', text: `${data.error || 'Failed to initiate payment'}${hint}` });
       }
     } catch (e) { setMsg({ type: 'error', text: e.message }); }
     finally { setLoading(false); }
@@ -202,7 +203,7 @@ export default function BillingPage() {
   const isFreeTerm = subscription.plan === 'free-term';
 
   return (
-    <div className="page on billing-page" style={{ background: '#F8FAFC', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
+    <div className="page on billing-page finance-page" style={{ background: '#F8FAFC', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
       <FinanceNav />
       <div className="blob-bg" style={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(79,70,229,0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
       
@@ -273,6 +274,11 @@ export default function BillingPage() {
           <p style={{ color: SLATE, fontSize: 15, marginBottom: 30, lineHeight: 1.6 }}>To renew or upgrade, please use our official channels. Your license will be extended automatically upon verification.</p>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {platformPayments.length === 0 && (
+              <div style={{ padding: 18, borderRadius: 16, background: '#FFF7ED', border: '1.5px solid #FDBA74', color: '#9A3412', fontSize: 13, fontWeight: 700 }}>
+                No platform payment channels are configured yet. Add M-Pesa/Daraja, bank, or Pesapal settings in the platform billing configuration before schools can renew automatically.
+              </div>
+            )}
             {platformPayments.map((p, idx) => (
               <div key={idx} style={{ padding: 24, border: `1.5px solid ${M}15`, borderRadius: 24, background: `linear-gradient(135deg, ${M}05, #fff)`, position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: -10, right: -10, fontSize: 64, opacity: 0.05, transform: 'rotate(-15deg)' }}>{p.type === 'Paybill' ? '📲' : '🏦'}</div>
@@ -297,6 +303,11 @@ export default function BillingPage() {
 
       <div className="panel billing-panel billing-upgrades-panel" style={{ marginTop: 40, background: '#fff', borderRadius: 32, boxShadow: '0 20px 50px rgba(15,23,42,0.05)', position: 'relative', zIndex: 1 }}>
         <h3 style={{ marginBottom: 32, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: SLATE }}>Available License Upgrades</h3>
+        {data.plans.length === 0 && (
+          <div style={{ padding: 18, borderRadius: 16, background: '#EFF6FF', border: '1.5px solid #BFDBFE', color: '#1E40AF', fontSize: 13, fontWeight: 700 }}>
+            No upgrade plans are configured. Add subscription plans in the platform global billing settings.
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
           {data.plans.map((p, idx) => (
             <div key={p.id} style={{ padding: 32, border: `2px solid ${idx === 1 ? M : 'rgba(0,0,0,0.05)'}`, borderRadius: 28, background: idx === 1 ? `${M}02` : '#fff', position: 'relative', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'pointer' }}>

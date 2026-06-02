@@ -50,8 +50,23 @@ function ReportCardContent() {
   const labels = getLabels(school?.curriculum || 'CBC');
   const ALL_GRADES = curr.ALL_GRADES || [];
   const TERMS = curr.TERMS || [{id:'T1',name:'Term 1'},{id:'T2',name:'Term 2'},{id:'T3',name:'Term 3'}];
-  const assessments = curr.ASSESSMENT_TYPES || [];
+  const assessments = curr.ASSESSMENT_TYPES?.length ? curr.ASSESSMENT_TYPES : [
+    { key: 'op1', label: 'Opener' },
+    { key: 'mt1', label: 'Mid-Term' },
+    { key: 'et1', label: 'End-Term' },
+  ];
   const assessMap = assessments.reduce((acc,a) => ({...acc,[a.key]:a.label}),{});
+  const outreachAssessments = [
+    ...assessments,
+    { key: 'term', label: `Whole ${labels.assessment} Average` }
+  ];
+
+  const cleanLabel = (value) => String(value || '').replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim();
+  const getTermName = (term) => TERMS.find(t => t.id === term)?.name || term;
+  const getAssessName = (assess) => assess === 'term' ? `Whole ${labels.assessment} Average` : (assessMap[assess] || assess);
+  const buildOutreachMessage = (term, assess, grade) => (
+    `Dear parent, ${getTermName(term)} ${cleanLabel(getAssessName(assess))} results for ${labels.grade} ${grade || ''} are now available. Please log in to the parent portal for the full report card.`
+  );
 
   useEffect(() => {
     setOutreachTerm(termParam);
@@ -64,9 +79,7 @@ function ReportCardContent() {
     if (!grade && gradeParam) grade = gradeParam;
     if (!grade && ALL_GRADES.length > 0) grade = ALL_GRADES[0];
     setOutreachGrade(grade);
-    const termName = TERMS.find(t => t.id === termParam)?.name || termParam;
-    const examName = assessParam === 'term' ? 'Whole Term Average' : (assessMap[assessParam] || assessParam);
-    setOutreachMessage(`Dear parent, ${termName} ${examName} results are now available. Please log in to the parent portal for the full report card.`);
+    setOutreachMessage(buildOutreachMessage(termParam, assessParam, grade));
    }, [termParam, assessParam, admParam, gradeParam, learners, ALL_GRADES]);
 
   const handleOutreachSubmit = async (e) => {
@@ -341,7 +354,11 @@ function ReportCardContent() {
                 </label>
                 <select
                   value={outreachTerm}
-                  onChange={e => setOutreachTerm(e.target.value)}
+                  onChange={e => {
+                    const nextTerm = e.target.value;
+                    setOutreachTerm(nextTerm);
+                    setOutreachMessage(buildOutreachMessage(nextTerm, outreachAssess, outreachGrade));
+                  }}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
                 >
                   {TERMS.map(t => (
@@ -353,19 +370,22 @@ function ReportCardContent() {
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
-                  Exam
+                  {labels.assessment} / Exam
                 </label>
                 <select
                   value={outreachAssess}
-                  onChange={e => setOutreachAssess(e.target.value)}
+                  onChange={e => {
+                    const nextAssess = e.target.value;
+                    setOutreachAssess(nextAssess);
+                    setOutreachMessage(buildOutreachMessage(outreachTerm, nextAssess, outreachGrade));
+                  }}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
                 >
-                  {assessments.map(a => (
+                  {outreachAssessments.map(a => (
                     <option key={a.key} value={a.key}>
                       {a.label}
                     </option>
                   ))}
-                  <option value="term">📈 Whole Term (Average)</option>
                 </select>
               </div>
               <div>
@@ -374,7 +394,11 @@ function ReportCardContent() {
                 </label>
                 <select
                   value={outreachGrade}
-                  onChange={e => setOutreachGrade(e.target.value)}
+                  onChange={e => {
+                    const nextGrade = e.target.value;
+                    setOutreachGrade(nextGrade);
+                    setOutreachMessage(buildOutreachMessage(outreachTerm, outreachAssess, nextGrade));
+                  }}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
                 >
                   {ALL_GRADES.map(g => (

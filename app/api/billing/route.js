@@ -35,6 +35,7 @@ export async function GET(request) {
         ...subscription,
         details: currentPlanDetails
       },
+      tenantId: tid,
       studentCount,
       platformPayments: paymentMethods,
       plans: plans.filter(p => p.id !== 'trial') // Don't show trial as an upgrade option

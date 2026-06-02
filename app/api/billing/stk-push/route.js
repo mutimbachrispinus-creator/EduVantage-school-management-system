@@ -38,6 +38,7 @@ export async function POST(request) {
         consumerSecret: process.env.MPESA_CONSUMER_SECRET || '',
         shortcode:      process.env.MPESA_SHORTCODE      || '',
         passkey:        process.env.MPESA_PASSKEY        || '',
+        callbackUrl:    process.env.MPESA_CALLBACK_URL   || process.env.DARAJA_CALLBACK_URL || '',
         env:            process.env.MPESA_ENV            || 'sandbox',
       };
     }
@@ -49,9 +50,10 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    if (!process.env.MPESA_CALLBACK_URL) {
+    const callbackUrl = gw.callbackUrl || gw.callbackURL || process.env.MPESA_CALLBACK_URL || process.env.DARAJA_CALLBACK_URL || '';
+    if (!callbackUrl) {
       return NextResponse.json({
-        error: 'M-Pesa callback URL is missing. Set MPESA_CALLBACK_URL to your public callback endpoint, for example https://your-domain.com/api/mpesa/callback.',
+        error: 'M-Pesa callback URL is missing. Set MPESA_CALLBACK_URL or DARAJA_CALLBACK_URL to your public callback endpoint, for example https://your-domain.com/api/mpesa/callback.',
         darajaTestUrl: DARAJA_SANDBOX_URL
       }, { status: 400 });
     }
@@ -67,6 +69,7 @@ export async function POST(request) {
       consumerSecret: gw.consumerSecret,
       shortcode: gw.shortcode,
       passkey: gw.passkey,
+      callbackUrl,
       env: gw.env
     });
 

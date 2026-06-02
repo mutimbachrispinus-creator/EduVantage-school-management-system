@@ -6,6 +6,10 @@ import { sendSMS } from '@/lib/sms-client';
 import { getDefaultSubjects, gInfo, maxPts, getMark, calcLearnerReportData } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 
+function cleanSmsLabel(value) {
+  return String(value || '').replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim();
+}
+
 export async function POST(request) {
   try {
     const session = await getSession();
@@ -33,6 +37,13 @@ export async function POST(request) {
     const schoolName = profile?.name || 'School Portal';
     const curriculum = profile?.curriculum || 'CBC';
     const curr = getCurriculum(curriculum, profile?.levels);
+    const labels = curr.LABELS || {
+      grade: 'Grade',
+      subject: 'Subject',
+      subjects: 'Subjects',
+      assessment: 'Assessment'
+    };
+    const termName = curr.TERMS?.find(t => t.id === term)?.name || term;
     const subjects = (subjCfg[grade]?.length > 0 ? subjCfg[grade] : getDefaultSubjects(grade, curriculum)) || [];
 
     // Find learners in the selected grade
@@ -44,12 +55,15 @@ export async function POST(request) {
 
     const assessments = curr.ASSESSMENT_TYPES || [];
     const assessMap = assessments.reduce((acc, a) => ({ ...acc, [a.key]: a.label }), {});
+    const rawAssessLabel = assess === 'term' ? `Whole ${labels.assessment} Average` : (assessMap[assess] || assess.toUpperCase());
+    const assessLabel = cleanSmsLabel(rawAssessLabel);
 
     // Calculate totals for each learner
     const messages = [];
     for (const learner of gradeLearners) {
       let totalPts = 0;
       let overallLevel = '—';
+      let enteredCount = 0;
       const mPts = maxPts(grade, subjects, curriculum);
 
       if (assess === 'term') {
@@ -65,9 +79,12 @@ export async function POST(request) {
         );
         totalPts = report.totalAvgPts;
         overallLevel = report.overallInfo?.lv || '—';
+        enteredCount = subjects.filter(subj => assessments.some(a => {
+          const score = getMark(marks, term, grade, subj, a.key, learner.adm);
+          return score !== null && score !== undefined;
+        })).length;
       } else {
         let scoreSum = 0;
-        let enteredCount = 0;
         subjects.forEach(subj => {
           const score = getMark(marks, term, grade, subj, assess, learner.adm);
           if (score !== null && score !== undefined) {
@@ -82,11 +99,18 @@ export async function POST(request) {
       }
 
       if (learner.phone) {
-        // Strip emojis from the exam label for a clean SMS text
-        const rawLabel = assess === 'term' ? 'Term Average' : (assessMap[assess] || assess.toUpperCase());
-        const assessLabel = rawLabel.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim();
-        const defaultMsg = `Term ${term.replace('T', '')} ${assessLabel} results are now available. Log in to view the full report card.`;
-        const msg = `${adminMessage || defaultMsg}\nLearner: ${learner.name}\nPerformance: ${totalPts}/${mPts} points.\nGeneral Level: ${overallLevel}.`;
+        const defaultMsg = `${termName} ${assessLabel} results are now available. Log in to view the full report card.`;
+        const msg = [
+          adminMessage || defaultMsg,
+          `Learner: ${learner.name}`,
+          `${labels.grade}: ${grade}`,
+          `${labels.assessment}: ${assessLabel}`,
+          `Term: ${termName}`,
+          `Curriculum: ${curr.name || curriculum}`,
+          `Performance: ${totalPts}/${mPts} points`,
+          `${labels.subjects}: ${enteredCount}/${subjects.length} recorded`,
+          `General Level: ${overallLevel}`
+        ].join('\n');
         messages.push({ to: learner.phone, message: `[${schoolName}]\n${msg}` });
       }
     }

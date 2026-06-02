@@ -85,7 +85,7 @@ export default function FinanceDashboardPage() {
   if (loading) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading Finance Hub…</div>;
 
   return (
-    <div className="page on">
+    <div className="page on finance-page">
       <FinanceNav />
       <div className="page-hdr">
         <div>

@@ -50,7 +50,7 @@ export default function TransactionsPage() {
   if (loading) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading Transactions…</div>;
 
   return (
-    <div className="page on">
+    <div className="page on finance-page">
       <FinanceNav />
       <div className="page-hdr">
         <div>

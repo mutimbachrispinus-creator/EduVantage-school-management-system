@@ -1320,6 +1320,37 @@ button {
     padding: 20px
 }
 
+.finance-page {
+    min-height: 100dvh;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.finance-page .panel,
+.finance-page .panel-body,
+.finance-page .tbl-wrap {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+.finance-page .panel {
+    max-width: 100%;
+}
+
+@media screen and (max-width:800px) {
+    .finance-page {
+        height: auto;
+        max-height: none;
+        padding-bottom: 120px;
+    }
+    .finance-page .panel {
+        max-height: calc(100dvh - 132px);
+        overflow-y: auto !important;
+    }
+}
+
 @media screen and (max-width:600px) {
     .panel-body {
         padding: 16px

@@ -62,7 +62,7 @@ export default function ReconcilePage() {
   if (loading) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading Reconciler…</div>;
 
   return (
-    <div className="page on">
+    <div className="page on finance-page">
       <FinanceNav />
       <div className="page-hdr">
         <div>

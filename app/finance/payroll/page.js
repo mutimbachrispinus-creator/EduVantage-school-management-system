@@ -266,6 +266,17 @@ export default function UnifiedPayrollPage() {
     setPayroll(updated);
   }
 
+  function printCurrentPayslip() {
+    document.body.classList.add('printing-payslip');
+    const cleanup = () => {
+      document.body.classList.remove('printing-payslip');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+    setTimeout(cleanup, 1200);
+  }
+
   async function updateSalary(username, newSal, saccoLoan = 0, bankLoan = 0) {
     setBusy(true);
     try {
@@ -294,7 +305,7 @@ export default function UnifiedPayrollPage() {
   if (loading) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading Unified Payroll…</div>;
 
   return (
-    <div className="page on">
+    <div className="page on finance-page">
       <FinanceNav />
       <div className="page-hdr">
         <div>
@@ -512,11 +523,11 @@ export default function UnifiedPayrollPage() {
       )}
 
       {printSlip && (
-        <div className="modal-overlay open">
+        <div className="modal-overlay open payslip-print-shell">
           <div className="modal modal-lg" style={{ background: '#fff', borderRadius: 20 }}>
             <div className="modal-hdr" style={{ border: 'none' }}><h3>Payslip Generation</h3><button className="modal-close" onClick={() => setPrintSlip(null)}>✕</button></div>
             <div className="modal-body" style={{ textAlign: 'center', padding: '0 40px 40px' }}>
-              <div id="print-area" style={{ border: '1.5px solid #E2E8F0', padding: 40, borderRadius: 15, maxWidth: 600, margin: '0 auto', textAlign: 'left', background: '#fff', boxShadow: '0 10px 40px rgba(0,0,0,0.05)' }}>
+              <div id="print-area" className="payslip-print-wrap" style={{ border: '1.5px solid #E2E8F0', padding: 40, borderRadius: 15, maxWidth: 600, margin: '0 auto', textAlign: 'left', background: '#fff', boxShadow: '0 10px 40px rgba(0,0,0,0.05)' }}>
                  <div style={{ textAlign: 'center', borderBottom: '3px solid var(--primary)', paddingBottom: 20, marginBottom: 25 }}>
                     <div style={{ fontWeight: 900, fontSize: 24, color: 'var(--primary)', letterSpacing: -1 }}>{(profile.name || 'SCHOOL PORTAL').toUpperCase()}</div>
                     <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 5, letterSpacing: 2, fontWeight: 700 }}>CERTIFIED MONTHLY PAYSLIP</div>
@@ -551,7 +562,7 @@ export default function UnifiedPayrollPage() {
                  <div style={{ marginTop: 30, fontSize: 10, color: '#94A3B8', textAlign: 'center', fontStyle: 'italic' }}>This is a computer generated payslip and does not require a signature.</div>
               </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 30 }}>
-                <button className="btn btn-primary" onClick={() => window.print()}>🖨️ Print Payslip</button>
+                <button className="btn btn-primary" onClick={printCurrentPayslip}>🖨️ Print Payslip</button>
                 <button className="btn btn-ghost" onClick={() => setPrintSlip(null)}>Close Preview</button>
               </div>
             </div>
@@ -563,6 +574,47 @@ export default function UnifiedPayrollPage() {
         .tab-btn { padding: 10px 24px; border: none; background: none; border-radius: 10px; font-weight: 700; color: #64748B; cursor: pointer; transition: 0.2s; font-size: 13px; }
         .tab-btn.on { background: #fff; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .hover-row:hover { background: #F8FAFC; }
+        @media print {
+          body.printing-payslip .page > :not(.payslip-print-shell) {
+            display: none !important;
+          }
+          body.printing-payslip .payslip-print-shell {
+            display: block !important;
+            visibility: visible !important;
+            position: static !important;
+            inset: auto !important;
+            background: #fff !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+          body.printing-payslip .payslip-print-shell .modal,
+          body.printing-payslip .payslip-print-shell .modal-body {
+            display: block !important;
+            visibility: visible !important;
+            width: 100% !important;
+            max-width: none !important;
+            height: auto !important;
+            max-height: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+          }
+          body.printing-payslip .payslip-print-shell .modal-hdr,
+          body.printing-payslip .payslip-print-shell .btn,
+          body.printing-payslip .payslip-print-shell .modal-close {
+            display: none !important;
+          }
+          body.printing-payslip #print-area {
+            display: block !important;
+            visibility: visible !important;
+            max-width: 180mm !important;
+            margin: 0 auto !important;
+            box-shadow: none !important;
+            page-break-inside: avoid !important;
+          }
+        }
       `}</style>
     </div>
   );
