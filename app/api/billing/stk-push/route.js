@@ -5,6 +5,12 @@ import { kvGet, query } from '@/lib/db';
 import { stkPush } from '@/lib/mpesa';
 
 const DARAJA_SANDBOX_URL = 'https://sandbox.safaricom.co.ke';
+const DARAJA_SANDBOX_SHORTCODE = '174379';
+
+function normalizeDarajaEnv(env) {
+  const value = String(env || 'sandbox').toLowerCase().trim();
+  return ['live', 'production', 'prod'].includes(value) ? 'production' : 'sandbox';
+}
 
 export async function POST(request) {
   const session = await getSession();
@@ -34,18 +40,36 @@ export async function POST(request) {
     // Fallback to platform-level env vars if global config is not set
     if (!gw || !gw.consumerKey || !gw.shortcode) {
       gw = {
-        consumerKey:    process.env.MPESA_CONSUMER_KEY    || '',
-        consumerSecret: process.env.MPESA_CONSUMER_SECRET || '',
-        shortcode:      process.env.MPESA_SHORTCODE      || '',
-        passkey:        process.env.MPESA_PASSKEY        || '',
+        consumerKey:    process.env.MPESA_CONSUMER_KEY    || process.env.DARAJA_CONSUMER_KEY    || '',
+        consumerSecret: process.env.MPESA_CONSUMER_SECRET || process.env.DARAJA_CONSUMER_SECRET || '',
+        shortcode:      process.env.MPESA_SHORTCODE       || process.env.DARAJA_SHORTCODE       || '',
+        passkey:        process.env.MPESA_PASSKEY         || process.env.DARAJA_PASSKEY         || '',
         callbackUrl:    process.env.MPESA_CALLBACK_URL   || process.env.DARAJA_CALLBACK_URL || '',
         env:            process.env.MPESA_ENV            || 'sandbox',
       };
     }
 
-    if (!gw.consumerKey || !gw.consumerSecret || !gw.shortcode || !gw.passkey) {
+    const darajaEnv = normalizeDarajaEnv(gw.env);
+    const shortcode = String(gw.shortcode || '').trim();
+    const passkey = String(gw.passkey || '').trim();
+
+    if (!gw.consumerKey || !gw.consumerSecret || !shortcode || !passkey) {
       return NextResponse.json({
         error: 'M-Pesa Automation Gateway is not fully configured. Add the Daraja consumer key, consumer secret, shortcode, and passkey.',
+        darajaTestUrl: DARAJA_SANDBOX_URL
+      }, { status: 400 });
+    }
+
+    if (darajaEnv === 'sandbox' && shortcode !== DARAJA_SANDBOX_SHORTCODE) {
+      return NextResponse.json({
+        error: `Daraja is set to sandbox but the shortcode is ${shortcode}. Sandbox STK Push must use shortcode ${DARAJA_SANDBOX_SHORTCODE} with the matching sandbox passkey, or switch the gateway environment to production for your real paybill.`,
+        darajaTestUrl: DARAJA_SANDBOX_URL
+      }, { status: 400 });
+    }
+
+    if (darajaEnv === 'production' && shortcode === DARAJA_SANDBOX_SHORTCODE) {
+      return NextResponse.json({
+        error: `Daraja is set to production but the shortcode is the sandbox test shortcode ${DARAJA_SANDBOX_SHORTCODE}. Use your real production paybill/till shortcode and production passkey, or switch the gateway environment back to sandbox.`,
         darajaTestUrl: DARAJA_SANDBOX_URL
       }, { status: 400 });
     }
@@ -67,10 +91,10 @@ export async function POST(request) {
       description: `EDU ${String(planId).toUpperCase()}`,
       consumerKey: gw.consumerKey,
       consumerSecret: gw.consumerSecret,
-      shortcode: gw.shortcode,
-      passkey: gw.passkey,
+      shortcode,
+      passkey,
       callbackUrl,
-      env: gw.env
+      env: darajaEnv
     });
 
     if (res.success) {
@@ -97,6 +121,8 @@ export async function POST(request) {
     } else {
       return NextResponse.json({
         error: res.error || 'Failed to initiate STK Push',
+        darajaEnv,
+        shortcode,
         darajaTestUrl: DARAJA_SANDBOX_URL
       }, { status: 400 });
     }

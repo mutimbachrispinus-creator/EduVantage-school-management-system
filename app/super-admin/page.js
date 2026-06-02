@@ -48,7 +48,7 @@ export default function SuperAdminPage() {
     pricing: { basic: 25000, premium: 50000 },
     plans: [],
     platformPayments: [],
-    mpesaGateway: { consumerKey: '', consumerSecret: '', shortcode: '', passkey: '', env: 'sandbox' },
+    mpesaGateway: { consumerKey: '', consumerSecret: '', shortcode: '', passkey: '', callbackUrl: '', env: 'sandbox' },
     maintenanceMode: false
   });
   const [announcement, setAnnouncement] = useState({ message: '', priority: 'normal', active: false });
@@ -534,6 +534,9 @@ export default function SuperAdminPage() {
               <div className="panel-hdr"><h3 style={{ color: '#2563EB' }}>💸 M-Pesa Automation Gateway</h3></div>
               <div className="panel-body">
                 <p style={{ fontSize: 11, color: SLATE, marginBottom: 15 }}>Configure Safaricom Daraja API credentials to enable automated STK Push billing for schools.</p>
+                <div style={{ marginBottom: 14, padding: 12, borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1E40AF', fontSize: 11, fontWeight: 700, lineHeight: 1.5 }}>
+                  Sandbox STK Push must use shortcode 174379 and its sandbox passkey. Use Production only with your live paybill/till shortcode and live Daraja passkey.
+                </div>
                 <div className="field">
                   <label>Consumer Key</label>
                   <input type="password" value={globalConfig.mpesaGateway?.consumerKey || ''} onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalConfig.mpesaGateway, consumerKey: e.target.value}})} />
@@ -551,6 +554,14 @@ export default function SuperAdminPage() {
                     <label>Passkey</label>
                     <input type="password" value={globalConfig.mpesaGateway?.passkey || ''} onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalConfig.mpesaGateway, passkey: e.target.value}})} />
                   </div>
+                </div>
+                <div className="field">
+                  <label>Callback URL</label>
+                  <input
+                    value={globalConfig.mpesaGateway?.callbackUrl || ''}
+                    onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalConfig.mpesaGateway, callbackUrl: e.target.value}})}
+                    placeholder="https://your-domain.com/api/mpesa/callback"
+                  />
                 </div>
                 <div className="field">
                   <label>Environment</label>
