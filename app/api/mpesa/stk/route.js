@@ -46,6 +46,30 @@ export async function POST(req) {
     const adm = String(accountRef).split(':')[0].trim();
     const safaricomRef = adm.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12) || 'FEES';
 
+    // Environment and shortcode validation to prevent cryptic 500 errors
+    const activeEnv = String(paybill.env || process.env.MPESA_ENV || 'sandbox').toLowerCase().trim();
+    const darajaEnv = ['live', 'production', 'prod'].includes(activeEnv) ? 'production' : 'sandbox';
+    const shortcode = String(paybill.shortcode || '').trim();
+
+    const DARAJA_SANDBOX_SHORTCODE = '174379';
+    const DARAJA_SANDBOX_URL = 'https://sandbox.safaricom.co.ke';
+
+    if (darajaEnv === 'sandbox' && shortcode && shortcode !== DARAJA_SANDBOX_SHORTCODE) {
+      return NextResponse.json({
+        success: false,
+        error: `Daraja is set to sandbox but the school's Paybill shortcode is configured as "${shortcode}". Sandbox STK Push must use Safaricom's default sandbox shortcode ${DARAJA_SANDBOX_SHORTCODE} with its matching sandbox passkey. To use your custom Paybill, switch the environment to production.`,
+        darajaTestUrl: DARAJA_SANDBOX_URL
+      }, { status: 400 });
+    }
+
+    if (darajaEnv === 'production' && shortcode === DARAJA_SANDBOX_SHORTCODE) {
+      return NextResponse.json({
+        success: false,
+        error: `Daraja is set to production but the shortcode is Safaricom's sandbox test shortcode ${DARAJA_SANDBOX_SHORTCODE}. Please use your real production paybill/till shortcode and production passkey, or switch the environment back to sandbox.`,
+        darajaTestUrl: DARAJA_SANDBOX_URL
+      }, { status: 400 });
+    }
+
     // Use school-level Daraja credentials if configured, else fall back to env vars
     const stkResult = await stkPush({
       phone,
@@ -56,7 +80,7 @@ export async function POST(req) {
       passkey:        paybill.passkey       || undefined,
       consumerKey:    paybill.consumerKey   || undefined,
       consumerSecret: paybill.consumerSecret|| undefined,
-      env:            paybill.env           || process.env.MPESA_ENV || 'sandbox',
+      env:            darajaEnv,
     });
 
     if (stkResult.success && stkResult.checkoutRequestId) {
