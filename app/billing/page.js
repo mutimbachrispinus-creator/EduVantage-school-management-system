@@ -362,7 +362,6 @@ export default function BillingPage() {
           padding: 22px 28px 28px;
           scrollbar-width: thin;
           scrollbar-color: #CBD5E1 transparent;
-          touch-action: pan-y;
         }
         .modal-content::-webkit-scrollbar {
           width: 8px;
@@ -378,12 +377,6 @@ export default function BillingPage() {
           .billing-panel {
             padding: 24px 20px;
             border-radius: 20px !important;
-            max-height: calc(100dvh - 150px);
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-            touch-action: pan-y;
-            pointer-events: auto;
           }
           .modal-content {
             padding: 18px 16px 22px;
@@ -391,21 +384,14 @@ export default function BillingPage() {
             max-height: calc(100dvh - 24px) !important;
             overflow-y: auto !important;
             -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-            touch-action: pan-y;
-            pointer-events: auto;
           }
           .billing-modal-backdrop {
             padding: 12px !important;
             overflow-y: auto !important;
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
           }
           .billing-digital-grid {
             grid-template-columns: 1fr !important;
-          }
-          .billing-upgrades-panel {
-            max-height: calc(100dvh - 118px);
           }
           h1 {
             font-size: 24px !important;

@@ -5,7 +5,7 @@ import { getSession } from '@/lib/auth';
 import { kvGet, kvSet } from '@/lib/db';
 import { sendSMS, sendFeeReminderSMS, getResultNotificationMessage, getAbsenteeismAlertMessage } from '@/lib/sms-client';
 import { sendEmail, getReportCardTemplate, getFeeBalanceTemplate } from '@/lib/mail';
-import { calcLearnerReportData, getDefaultSubjects } from '@/lib/cbe';
+import { calcLearnerReportData, getDefaultSubjects, calcLearnerPoints } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 import { findLearner, getTenantId } from '@/lib/learner-lookup';
 
@@ -16,7 +16,7 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { type, channel, targets, term } = await request.json();
+    const { type, channel, targets, term, assess } = await request.json();
     const tid = getTenantId(session);
 
     if (!targets || !targets.length) {
@@ -131,13 +131,32 @@ export async function POST(request) {
         
         if (!gradeSubjects.length) continue;
         
-        const report = calcLearnerReportData(marks, learner.adm, learner.grade, term, gradeSubjects, null, profile?.curriculum || 'CBC', weights);
-        const totalPts = report.totalAvgPts;
-        const maxPts = gradeSubjects.length * (['GRADE 7', 'GRADE 8', 'GRADE 9'].includes(learner.grade) ? 8 : 4);
-        const pct = maxPts > 0 ? Math.round((totalPts / maxPts) * 100) : 0;
+        let totalPts = 0;
+        let maxPts = 0;
+        let pct = 0;
+
+        if (assess) {
+          const ptData = calcLearnerPoints(marks, learner.adm, learner.grade, term, assess, gradeSubjects, null, profile?.curriculum || 'CBC');
+          totalPts = ptData.totalPts;
+          maxPts = ptData.maxTotal || (gradeSubjects.length * (['GRADE 7', 'GRADE 8', 'GRADE 9'].includes(learner.grade) ? 8 : 4));
+          pct = maxPts > 0 ? Math.round((totalPts / maxPts) * 100) : 0;
+        } else {
+          const report = calcLearnerReportData(marks, learner.adm, learner.grade, term, gradeSubjects, null, profile?.curriculum || 'CBC', weights);
+          totalPts = report.totalAvgPts;
+          maxPts = gradeSubjects.length * (['GRADE 7', 'GRADE 8', 'GRADE 9'].includes(learner.grade) ? 8 : 4);
+          pct = maxPts > 0 ? Math.round((totalPts / maxPts) * 100) : 0;
+        }
 
         // Resolve full curriculum term label (e.g. "Term 1" or "Semester 2")
-        const termLabel = TERMS.find(t => t.id === term)?.name || `Term ${term.replace(/^T/, '')}`;
+        let termLabel = TERMS.find(t => t.id === term)?.name || `Term ${term.replace(/^T/, '')}`;
+        if (assess) {
+          const assessObj = curr.ASSESSMENT_TYPES?.find(a => a.key === assess);
+          if (assessObj) {
+            termLabel = `${termLabel} ${assessObj.label.replace(/\p{Emoji}/gu, '').trim()}`;
+          } else {
+            termLabel = `${termLabel} ${assess.toUpperCase()}`;
+          }
+        }
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portal.eduvantage.app';
         const portalLink = `${baseUrl}/parent-home?adm=${learner.adm}`;

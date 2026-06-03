@@ -552,16 +552,23 @@ export default function SuperAdminPage() {
                   </div>
                   <div className="field">
                     <label>Passkey</label>
-                    <input type="password" value={globalConfig.mpesaGateway?.passkey || ''} onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalConfig.mpesaGateway, passkey: e.target.value}})} />
-                  </div>
-                </div>
-                <div className="field">
+                    <input type="password" value={globalConfig.mpesaGateway?.passkey || ''} onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalC                 <div className="field">
                   <label>Callback URL</label>
                   <input
                     value={globalConfig.mpesaGateway?.callbackUrl || ''}
                     onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalConfig.mpesaGateway, callbackUrl: e.target.value}})}
                     placeholder="https://your-domain.com/api/mpesa/callback"
                   />
+                </div>
+                <div className="field-row">
+                  <div className="field">
+                    <label>Initiator Name <span style={{ fontSize: 11, color: '#64748B' }}>(for Disbursements)</span></label>
+                    <input value={globalConfig.mpesaGateway?.initiatorName || ''} onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalConfig.mpesaGateway, initiatorName: e.target.value}})} placeholder="e.g. testapi" />
+                  </div>
+                  <div className="field">
+                    <label>Security Credential <span style={{ fontSize: 11, color: '#64748B' }}>(RSA Encrypted)</span></label>
+                    <input type="password" value={globalConfig.mpesaGateway?.securityCredential || ''} onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalConfig.mpesaGateway, securityCredential: e.target.value}})} placeholder="Encrypted Initiator Password" />
+                  </div>
                 </div>
                 <div className="field">
                   <label>Environment</label>
@@ -570,7 +577,7 @@ export default function SuperAdminPage() {
                     <option value="production">Production (Live)</option>
                   </select>
                 </div>
-                <button className="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save M-Pesa Config</button>
+                <button className="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save M-Pesa Config</button>lassName="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save M-Pesa Config</button>
               </div>
             </div>
             <div className="panel" style={{ border: '2px solid #E11D48' }}>

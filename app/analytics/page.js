@@ -134,13 +134,13 @@ export default function AnalyticsPage() {
           <p style={{ color: 'var(--muted)', marginTop: 4, fontWeight: 600 }}>Institutional excellence dashboard</p>
         </div>
         
-        <div style={{ display: 'flex', gap: 8, background: 'var(--slate-50)', padding: 4, borderRadius: 12, overflowX: 'auto', maxWidth: '100%' }}>
-          <button className={`btn btn-sm ${activeTab === 'insights' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('insights')}>📊 Insights</button>
-          <button className={`btn btn-sm ${activeTab === 'performance' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('performance')}>📈 Academic Detail</button>
-          <button className={`btn btn-sm ${activeTab === 'staff' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('staff')}>👨‍🏫 Staff Efficiency</button>
-          <button className={`btn btn-sm ${activeTab === 'outreach' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('outreach')}>📲 Parent Outreach</button>
-          <button className={`btn btn-sm ${activeTab === 'pathways' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('pathways')}>🛣️ Learner Pathways</button>
-          <button className={`btn btn-sm ${activeTab === 'predictor' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('predictor')}>🔮 Exam Predictor</button>
+        <div className="analytics-tabs-container">
+          <button className={`analytics-tab ${activeTab === 'insights' ? 'active' : ''}`} onClick={() => setActiveTab('insights')}>📊 Insights</button>
+          <button className={`analytics-tab ${activeTab === 'performance' ? 'active' : ''}`} onClick={() => setActiveTab('performance')}>📈 Academic Detail</button>
+          <button className={`analytics-tab ${activeTab === 'staff' ? 'active' : ''}`} onClick={() => setActiveTab('staff')}>👨‍🏫 Staff Efficiency</button>
+          <button className={`analytics-tab ${activeTab === 'outreach' ? 'active' : ''}`} onClick={() => setActiveTab('outreach')}>📲 Parent Outreach</button>
+          <button className={`analytics-tab ${activeTab === 'pathways' ? 'active' : ''}`} onClick={() => setActiveTab('pathways')}>🛣️ Learner Pathways</button>
+          <button className={`analytics-tab ${activeTab === 'predictor' ? 'active' : ''}`} onClick={() => setActiveTab('predictor')}>🔮 Exam Predictor</button>
         </div>
       </div>
 
@@ -158,6 +158,11 @@ export default function AnalyticsPage() {
               <select value={term} onChange={(e) => setTerm(e.target.value)} style={{ background: 'var(--slate-50)', fontWeight: 700 }}>
                 {currTerms.map(t => <option key={t.id} value={t.id}>{t.name.toUpperCase()}</option>)}
               </select>
+              {activeTab === 'outreach' && (
+                <select value={pAssess} onChange={(e) => setPAssess(e.target.value)} style={{ background: 'var(--slate-50)', fontWeight: 700 }}>
+                  {currAssessments.map(a => <option key={a.key} value={a.key}>{a.label.replace(/\p{Emoji}/gu, '').trim()}</option>)}
+                </select>
+              )}
             </div>
           </div>
           {/* Insight Cards ... */}
@@ -243,132 +248,152 @@ export default function AnalyticsPage() {
           {!error && stats && (
           <>
           {/* Insight Cards */}
-          <div className="sg sg3">
-            <div className="stat-card" style={{ borderLeft: '4px solid #2563eb' }}>
-              <div className="sc-inner">
-                <div className="sc-icon" style={{ background: '#eff6ff', color: '#2563eb' }}><Gauge size={20} /></div>
+          <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            <div className="glass-card premium-hover">
+              <div className="glass-gradient" style={{ background: 'radial-gradient(circle at top right, rgba(37,99,235,0.15) 0%, transparent 70%)' }} />
+              <div className="sc-inner" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="sc-icon-glow" style={{ background: '#eff6ff', color: '#2563eb', boxShadow: '0 0 15px rgba(37,99,235,0.3)' }}><Gauge size={20} /></div>
                 <div>
-                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Class Average</div>
-                  <div className="sc-n" style={{ fontSize: 24 }}>{stats.classAverage || 0}%</div>
-                  <div className="sc-sub" style={{ background: '#eff6ff', color: '#2563eb' }}>{stats.enteredLearners || 0}/{stats.studentCount || 0} {(stats.labels || currLabels).learners} with marks</div>
+                  <div className="sc-l" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 800, color: '#64748B' }}>Class Average</div>
+                  <div className="sc-n" style={{ fontSize: 32, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.03em' }}>{stats.classAverage || 0}%</div>
+                  <div className="sc-sub" style={{ background: 'transparent', color: '#2563eb', padding: 0, fontWeight: 700, fontSize: 12, marginTop: 4 }}>
+                    {stats.enteredLearners || 0}/{stats.studentCount || 0} {(stats.labels || currLabels).learners} with marks
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="stat-card" style={{ borderLeft: '4px solid #059669' }}>
-              <div className="sc-inner">
-                <div className="sc-icon" style={{ background: '#ecfdf5', color: '#059669' }}><BookOpen size={20} /></div>
+            <div className="glass-card premium-hover">
+              <div className="glass-gradient" style={{ background: 'radial-gradient(circle at top right, rgba(5,150,105,0.15) 0%, transparent 70%)' }} />
+              <div className="sc-inner" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="sc-icon-glow" style={{ background: '#ecfdf5', color: '#059669', boxShadow: '0 0 15px rgba(5,150,105,0.3)' }}><BookOpen size={20} /></div>
                 <div>
-                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Top Subject</div>
-                  <div className="sc-n" style={{ fontSize: 18, textTransform: 'uppercase' }}>{stats.subjectMastery[0]?.name || '—'}</div>
-                  <div className="sc-sub" style={{ background: '#ecfdf5', color: '#059669' }}>
+                  <div className="sc-l" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 800, color: '#64748B' }}>Top Subject</div>
+                  <div className="sc-n" style={{ fontSize: 22, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>{stats.subjectMastery[0]?.name || '—'}</div>
+                  <div className="sc-sub" style={{ background: 'transparent', color: '#059669', padding: 0, fontWeight: 700, fontSize: 12, marginTop: 4 }}>
                     {stats.subjectMastery[0]?.level || '—'} ({stats.subjectMastery[0]?.average || 0}%)
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="stat-card" style={{ borderLeft: '4px solid #dc2626' }}>
-              <div className="sc-inner">
-                <div className="sc-icon" style={{ background: '#fef2f2', color: '#dc2626' }}><AlertCircle size={20} /></div>
+            <div className="glass-card premium-hover">
+              <div className="glass-gradient" style={{ background: 'radial-gradient(circle at top right, rgba(220,38,38,0.15) 0%, transparent 70%)' }} />
+              <div className="sc-inner" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="sc-icon-glow" style={{ background: '#fef2f2', color: '#dc2626', boxShadow: '0 0 15px rgba(220,38,38,0.3)' }}><AlertCircle size={20} /></div>
                 <div>
-                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Weakest Subject</div>
-                  <div className="sc-n" style={{ fontSize: 18, textTransform: 'uppercase' }}>{stats.subjectMastery[stats.subjectMastery.length-1]?.name || '—'}</div>
-                  <div className="sc-sub" style={{ background: '#fef2f2', color: '#dc2626' }}>
+                  <div className="sc-l" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 800, color: '#64748B' }}>Weakest Subject</div>
+                  <div className="sc-n" style={{ fontSize: 22, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>{stats.subjectMastery[stats.subjectMastery.length-1]?.name || '—'}</div>
+                  <div className="sc-sub" style={{ background: 'transparent', color: '#dc2626', padding: 0, fontWeight: 700, fontSize: 12, marginTop: 4 }}>
                     {stats.subjectMastery[stats.subjectMastery.length-1]?.level || '—'} ({stats.subjectMastery[stats.subjectMastery.length-1]?.average || 0}%)
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="stat-card" style={{ borderLeft: '4px solid #7c3aed' }}>
-              <div className="sc-inner">
-                <div className="sc-icon" style={{ background: '#f5f3ff', color: '#7c3aed' }}><TrendingUp size={20} /></div>
+            <div className="glass-card premium-hover">
+              <div className="glass-gradient" style={{ background: 'radial-gradient(circle at top right, rgba(124,58,237,0.15) 0%, transparent 70%)' }} />
+              <div className="sc-inner" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="sc-icon-glow" style={{ background: '#f5f3ff', color: '#7c3aed', boxShadow: '0 0 15px rgba(124,58,237,0.3)' }}><TrendingUp size={20} /></div>
                 <div>
-                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Top Value-Add</div>
-                  <div className="sc-n" style={{ fontSize: 18, textTransform: 'uppercase' }}>
+                  <div className="sc-l" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 800, color: '#64748B' }}>Top Value-Add</div>
+                  <div className="sc-n" style={{ fontSize: 22, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>
                     {stats.subjectMastery.filter(s => s.sva > 0).sort((a,b) => b.sva - a.sva)[0]?.name || '—'}
                   </div>
-                  <div className="sc-sub" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
+                  <div className="sc-sub" style={{ background: 'transparent', color: '#7c3aed', padding: 0, fontWeight: 700, fontSize: 12, marginTop: 4 }}>
                     +{stats.subjectMastery.filter(s => s.sva > 0).sort((a,b) => b.sva - a.sva)[0]?.sva || 0}% Improvement
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="sg sg3">
-            <div className="stat-card" style={{ borderLeft: '4px solid #7c3aed' }}>
-              <div className="sc-inner">
-                <div className="sc-icon" style={{ background: '#f5f3ff', color: '#7c3aed' }}><ClipboardList size={20} /></div>
+            <div className="glass-card premium-hover">
+              <div className="glass-gradient" style={{ background: 'radial-gradient(circle at top right, rgba(14,165,233,0.15) 0%, transparent 70%)' }} />
+              <div className="sc-inner" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="sc-icon-glow" style={{ background: '#f0f9ff', color: '#0ea5e9', boxShadow: '0 0 15px rgba(14,165,233,0.3)' }}><ClipboardList size={20} /></div>
                 <div>
-                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Marks Coverage</div>
-                  <div className="sc-n" style={{ fontSize: 24 }}>{stats.completionRate || 0}%</div>
-                  <div className="sc-sub" style={{ background: '#f5f3ff', color: '#7c3aed' }}>{stats.totalEntries || 0} captured entries</div>
+                  <div className="sc-l" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 800, color: '#64748B' }}>Marks Coverage</div>
+                  <div className="sc-n" style={{ fontSize: 32, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.03em' }}>{stats.completionRate || 0}%</div>
+                  <div className="sc-sub" style={{ background: 'transparent', color: '#0ea5e9', padding: 0, fontWeight: 700, fontSize: 12, marginTop: 4 }}>
+                    {stats.totalEntries || 0} captured entries
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="stat-card" style={{ borderLeft: '4px solid #dc2626' }}>
-              <div className="sc-inner">
-                <div className="sc-icon" style={{ background: '#fef2f2', color: '#dc2626' }}><ShieldAlert size={20} /></div>
+            <div className="glass-card premium-hover">
+              <div className="glass-gradient" style={{ background: 'radial-gradient(circle at top right, rgba(239,68,68,0.15) 0%, transparent 70%)' }} />
+              <div className="sc-inner" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="sc-icon-glow" style={{ background: '#fef2f2', color: '#ef4444', boxShadow: '0 0 15px rgba(239,68,68,0.3)' }}><ShieldAlert size={20} /></div>
                 <div>
-                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Academic Risk</div>
-                  <div className="sc-n" style={{ fontSize: 24 }}>{stats.riskCount || 0}</div>
-                  <div className="sc-sub" style={{ background: '#fef2f2', color: '#dc2626' }}>Below 40% average</div>
+                  <div className="sc-l" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 800, color: '#64748B' }}>Academic Risk</div>
+                  <div className="sc-n" style={{ fontSize: 32, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.03em' }}>{stats.riskCount || 0}</div>
+                  <div className="sc-sub" style={{ background: 'transparent', color: '#ef4444', padding: 0, fontWeight: 700, fontSize: 12, marginTop: 4 }}>
+                    Below 40% average
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="stat-card" style={{ borderLeft: '4px solid #d97706' }}>
-              <div className="sc-inner">
-                <div className="sc-icon" style={{ background: '#fffbeb', color: '#d97706' }}><Award size={20} /></div>
+            <div className="glass-card premium-hover">
+              <div className="glass-gradient" style={{ background: 'radial-gradient(circle at top right, rgba(245,158,11,0.15) 0%, transparent 70%)' }} />
+              <div className="sc-inner" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="sc-icon-glow" style={{ background: '#fffbeb', color: '#f59e0b', boxShadow: '0 0 15px rgba(245,158,11,0.3)' }}><Award size={20} /></div>
                 <div>
-                  <div className="sc-l" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800 }}>Excellence Pool</div>
-                  <div className="sc-n" style={{ fontSize: 24 }}>{stats.excellenceCount || 0}</div>
-                  <div className="sc-sub" style={{ background: '#fffbeb', color: '#d97706' }}>At or above 80%</div>
+                  <div className="sc-l" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 800, color: '#64748B' }}>Excellence Pool</div>
+                  <div className="sc-n" style={{ fontSize: 32, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.03em' }}>{stats.excellenceCount || 0}</div>
+                  <div className="sc-sub" style={{ background: 'transparent', color: '#f59e0b', padding: 0, fontWeight: 700, fontSize: 12, marginTop: 4 }}>
+                    At or above 80%
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="panel" style={{ gridColumn: '1 / -1' }}>
-              <div className="panel-hdr" style={{ borderBottom: '1px solid var(--border)' }}>
+            <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '0', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+              <div className="panel-hdr" style={{ padding: '24px 30px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: 18, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Gauge size={18} className="text-blue-600" /> Deep Subject Analytics Matrix
+                  <Gauge size={20} style={{ color: '#2563eb' }} /> Deep Subject Analytics Matrix
                 </h3>
               </div>
-              <div className="tbl-wrap">
-                <table style={{ margin: 0 }}>
+              <div className="tbl-wrap" style={{ overflowX: 'auto' }}>
+                <table style={{ margin: 0, width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>
-                      <th style={{ paddingLeft: 20 }}>{(stats.labels || currLabels).subject}</th>
-                      <th style={{ textAlign: 'center' }}>Mean</th>
-                      <th style={{ textAlign: 'center' }}>Value-Add (SVA)</th>
-                      <th style={{ textAlign: 'center' }}>Variance (StdDev)</th>
-                      <th>Grade Distribution (Count)</th>
+                    <tr style={{ background: 'rgba(248,250,252,0.5)' }}>
+                      <th style={{ padding: '16px 30px', fontSize: 12, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 }}>{(stats.labels || currLabels).subject}</th>
+                      <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: 12, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 }}>Mean</th>
+                      <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: 12, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 }}>Value-Add (SVA)</th>
+                      <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: 12, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 }}>Variance (StdDev)</th>
+                      <th style={{ padding: '16px 30px', fontSize: 12, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 }}>Grade Distribution (Count)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stats.subjectMastery.map((s, idx) => (
-                      <tr key={idx}>
-                        <td style={{ paddingLeft: 20, fontWeight: 800 }}>{s.name}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 900, color: s.color }}>{s.average}%</td>
-                        <td style={{ textAlign: 'center' }}>
-                          {s.sva > 0 ? <span className="badge bg-green">+{s.sva}</span> 
-                           : s.sva < 0 ? <span className="badge bg-red">{s.sva}</span> 
-                           : <span className="badge" style={{ background: '#f1f5f9' }}>—</span>}
+                      <tr key={idx} style={{ borderBottom: idx === stats.subjectMastery.length - 1 ? 'none' : '1px solid rgba(0,0,0,0.05)', transition: 'background 0.2s', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(241,245,249,0.3)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                        <td style={{ padding: '16px 30px', fontWeight: 800, color: '#0F172A', fontSize: 14 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color || '#cbd5e1' }}></div>
+                            {s.name}
+                          </div>
                         </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <span className={`badge ${s.stdDev > 15 ? 'bg-amber' : 'bg-blue'}`}>{s.stdDev}</span>
+                        <td style={{ textAlign: 'center', padding: '16px 20px', fontWeight: 900, color: s.color, fontSize: 15 }}>{s.average}%</td>
+                        <td style={{ textAlign: 'center', padding: '16px 20px' }}>
+                          {s.sva > 0 ? <span style={{ background: '#ecfdf5', color: '#059669', padding: '4px 10px', borderRadius: 99, fontWeight: 800, fontSize: 12 }}>+{s.sva}</span> 
+                           : s.sva < 0 ? <span style={{ background: '#fef2f2', color: '#dc2626', padding: '4px 10px', borderRadius: 99, fontWeight: 800, fontSize: 12 }}>{s.sva}</span> 
+                           : <span style={{ background: '#f1f5f9', color: '#94a3b8', padding: '4px 10px', borderRadius: 99, fontWeight: 800, fontSize: 12 }}>—</span>}
                         </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                        <td style={{ textAlign: 'center', padding: '16px 20px' }}>
+                          <span style={{ background: s.stdDev > 15 ? '#fffbeb' : '#eff6ff', color: s.stdDev > 15 ? '#d97706' : '#2563eb', padding: '4px 10px', borderRadius: 99, fontWeight: 800, fontSize: 12 }}>
+                            {s.stdDev}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 30px' }}>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             {stats.distBucketsTemplate && Object.keys(stats.distBucketsTemplate).map(k => (
                               s.distribution?.[k] ? (
-                                <div key={k} style={{ fontSize: 10, padding: '2px 6px', background: 'var(--slate-50)', border: '1px solid var(--border)', borderRadius: 4 }}>
-                                  <strong style={{ color: 'var(--navy)' }}>{k}</strong>: {s.distribution[k]}
+                                <div key={k} style={{ fontSize: 11, padding: '3px 8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, fontWeight: 600, color: '#475569' }}>
+                                  <strong style={{ color: '#0F172A', fontWeight: 800 }}>{k}</strong> <span style={{ opacity: 0.6 }}>·</span> {s.distribution[k]}
                                 </div>
                               ) : null
                             ))}
@@ -382,69 +407,83 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="space-y-8">
-              <div className="panel">
+              <div className="panel" style={{ border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', borderRadius: 20 }}>
                 <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900 }}>Historical Progression</h3></div>
                 <div className="panel-body">
                   <ResponsiveContainer width="100%" height={210}>
                     <LineChart data={[...(stats.historicalProgression || []), { name: term, average: stats.classAverage }]}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="average" stroke="#2563EB" strokeWidth={3} dot={{ r: 4 }} name="Average" />
+                      <defs>
+                        <linearGradient id="colorProgression" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#2563EB" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 12, fontWeight: 600, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)' }} itemStyle={{ fontWeight: 800 }} />
+                      <Line type="monotone" dataKey="average" stroke="#2563EB" strokeWidth={4} dot={{ r: 5, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 8, fill: '#2563EB' }} name="Average" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="panel">
+              <div className="panel" style={{ border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', borderRadius: 20 }}>
                 <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900 }}>Current Term Assessments</h3></div>
                 <div className="panel-body">
                   <ResponsiveContainer width="100%" height={210}>
                     <LineChart data={stats.assessmentComparison || []}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="average" stroke="#8B1A1A" strokeWidth={3} dot={{ r: 4 }} name="Average" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 12, fontWeight: 600, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)' }} itemStyle={{ fontWeight: 800 }} />
+                      <Line type="monotone" dataKey="average" stroke="#8B1A1A" strokeWidth={4} dot={{ r: 5, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 8, fill: '#8B1A1A' }} name="Average" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="panel">
+              <div className="panel" style={{ border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', borderRadius: 20 }}>
                 <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900 }}>Gender Parity Analysis</h3></div>
                 <div className="panel-body">
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
-                      <Pie data={stats.genderComparison} innerRadius={60} outerRadius={80} dataKey="average">
+                      <Pie data={stats.genderComparison} innerRadius={60} outerRadius={80} dataKey="average" stroke="none">
                         {stats.genderComparison.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)' }} itemStyle={{ fontWeight: 800 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="panel">
+              <div className="panel" style={{ border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', borderRadius: 20 }}>
                 <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900 }}>Stream Performance</h3></div>
                 <div className="panel-body">
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={stats.streamComparison}>
-                      <XAxis dataKey="name" />
-                      <Bar dataKey="average" fill="#2563EB" radius={[8, 8, 0, 0]} />
+                      <defs>
+                        <linearGradient id="colorStream" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#2563EB" stopOpacity={1}/>
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                      <Tooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)' }} itemStyle={{ fontWeight: 800 }} />
+                      <Bar dataKey="average" fill="url(#colorStream)" radius={[8, 8, 8, 8]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="panel">
-                <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900 }}>Action Recommendations</h3></div>
-                <div className="panel-body" style={{ display: 'grid', gap: 10 }}>
+              <div className="panel" style={{ background: 'linear-gradient(to bottom right, #ffffff, #f8fafc)', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                <div className="panel-hdr"><h3 style={{ fontSize: 16, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8 }}>✨ Action Recommendations</h3></div>
+                <div className="panel-body" style={{ display: 'grid', gap: 14 }}>
                   {buildInsightActions(stats, stats.labels || currLabels).map((a, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 10, padding: 12, border: '1px solid var(--border)', borderRadius: 12, background: a.bg }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', color: a.color, flexShrink: 0 }}>{a.icon}</div>
+                    <div key={i} className="action-rec-card" style={{ display: 'flex', gap: 14, padding: 16, border: `1.5px solid ${a.color}30`, borderRadius: 16, background: '#fff', position: 'relative', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: a.color }}></div>
+                      <div style={{ width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: a.bg, color: a.color, flexShrink: 0, boxShadow: `0 0 10px ${a.color}20` }}>{a.icon}</div>
                       <div>
-                        <div style={{ fontWeight: 900, color: '#172033', fontSize: 13 }}>{a.title}</div>
-                        <div style={{ color: 'var(--muted)', fontSize: 12, lineHeight: 1.5 }}>{a.text}</div>
+                        <div style={{ fontWeight: 900, color: '#0f172a', fontSize: 14, marginBottom: 4 }}>{a.title}</div>
+                        <div style={{ color: '#64748b', fontSize: 13, lineHeight: 1.5 }}>{a.text}</div>
                       </div>
                     </div>
                   ))}
@@ -475,8 +514,93 @@ export default function AnalyticsPage() {
           term={term.replace('TERM ', 'T')} assess={pAssess} stats={stats} 
           schoolName={profile?.name}
           grades={grades}
+          currAssessments={currAssessments}
         />
       ) : null}
+    <style>{`
+        .analytics-tabs-container {
+          display: flex;
+          gap: 6px;
+          background: #f1f5f9;
+          padding: 6px;
+          border-radius: 99px;
+          overflow-x: auto;
+          max-width: 100%;
+          scrollbar-width: none;
+        }
+        .analytics-tabs-container::-webkit-scrollbar { display: none; }
+        .analytics-tab {
+          padding: 8px 18px;
+          border-radius: 99px;
+          font-weight: 800;
+          font-size: 13px;
+          color: #64748b;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .analytics-tab:hover {
+          color: #0f172a;
+          background: rgba(255,255,255,0.5);
+        }
+        .analytics-tab.active {
+          background: #fff;
+          color: #0f172a;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.03);
+          transform: translateY(-1px);
+        }
+        
+        .glass-card {
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          border-radius: 24px;
+          padding: 24px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1);
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card.premium-hover:hover {
+          transform: translateY(-4px) scale(1.01);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        .glass-gradient {
+          position: absolute;
+          top: 0; right: 0; bottom: 0; left: 0;
+          opacity: 0.6;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+        }
+        .glass-card:hover .glass-gradient {
+          opacity: 1;
+        }
+        .sc-icon-glow {
+          width: 48px;
+          height: 48px;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 16px;
+          transition: transform 0.3s ease;
+        }
+        .glass-card:hover .sc-icon-glow {
+          transform: scale(1.1) rotate(5deg);
+        }
+        
+        .action-rec-card {
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .action-rec-card:hover {
+          transform: translateX(4px);
+          box-shadow: 0 8px 25px rgba(0,0,0,0.06) !important;
+        }
+      `}</style>
     </div>
   );
 }
@@ -876,7 +1000,7 @@ function PredictorTab({ learners, marks, grade, setGrade, grades, curriculum, su
   );
 }
 
-function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, grades }) {
+function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, grades, currAssessments }) {
   const [sending, setSending] = useState(false);
   const [sentCount, setSentCount] = useState(0);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -933,12 +1057,14 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
       ? (selectedLearner?.name || 'one learner')
       : grade;
 
+  const assessLabel = currAssessments?.find(a => a.key === assess)?.label?.replace(/\p{Emoji}/gu, '').trim() || assess.toUpperCase();
+
   const outreachItems = [
     {
       id: 'results',
       type: 'report',
       title: 'Bulk Result Notifications',
-      desc: `Send ${term} ${assess.toUpperCase()} results to all ${gradeLearners.length} parents in ${grade}.`,
+      desc: `Send ${term} ${assessLabel} results to all ${gradeLearners.length} parents in ${grade}.`,
       icon: <Award className="text-blue-600" />,
       color: '#2563eb',
       bg: '#eff6ff',
@@ -990,6 +1116,7 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
             type: item.type,
             channel: 'sms',
             term: term,
+            assess: item.type === 'report' ? assess : undefined,
             targets: batch.map(l => ({ adm: l.adm, grade: l.grade }))
           }),
           timeout: 30000
