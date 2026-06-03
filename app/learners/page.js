@@ -358,8 +358,33 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
   async function save() {
     if (!form.name || !form.grade) { setErr('Name and grade are required'); return; }
     setBusy(true);
-    
-    const adm = form.adm.trim() || String(Date.now()).slice(-6);
+
+    // Curriculum-aware ADM: encodes the expected year of level completion.
+    // CBC: Grade 1-6 → completes Primary (Grade 6), Grade 7-9 → completes JSS (Grade 9),
+    //      Grade 10-12 → completes Senior School (Grade 12).
+    // Other curricula fall back to current year.
+    function getCompletionYear(grade) {
+      const y = new Date().getFullYear();
+      const n = parseInt((grade.match(/\d+/) || [])[0], 10);
+      if (!isNaN(n)) {
+        if (/GRADE/i.test(grade)) {
+          if (n >= 1  && n <= 6)  return y + (6  - n); // Primary exit: Grade 6
+          if (n >= 7  && n <= 9)  return y + (9  - n); // JSS exit: Grade 9
+          if (n >= 10 && n <= 12) return y + (12 - n); // Senior exit: Grade 12
+        }
+        if (/YEAR/i.test(grade))  return y + Math.max(0, 13 - n); // British KS
+        if (/FORM/i.test(grade))  return y + Math.max(0, 4  - n); // 8-4-4 legacy
+      }
+      if (/PP1|PP2|KINDERGARTEN/i.test(grade)) return y + 1;
+      return y;
+    }
+
+    let adm = form.adm.trim();
+    if (!adm) {
+      const completionYear = getCompletionYear(form.grade);
+      const seq = String(Math.floor(Math.random() * 9000) + 1000);
+      adm = `${completionYear}/${seq}`;
+    }
     const newLearner = {
       adm, name: form.name.toUpperCase(), grade: form.grade,
       sex: form.sex, age: Number(form.age) || '',
@@ -434,7 +459,7 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
             setForm(f => ({ ...f, dob, age: calculateAge(dob) }));
           }} /></div>
         <div className="field"><label>Adm No (auto if blank)</label>
-          <input autoComplete="new-password" value={form.adm} onChange={e => F('adm', e.target.value)} placeholder="e.g. 2026001" /></div>
+          <input autoComplete="new-password" value={form.adm} onChange={e => F('adm', e.target.value)} placeholder="Auto: e.g. 2031/4823 (completion year/seq)" /></div>
       </div>
       <div className="field-row">
         <div className="field"><label>Gender</label>

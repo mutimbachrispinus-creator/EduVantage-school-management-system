@@ -181,15 +181,28 @@ export default function FinanceDashboardPage() {
 
         <div className="panel">
           <div className="panel-hdr"><h3>⚡ Finance Command Center</h3></div>
-         <div className="panel-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-             <button className="quick-access-btn" onClick={() => router.push('/finance/budgets')}>📊 Budgets</button>
-             <button className="quick-access-btn" onClick={() => router.push('/finance/transactions')}>📜 Transactions</button>
-             <button className="quick-access-btn" onClick={() => router.push('/finance/expenses')}>🧾 Expenses</button>
-             <button className="quick-access-btn" onClick={() => router.push('/finance/petty-cash')}>💵 Petty Cash</button>
-             <button className="quick-access-btn" onClick={() => router.push('/finance/payroll')}>💸 Payroll</button>
-             <button className="quick-access-btn" onClick={() => router.push('/finance/invoices')}>📄 Invoicing</button>
-             <button className="quick-access-btn" onClick={() => router.push('/finance/reconcile')}>🔁 Reconcile</button>
-           </div>
+          <div className="panel-body" style={{ overflowY: 'auto', maxHeight: 380, padding: '8px 4px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[
+                { icon: '📊', label: 'Budgets',      sub: 'Annual budget planning',     path: '/finance/budgets',      accent: '#6366F1' },
+                { icon: '📜', label: 'Transactions', sub: 'Full ledger & journals',     path: '/finance/transactions', accent: '#0EA5E9' },
+                { icon: '🧾', label: 'Expenses',     sub: 'Track institutional spend',  path: '/finance/expenses',     accent: '#F59E0B' },
+                { icon: '💵', label: 'Petty Cash',   sub: 'Imprest & cash controls',    path: '/finance/petty-cash',   accent: '#10B981' },
+                { icon: '💸', label: 'Payroll',      sub: 'Staff salaries & payslips',  path: '/finance/payroll',      accent: '#8B5CF6' },
+                { icon: '📄', label: 'Invoicing',    sub: 'Generate fee invoices',      path: '/finance/invoices',     accent: '#EC4899' },
+                { icon: '🔁', label: 'Reconcile',    sub: 'Bank reconciliation',        path: '/finance/reconcile',    accent: '#DC2626' },
+              ].map(({ icon, label, sub, path, accent }) => (
+                <button key={path} className="fin-cmd-btn" onClick={() => router.push(path)}
+                  style={{ '--fin-accent': accent }}>
+                  <span className="fin-cmd-icon">{icon}</span>
+                  <span className="fin-cmd-text">
+                    <span className="fin-cmd-label">{label}</span>
+                    <span className="fin-cmd-sub">{sub}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -229,29 +242,35 @@ export default function FinanceDashboardPage() {
           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
           gap: 20px;
         }
-        .quick-access-btn {
+        .fin-cmd-btn {
           display: flex;
           align-items: center;
-          padding: 15px;
+          gap: 10px;
+          padding: 12px 14px;
           background: #fff;
           border: 1.5px solid #E2E8F0;
+          border-left: 3.5px solid var(--fin-accent, #6366F1);
           border-radius: 12px;
-          font-weight: 700;
-          color: #475569;
-          transition: all 0.2s;
           cursor: pointer;
           width: 100%;
           text-align: left;
+          transition: all 0.18s ease;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         }
-        .quick-access-btn:hover {
-          border-color: #0369A1;
-          background: #F0F9FF;
-          transform: translateX(5px);
+        .fin-cmd-btn:hover {
+          border-color: var(--fin-accent, #6366F1);
+          background: #F8FAFF;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(0,0,0,0.10);
         }
+        .fin-cmd-btn:active { transform: translateY(0); }
+        .fin-cmd-icon { font-size: 22px; flex-shrink: 0; }
+        .fin-cmd-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+        .fin-cmd-label { font-weight: 800; font-size: 13px; color: #0F172A; }
+        .fin-cmd-sub   { font-size: 10.5px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         @media (max-width: 800px) {
-          .sg-responsive {
-            grid-template-columns: 1fr;
-          }
+          .sg-responsive { grid-template-columns: 1fr; }
+          .fin-cmd-btn { padding: 10px 12px; }
         }
       `}</style>
     </div>
