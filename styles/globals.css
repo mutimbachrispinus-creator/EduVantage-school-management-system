@@ -1325,7 +1325,8 @@ button {
     box-shadow: 0 8px 24px rgba(5, 15, 28, .04);
     border: 1.5px solid var(--border);
     position: relative;
-    overflow: hidden;
+    /* Do NOT set overflow:hidden — it clips modals, dropdowns and scroll content */
+    overflow: visible;
     animation: slideUp .3s ease-out;
     will-change: transform
 }
@@ -1346,18 +1347,26 @@ button {
     overflow-y: auto !important;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
-.finance-page .panel,
-.finance-page .panel-body,
-.finance-page .tbl-wrap {
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-}
-
+/* Finance panels: scroll freely — never clip content */
 .finance-page .panel {
     max-width: 100%;
+    overflow: visible;
+}
+.finance-page .panel-body {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+}
+.finance-page .tbl-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
 }
 
 @media screen and (max-width:800px) {
@@ -1366,9 +1375,22 @@ button {
         max-height: none;
         padding-bottom: 120px;
     }
+    /* STRICT: never cap panel height on mobile — let content scroll naturally */
     .finance-page .panel {
-        max-height: calc(100dvh - 132px);
-        overflow-y: auto !important;
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .finance-page .panel-body {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x pan-y;
+    }
+    .finance-page .tbl-wrap {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x pan-y;
+        max-width: 100%;
     }
 }
 
@@ -1399,7 +1421,11 @@ button {
 /* ── TABLES ── */
 
 .tbl-wrap {
-    overflow-x: auto
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    max-width: 100%;
 }
 
 table {
@@ -1533,6 +1559,25 @@ tr:hover td {
     background: #fff;
     color: var(--navy);
     box-shadow: 0 2px 8px rgba(0, 0, 0, .1)
+}
+
+/* Stream toggle row inside panels */
+.stream-toggle-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0 4px
+}
+.stream-toggle-row::-webkit-scrollbar { display: none }
+
+@media screen and (max-width: 640px) {
+    .panel-body {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch
+    }
 }
 
 

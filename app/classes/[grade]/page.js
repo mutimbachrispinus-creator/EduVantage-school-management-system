@@ -67,8 +67,15 @@ export default function ClassPage() {
           <button className="btn btn-ghost btn-sm" onClick={() => router.push('/learners')}>
             ← All Learners
           </button>
+          <button
+            className="btn btn-ghost btn-sm no-print"
+            title="Print Class List for this stream/grade"
+            onClick={() => router.push(`/templates?grade=${encodeURIComponent(grade)}&stream=${encodeURIComponent(streamF && streamF !== 'Default' ? streamF : '')}&tab=class`)}
+          >
+            📋 Class List
+          </button>
           <button className="btn btn-primary btn-sm no-print" onClick={() => router.push(`/grades/report-card/bulk?grade=${encodeURIComponent(grade)}&stream=${encodeURIComponent(streamF === 'Default' ? '' : streamF)}`)}>
-            🖨️ Stream Report Cards
+            🖨️ Report Cards
           </button>
           <button className="btn btn-ghost btn-sm no-print" onClick={() => {
             document.body.classList.add('print-landscape');
@@ -82,16 +89,37 @@ export default function ClassPage() {
 
       {/* Stream filter */}
       {allStreams.length > 1 && (
-        <div className="tabs" style={{ marginBottom:16 }}>
+        <div className="stream-toggle-row" style={{ marginBottom: 16 }}>
           <button className={`tab-btn${!streamF?' on':''}`} onClick={() => setStreamF('')}>
-            All ({learners.length})
+            🏫 All ({learners.length})
           </button>
           {allStreams.map(s => (
             <button key={s} className={`tab-btn${streamF===s?' on':''}`}
               onClick={() => setStreamF(s)}>
-              {s} ({learners.filter(l=>(l.stream||'Default')===s).length})
+              🌊 {s} ({learners.filter(l=>(l.stream||'Default')===s).length})
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Per-stream breakdown (shown only when no filter is active and grade has streams) */}
+      {allStreams.length > 1 && !streamF && (
+        <div className="sg" style={{ gridTemplateColumns: `repeat(${allStreams.length}, 1fr)`, marginBottom: 18 }}>
+          {allStreams.map(s => {
+            const grp = learners.filter(l => (l.stream || 'Default') === s);
+            const girls = grp.filter(l => l.sex === 'Female').length;
+            const boys  = grp.filter(l => l.sex === 'Male').length;
+            return (
+              <div key={s} className="stat-card" style={{ textAlign: 'center', cursor: 'pointer' }}
+                onClick={() => router.push(`/templates?grade=${encodeURIComponent(grade)}&stream=${encodeURIComponent(s)}&tab=class`)}>
+                <div style={{ fontSize: 20, marginBottom: 2 }}>🌊</div>
+                <div className="sc-n" style={{ fontSize: 22 }}>{grp.length}</div>
+                <div className="sc-l">Stream {s}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{girls}F / {boys}M</div>
+                <div style={{ fontSize: 10, marginTop: 6, color: '#0369A1', fontWeight: 700 }}>📋 Print List</div>
+              </div>
+            );
+          })}
         </div>
       )}
 

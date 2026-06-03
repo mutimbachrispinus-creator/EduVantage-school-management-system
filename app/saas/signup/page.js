@@ -14,7 +14,7 @@ const CURRICULA = [
 ];
 
 const COUNTIES = ['Nairobi','Mombasa','Kisumu','Nakuru','Eldoret','Thika','Machakos','Nyeri','Meru','Kakamega','Kisii','Garissa','Malindi','Kitale','Bungoma','Other'];
-const SCHOOL_TYPES = ['Primary','Secondary','Mixed Day','Boarding','Special Needs','College','Montessori','Kindergarten'];
+const SCHOOL_TYPES = ['Primary','Junior Secondary School (JSS)','Senior Secondary School','Primary & JSS (1-9)','JSS & Senior (7-12)','Mixed Day','Boarding','Special Needs','College','Montessori','Kindergarten','ECDE / Pre-School'];
 const STEPS = ['School Info','Admin Setup','Curriculum & Plan','Confirm'];
 
 export default function SignupPage() {

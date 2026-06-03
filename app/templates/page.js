@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { getAllGrades, getCurriculum, gInfo, getDefaultSubjects, maxPts, calcLearnerReportData, getMark, isJSSGrade, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled, buildMeritList, getLabels, getProfessionalRemarks } from '@/lib/cbe';
 import { useSchoolProfile } from '@/lib/school-profile';
@@ -23,6 +23,7 @@ const LOGO = "";
 
 export default function TemplatesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState(null);
   const [tab, setTab] = useState('merit');
   const { profile: ctxProfile } = useProfile() || {};
@@ -43,15 +44,35 @@ export default function TemplatesPage() {
   const [weights, setWeights] = useState(null);
   const [terms, setTerms] = useState([]);
   const [grade, setGrade] = useState('');
+  const [stream, setStream] = useState('');   // '' = all streams (whole grade)
   const [term, setTerm] = useState('T1');
   const [assess, setAssess] = useState('et1');
   const [selLearner, setSelLearner] = useState('');
   const [regType, setRegType] = useState('monthly');
   const [gradingMode, setGradingMode] = useState('per-level');
 
+  // One-time: read deep-link query params (?grade=...&stream=...&tab=...)
+  useEffect(() => {
+    const qGrade  = searchParams?.get('grade');
+    const qStream = searchParams?.get('stream');
+    const qTab    = searchParams?.get('tab');
+    if (qGrade)  setGrade(qGrade);
+    if (qStream) setStream(qStream);
+    if (qTab)    setTab(qTab);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-init grade to first available (only if not already set by query param)
   useEffect(() => {
     if (!grade && ALL_GRADES.length > 0) setGrade(ALL_GRADES[0]);
   }, [ALL_GRADES, grade]);
+
+  // Reset stream/learner when grade changes (but not on first load from query param)
+  const prevGrade = useState(grade)[0];
+  useEffect(() => {
+    // Only reset if grade actually changed after initial render
+    setSelLearner('');
+  }, [grade]);
 
   useEffect(() => {
     async function load() {
@@ -86,12 +107,23 @@ export default function TemplatesPage() {
     load();
   }, [router]);
 
+  // Streams that exist for the currently selected grade
+  const availableStreams = useMemo(() => {
+    const raw = (learners || [])
+      .filter(l => l.grade === grade)
+      .map(l => (l.stream || '').trim())
+      .filter(Boolean);
+    return [...new Set(raw)].sort();
+  }, [learners, grade]);
+
   const filteredLearners = useMemo(() => {
     let list = (learners || []).filter(l => l.grade === grade);
+    if (stream) list = list.filter(l => (l.stream || '').trim() === stream);
     if (selLearner) list = list.filter(l => l.adm === selLearner);
     return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [learners, grade, selLearner]);
+  }, [learners, grade, stream, selLearner]);
 
+  // Full grade learner list (for rank comparison in report cards & learner selector)
   const allGradeLearners = useMemo(() =>
     (learners || []).filter(l => l.grade === grade).sort((a,b) => (a.name || '').localeCompare(b.name || '')),
   [learners, grade]);
@@ -162,11 +194,15 @@ export default function TemplatesPage() {
       <div className="page-hdr no-print">
         <div>
           <h2>📄 Report Templates</h2>
-          <p>Printable assets — {grade || 'Select'} · Term {term.replace('T','')}</p>
+          <p>
+            Printable assets — {grade || 'Select'}
+            {stream && <span style={{ fontWeight: 700, color: '#0369A1' }}> · Stream {stream}</span>}
+            {' '}· Term {term.replace('T','')}
+          </p>
         </div>
         <div className="page-hdr-acts">
           <button className="btn btn-ghost btn-sm" onClick={printLearner}>🖨️ Print {LABELS.learner}</button>
-          <button className="btn btn-primary btn-sm" onClick={printGrade}>🖨️ Print Whole {LABELS.grade}</button>
+          <button className="btn btn-primary btn-sm" onClick={printGrade}>🖨️ Print {stream ? `Stream ${stream}` : `Whole ${LABELS.grade}`}</button>
         </div>
       </div>
 
@@ -184,10 +220,23 @@ export default function TemplatesPage() {
         <div className="panel-body" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>{LABELS.grade}</label>
-            <select value={grade} onChange={e => { setGrade(e.target.value); setSelLearner(''); }}>
+            <select value={grade} onChange={e => setGrade(e.target.value)}>
               {ALL_GRADES.map(g => <option key={g}>{g}</option>)}
             </select>
           </div>
+          {/* Stream selector — only shown for multi-stream grades */}
+          {availableStreams.length > 1 && (
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>🌊 Stream</label>
+              <select value={stream} onChange={e => { setStream(e.target.value); setSelLearner(''); }}>
+                <option value="">— All Streams ({allGradeLearners.length}) —</option>
+                {availableStreams.map(s => {
+                  const cnt = allGradeLearners.filter(l => (l.stream || '').trim() === s).length;
+                  return <option key={s} value={s}>{s} ({cnt})</option>;
+                })}
+              </select>
+            </div>
+          )}
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Term</label>
             <select value={term} onChange={e => setTerm(e.target.value)}>
@@ -209,8 +258,8 @@ export default function TemplatesPage() {
           <div className="field" style={{ marginBottom: 0 }}>
             <label>{LABELS.learner}</label>
             <select value={selLearner} onChange={e => setSelLearner(e.target.value)}>
-              <option value="">— ALL ({allGradeLearners.length}) —</option>
-              {allGradeLearners.map(l => <option key={l.adm} value={l.adm}>{l.name} ({l.adm})</option>)}
+              <option value="">— {stream ? `Stream ${stream}` : 'ALL'} ({filteredLearners.length}) —</option>
+              {filteredLearners.map(l => <option key={l.adm} value={l.adm}>{l.name} ({l.adm})</option>)}
             </select>
           </div>
           {tab === 'register' && (
@@ -226,7 +275,7 @@ export default function TemplatesPage() {
           )}
           <div style={{ display: 'flex', gap: 8, paddingBottom: 2 }}>
             <button className="btn btn-ghost btn-sm" onClick={printLearner}>🖨️ By Learner</button>
-            <button className="btn btn-gold btn-sm" onClick={printGrade}>🖨️ By Grade</button>
+            <button className="btn btn-gold btn-sm" onClick={printGrade}>🖨️ {stream ? `Stream ${stream}` : `By ${LABELS.grade}`}</button>
           </div>
         </div>
       </div>
@@ -251,16 +300,16 @@ export default function TemplatesPage() {
         `}</style>
         
         <div id="pct-merit" className={`print-content ${tab === 'merit' ? 'print-me' : ''}`} style={{ display: tab === 'merit' ? 'block' : 'none' }}>
-          <MeritListTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} />
+          <MeritListTemplate learners={filteredLearners} allGradeLearners={allGradeLearners} subjects={subjects} marks={marks} grade={grade} stream={stream} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} />
         </div>
         <div id="pct-report" className={`print-content ${tab === 'report' ? 'print-me' : ''}`} style={{ display: tab === 'report' ? 'block' : 'none' }}>
-          <ReportCardTemplate learners={filteredLearners} subjects={subjects} marks={marks} grade={grade} term={term} gradCfg={gradCfg} profile={profile} att={att} weights={weights} terms={terms} mode={gradingMode} />
+          <ReportCardTemplate learners={filteredLearners} allGradeLearners={allGradeLearners} subjects={subjects} marks={marks} grade={grade} stream={stream} term={term} gradCfg={gradCfg} profile={profile} att={att} weights={weights} terms={terms} mode={gradingMode} />
         </div>
         <div id="pct-class" className={`print-content ${tab === 'class' ? 'print-me' : ''}`} style={{ display: tab === 'class' ? 'block' : 'none' }}>
-          <ClassListTemplate learners={filteredLearners} grade={grade} profile={profile} />
+          <ClassListTemplate learners={filteredLearners} grade={grade} stream={stream} profile={profile} />
         </div>
         <div id="pct-balance" className={`print-content ${tab === 'balance' ? 'print-me' : ''}`} style={{ display: tab === 'balance' ? 'block' : 'none' }}>
-          <FeeBalanceListTemplate learners={filteredLearners} fees={fees} grade={grade} feeCfg={feeCfg} profile={profile} />
+          <FeeBalanceListTemplate learners={filteredLearners} fees={fees} grade={grade} stream={stream} feeCfg={feeCfg} profile={profile} />
         </div>
         <div id="pct-receipt" className={`print-content ${tab === 'receipt' ? 'print-me' : ''}`} style={{ display: tab === 'receipt' ? 'block' : 'none' }}>
           <ReceiptTemplate learners={filteredLearners} fees={fees} grade={grade} selLearner={selLearner} feeCfg={feeCfg} profile={profile} />
@@ -272,7 +321,7 @@ export default function TemplatesPage() {
           <StaffIDCardTemplate staff={staff} profile={profile} />
         </div>
         <div id="pct-register" className={`print-content ${tab === 'register' ? 'print-me' : ''}`} style={{ display: tab === 'register' ? 'block' : 'none' }}>
-          <AttendanceRegisterTemplate learners={filteredLearners} grade={grade} type={regType} att={att} profile={profile} />
+          <AttendanceRegisterTemplate learners={filteredLearners} grade={grade} stream={stream} type={regType} att={att} profile={profile} />
         </div>
         <div id="pct-exam_summary" className={`print-content ${tab === 'exam_summary' ? 'print-me' : ''}`} style={{ display: tab === 'exam_summary' ? 'block' : 'none' }}>
           <ExamSummaryTemplate learners={learners} subjects={subjCfg} marks={marks} gradCfg={gradCfg} profile={profile} mainTerm={term} mainAssess={assess} mode={gradingMode} />
@@ -284,10 +333,10 @@ export default function TemplatesPage() {
 
 /* ── SUB-COMPONENTS ── */
 
-function PrintHeader({ title, grade, profile = {} }) {
+function PrintHeader({ title, grade, stream = '', profile = {} }) {
   const curr = profile.curriculum || 'CBC';
   const themeColor = curr === 'BRITISH' ? '#1E3A8A' : curr === 'CAMBRIDGE' ? '#065F46' : curr === 'IB' ? '#4338CA' : '#8B1A1A';
-  
+  const scope = stream ? `${grade} · STREAM ${stream}` : grade;
   return (
     <div style={{ textAlign: 'center', borderBottom: `3.5px double ${themeColor}`, paddingBottom: 12, marginBottom: 16, position: 'relative' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, fontSize: 8, color: '#94A3B8', fontWeight: 800 }}>{curr} SYSTEM</div>
@@ -295,16 +344,15 @@ function PrintHeader({ title, grade, profile = {} }) {
       <h1 style={{ fontFamily: 'Sora', fontSize: 20, fontWeight: 900, color: themeColor, margin: 0, letterSpacing: -0.5 }}>{profile.name?.toUpperCase() || 'EDU-VANTAGE SCHOOL'}</h1>
       <p style={{ fontSize: 11, margin: '2px 0', color: '#475569', fontWeight: 600 }}>{profile.address || '—'} | {profile.phone || '—'}</p>
       <p style={{ fontSize: 10, fontStyle: 'italic', color: '#64748B', fontWeight: 700, margin: '2px 0' }}>"{profile.motto || 'Excellence in Every Step'}"</p>
-      <div style={{ background: themeColor, color: '#fff', display: 'inline-block', padding: '5px 24px', borderRadius: 25, marginTop: 8, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
-        {title} — {grade}
+      <div style={{ background: themeColor, color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 24px', borderRadius: 25, marginTop: 8, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
+        {title} — {scope}
       </div>
     </div>
   );
 }
 
-function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gradCfg, profile, mode = 'per-level' }) {
+function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, grade, stream = '', term, assess, gradCfg, profile, mode = 'per-level' }) {
   const curr = profile?.curriculum || 'CBC';
-  // Ensure we pass the dynamic subjects list to buildMeritList
   const filteredSubjects = (subjects || []).filter(s => s && s.trim());
   const data = buildMeritList(learners, marks, grade, term, assess, gradCfg, curr, filteredSubjects, mode);
 
@@ -364,11 +412,10 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
 
   return (
     <div>
-      <PrintHeader title="MERIT LIST" grade={grade} profile={profile} />
-      
-
+      <PrintHeader title="MERIT LIST" grade={grade} stream={stream} profile={profile} />
       <div style={{ textAlign: 'center', marginBottom: 15, fontSize: 13, fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: 1 }}>
         TERM {term.replace('T','')} — {assess === 'op1' ? 'OPENER' : assess === 'mt1' ? 'MID-TERM' : 'END-TERM'} EXAMINATION
+        {stream && <span style={{ marginLeft: 8, color: '#0369A1' }}>· STREAM {stream}</span>}
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9.5 }}>
         <thead>
@@ -584,11 +631,11 @@ function MeritListTemplate({ learners, subjects, marks, grade, term, assess, gra
   );
 }
 
-function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, profile, att, weights, terms, mode = 'per-level' }) {
+function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, grade, stream = '', term, gradCfg, profile, att, weights, terms, mode = 'per-level' }) {
   const curr = profile?.curriculum || 'CBC';
   const themeColor = curr === 'BRITISH' ? '#1E3A8A' : curr === 'CAMBRIDGE' ? '#065F46' : curr === 'IB' ? '#4338CA' : '#8B1A1A';
-  
-  // Pre-calculate ranks
+
+  // Pre-calculate stream ranks (within the passed learners list)
   const rankedData = learners.map(l => {
     const report = calcLearnerReportData(marks, l.adm, grade, term, subjects, gradCfg, curr, weights, mode);
     return { ...l, report };
@@ -602,8 +649,23 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
     const val = shouldRankByMarks(grade, curr) ? rankedData[i].report.totalAvgScore : rankedData[i].report.totalAvgPts;
     const prevVal = i > 0 ? (shouldRankByMarks(grade, curr) ? rankedData[i - 1].report.totalAvgScore : rankedData[i - 1].report.totalAvgPts) : null;
     if (i > 0 && val < prevVal) r = i + 1;
-    rankedData[i].rank = r;
+    rankedData[i].streamRank = r;
+    rankedData[i].streamTotal = learners.length;
   }
+
+  // Grade rank (across entire grade, not just this stream)
+  const gradeSource = allGradeLearners.length > 0 ? allGradeLearners : learners;
+  const allRanked = gradeSource.map(l => {
+    const report = calcLearnerReportData(marks, l.adm, grade, term, subjects, gradCfg, curr, weights, mode);
+    return { adm: l.adm, val: shouldRankByMarks(grade, curr) ? report.totalAvgScore : report.totalAvgPts };
+  }).sort((a, b) => b.val - a.val);
+  const gradeRankMap = {};
+  let gr = 1;
+  for (let i = 0; i < allRanked.length; i++) {
+    if (i > 0 && allRanked[i].val < allRanked[i - 1].val) gr = i + 1;
+    gradeRankMap[allRanked[i].adm] = gr;
+  }
+  const gradeTotal = gradeSource.length;
 
   return (
     <div className="rc-batch">
@@ -636,16 +698,34 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
               <div style={{ fontSize: 9, color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Learner Identification</div>
               <div style={{ fontSize: 14, fontWeight: 900, color: themeColor }}>{l.name}</div>
               <div style={{ fontSize: 11, color: '#475569' }}>ADM: <strong>{l.adm}</strong> · Sex: <strong>{l.sex || '—'}</strong></div>
+              {l.stream && <div style={{ fontSize: 10, color: '#0369A1', fontWeight: 700, marginTop: 2 }}>🌊 Stream: {l.stream}</div>}
             </div>
             <div style={{ padding: 12, borderRight: `1px solid ${themeColor}33`, background: `${themeColor}05` }}>
               <div style={{ fontSize: 9, color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Academic Period</div>
               <div style={{ fontSize: 14, fontWeight: 800 }}>Term {term.replace('T','')} — {new Date().getFullYear()}</div>
               <div style={{ fontSize: 11, color: '#475569' }}>Curriculum: <strong>{curr}</strong></div>
             </div>
-            <div style={{ padding: 12, textAlign: 'center', background: themeColor, color: '#fff' }}>
-              <div style={{ fontSize: 9, opacity: 0.8, fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Institutional Rank</div>
-              <div style={{ fontSize: 24, fontWeight: 900 }}>{l.rank}</div>
-              <div style={{ fontSize: 10, opacity: 0.9 }}>Out of {learners.length} students</div>
+            <div style={{ padding: 10, textAlign: 'center', background: themeColor, color: '#fff' }}>
+              {stream && allGradeLearners.length > learners.length ? (
+                // Multi-stream: show both stream rank and grade rank
+                <>
+                  <div style={{ fontSize: 8, opacity: 0.8, fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>Stream Rank</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1 }}>{l.streamRank}</div>
+                  <div style={{ fontSize: 9, opacity: 0.85 }}>of {l.streamTotal} in stream</div>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: 6, paddingTop: 5 }}>
+                    <div style={{ fontSize: 8, opacity: 0.8, fontWeight: 800, textTransform: 'uppercase' }}>Grade Rank</div>
+                    <div style={{ fontSize: 15, fontWeight: 900 }}>{gradeRankMap[l.adm] || '—'}</div>
+                    <div style={{ fontSize: 8, opacity: 0.85 }}>of {gradeTotal} overall</div>
+                  </div>
+                </>
+              ) : (
+                // Single-stream or no stream context
+                <>
+                  <div style={{ fontSize: 9, opacity: 0.8, fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Class Rank</div>
+                  <div style={{ fontSize: 24, fontWeight: 900 }}>{l.streamRank}</div>
+                  <div style={{ fontSize: 10, opacity: 0.9 }}>Out of {l.streamTotal} students</div>
+                </>
+              )}
             </div>
           </div>
 
@@ -846,32 +926,90 @@ function ReportCardTemplate({ learners, subjects, marks, grade, term, gradCfg, p
   );
 }
 
-function ClassListTemplate({ learners, grade, profile }) {
+function ClassListTemplate({ learners, grade, stream = '', profile }) {
+  // Group by stream when printing whole grade
+  const streamGroups = stream
+    ? null
+    : [...new Set(learners.map(l => (l.stream || '').trim()).filter(Boolean))].sort();
+  const hasStreams = streamGroups && streamGroups.length > 1;
+
+  const Row = ({ l, idx }) => (
+    <tr key={l.adm} style={{ background: idx % 2 === 0 ? '#fff' : '#f9fafb' }}>
+      <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center', fontSize: 10 }}>{idx + 1}</td>
+      <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center', fontWeight: 700 }}>{l.adm}</td>
+      <td style={{ border: '1px solid #ddd', padding: 4, fontWeight: 600 }}>{l.name}</td>
+      {hasStreams && !stream && <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center', fontWeight: 700, color: '#0369A1', fontSize: 10 }}>{l.stream || '—'}</td>}
+      <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center' }}>{l.sex === 'F' ? 'Female' : (l.sex === 'M' ? 'Male' : l.sex)}</td>
+      <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center', fontSize: 10 }}>{l.phone}</td>
+    </tr>
+  );
+
+  const TableHead = () => (
+    <thead>
+      <tr style={{ background: '#f0f4ff' }}>
+        <th style={{ border: '1px solid #ddd', padding: 5 }}>#</th>
+        <th style={{ border: '1px solid #ddd', padding: 5 }}>ADM</th>
+        <th style={{ border: '1px solid #ddd', padding: 5, textAlign: 'left' }}>Full Name</th>
+        {hasStreams && !stream && <th style={{ border: '1px solid #ddd', padding: 5 }}>Stream</th>}
+        <th style={{ border: '1px solid #ddd', padding: 5 }}>Gender</th>
+        <th style={{ border: '1px solid #ddd', padding: 5 }}>Parent Phone</th>
+      </tr>
+    </thead>
+  );
+
   return (
     <div>
-      <PrintHeader title="OFFICIAL CLASS LIST" grade={grade} profile={profile} />
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
-        <thead>
-          <tr style={{ background: '#f4f4f4' }}>
-            <th style={{ border: '1px solid #ddd', padding: 5 }}>#</th>
-            <th style={{ border: '1px solid #ddd', padding: 5 }}>ADM</th>
-            <th style={{ border: '1px solid #ddd', padding: 5, textAlign: 'left' }}>Full Name</th>
-            <th style={{ border: '1px solid #ddd', padding: 5 }}>Gender</th>
-            <th style={{ border: '1px solid #ddd', padding: 5 }}>Parent Phone</th>
-          </tr>
-        </thead>
-        <tbody>
-          {learners.map((l, i) => (
-            <tr key={l.adm}>
-              <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center' }}>{i + 1}</td>
-              <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center' }}>{l.adm}</td>
-              <td style={{ border: '1px solid #ddd', padding: 4 }}>{l.name}</td>
-              <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center' }}>{l.sex === 'F' ? 'Female' : (l.sex === 'M' ? 'Male' : l.sex)}</td>
-              <td style={{ border: '1px solid #ddd', padding: 4, textAlign: 'center' }}>{l.phone}</td>
+      <PrintHeader title="OFFICIAL CLASS LIST" grade={grade} stream={stream} profile={profile} />
+      {hasStreams ? (
+        // Whole-grade view: group by stream
+        <>
+          {streamGroups.map(s => {
+            const grp = learners.filter(l => (l.stream || '').trim() === s);
+            const girls = grp.filter(l => l.sex === 'F').length;
+            const boys  = grp.filter(l => l.sex === 'M').length;
+            return (
+              <div key={s} style={{ marginBottom: 24, pageBreakInside: 'avoid' }}>
+                <div style={{ background: '#1E3A5F', color: '#fff', padding: '6px 12px', borderRadius: '6px 6px 0 0', fontWeight: 800, fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>🌊 STREAM {s}</span>
+                  <span style={{ fontSize: 10, opacity: 0.9 }}>{grp.length} learners · {girls}F / {boys}M</span>
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
+                  <TableHead />
+                  <tbody>{grp.map((l, i) => <Row key={l.adm} l={l} idx={i} />)}</tbody>
+                  <tfoot>
+                    <tr style={{ background: '#f0fdf4', fontWeight: 800 }}>
+                      <td colSpan={6} style={{ border: '1px solid #ddd', padding: 6, fontSize: 10 }}>
+                        Stream {s}: {grp.length} total · {girls} Female · {boys} Male
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            );
+          })}
+          {/* Grade summary footer */}
+          <div style={{ marginTop: 12, padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 11, fontWeight: 700 }}>
+            Grade Total: {learners.length} learners
+            {streamGroups.map(s => {
+              const cnt = learners.filter(l => (l.stream || '').trim() === s).length;
+              return <span key={s} style={{ marginLeft: 16, color: '#0369A1' }}>Stream {s}: {cnt}</span>;
+            })}
+          </div>
+        </>
+      ) : (
+        // Single-stream or filtered stream view
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
+          <TableHead />
+          <tbody>{learners.map((l, i) => <Row key={l.adm} l={l} idx={i} />)}</tbody>
+          <tfoot>
+            <tr style={{ background: '#f0fdf4', fontWeight: 800 }}>
+              <td colSpan={5} style={{ border: '1px solid #ddd', padding: 6, fontSize: 10 }}>
+                Total: {learners.length} · Female: {learners.filter(l => l.sex === 'F').length} · Male: {learners.filter(l => l.sex === 'M').length}
+              </td>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </tfoot>
+        </table>
+      )}
     </div>
   );
 }

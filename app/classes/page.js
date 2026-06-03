@@ -145,13 +145,22 @@ export default function ClassesPage() {
                                 )}
                               </div>
 
-                              <button 
-                                className="btn btn-primary btn-sm" 
-                                style={{ width: '100%', marginTop: 4 }}
-                                onClick={() => router.push(`/classes/${grade}?stream=${s}`)}
-                              >
-                                View Stream
-                              </button>
+                              <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                                <button 
+                                  className="btn btn-primary btn-sm" 
+                                  style={{ flex: 1 }}
+                                  onClick={() => router.push(`/classes/${grade}?stream=${s}`)}
+                                >
+                                  View Stream
+                                </button>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  title="Print Class List"
+                                  onClick={() => router.push(`/templates?grade=${encodeURIComponent(grade)}&stream=${encodeURIComponent(s)}&tab=class`)}
+                                >
+                                  🖨️
+                                </button>
+                              </div>
                             </div>
                           );
                         })}

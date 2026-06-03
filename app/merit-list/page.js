@@ -43,6 +43,7 @@ export default function MeritListPage() {
   const [loading,  setLoading]  = useState(true);
   const [mounted,  setMounted]  = useState(false);
   const [modal,    setModal]    = useState(null);
+  const [stream,   setStream]   = useState('');  // '' = all streams (whole grade)
 
   useEffect(() => setMounted(true), []);
 
@@ -68,6 +69,9 @@ export default function MeritListPage() {
       setGrade(ALL_GRADES[0]);
     }
   }, [ALL_GRADES, grade, setGrade]);
+
+  // Reset stream when grade changes
+  useEffect(() => { setStream(''); }, [grade]);
 
   const load = useCallback(async () => {
     try {
@@ -110,9 +114,26 @@ export default function MeritListPage() {
   }, [subjCfg, grade, curr]);
 
 
+  /* ── Streams available for the selected grade ── */
+  const availableStreams = useMemo(() => {
+    const raw = learners
+      .filter(l => l.grade === grade)
+      .map(l => (l.stream || '').trim())
+      .filter(Boolean);
+    return [...new Set(raw)].sort();
+  }, [learners, grade]);
+
   /* ── Build ranked list (memoized so dropdowns trigger re-render) ── */
-  const ranked = useMemo(() => loading ? [] : buildMeritList(learners, marks, grade, term, assess, gradCfg, school?.curriculum || 'CBC', subjects), [learners, marks, grade, term, assess, gradCfg, loading, school?.curriculum, subjects]);
-  
+  const rankedSource = useMemo(() => {
+    if (loading) return [];
+    // Pre-filter by stream when one is selected
+    const base = stream
+      ? learners.filter(l => l.grade === grade && (l.stream || '').trim() === stream)
+      : learners.filter(l => l.grade === grade);
+    return buildMeritList(base, marks, grade, term, assess, gradCfg, school?.curriculum || 'CBC', subjects);
+  }, [learners, marks, grade, stream, term, assess, gradCfg, loading, school?.curriculum, subjects]);
+
+  const ranked = rankedSource;
   const max = curr.maxPts ? curr.maxPts(grade, subjects) : 0;
 
   const colStats = useMemo(() => {
@@ -198,7 +219,11 @@ export default function MeritListPage() {
       <div className="page-hdr">
         <div>
           <h2>🏆 {school.name} {LABELS.assessment} Rankings</h2>
-          <p>{curr.name} {LABELS.grades} — ranked by total points · <span style={{fontWeight:700,color:'#8B1A1A'}}>{ASSESSMENTS.find(a=>a.key===assess)?.label}</span></p>
+          <p>
+            {curr.name} {LABELS.grades} — ranked by total points ·{' '}
+            <span style={{fontWeight:700,color:'#8B1A1A'}}>{ASSESSMENTS.find(a=>a.key===assess)?.label}</span>
+            {stream && <span style={{fontWeight:700,color:'#0369A1',marginLeft:8}}>· Stream {stream}</span>}
+          </p>
         </div>
         <div className="page-hdr-acts">
           <button className="btn btn-ghost btn-sm no-print" onClick={() => {
@@ -282,8 +307,32 @@ export default function MeritListPage() {
           <div style={{ marginLeft: 'auto', alignSelf: 'flex-end', fontSize: 12,
             color: 'var(--muted)', paddingBottom: 2 }}>
             {ranked.length} learner{ranked.length !== 1 ? 's' : ''} ranked
+            {stream && <span style={{ marginLeft: 8, fontWeight: 700, color: '#0369A1' }}>· Stream {stream}</span>}
           </div>
         </div>
+        {/* ── Stream toggle tabs (only for multi-stream grades) ── */}
+        {availableStreams.length > 1 && (
+          <div className="stream-toggle-row" style={{ borderTop: '1px solid var(--border)', padding: '10px 16px 8px' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', marginRight: 4, textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>View by:</span>
+            <button
+              className={`tab-btn${!stream ? ' on' : ''}`}
+              style={{ padding: '4px 14px', fontSize: 12 }}
+              onClick={() => setStream('')}>
+              🏫 All ({learners.filter(l => l.grade === grade).length})
+            </button>
+            {availableStreams.map(s => {
+              const cnt = learners.filter(l => l.grade === grade && (l.stream || '').trim() === s).length;
+              return (
+                <button key={s}
+                  className={`tab-btn${stream === s ? ' on' : ''}`}
+                  style={{ padding: '4px 14px', fontSize: 12 }}
+                  onClick={() => setStream(s)}>
+                  🌊 {s} ({cnt})
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {ranked.length === 0 ? (
@@ -333,7 +382,10 @@ export default function MeritListPage() {
           {/* ── Full ranked table ── */}
           <div className="panel">
             <div className="panel-hdr">
-              <h3>📋 Full Rankings — {grade} · Term {term.replace('T','')} · {ASSESSMENTS.find(a=>a.key===assess)?.label}</h3>
+              <h3>
+                📋 Full Rankings — {grade}{stream ? ` · Stream ${stream}` : ' · All Streams'}
+                {' '}· Term {term.replace('T','')} · {ASSESSMENTS.find(a=>a.key===assess)?.label}
+              </h3>
             </div>
             <div className="tbl-wrap">
               <table>
