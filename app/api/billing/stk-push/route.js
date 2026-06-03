@@ -90,10 +90,11 @@ export async function POST(request) {
 
     // 2. Initiate STK Push
     // We use the tenantId as the AccountReference so we can identify the school in the callback.
+    const accountRefStr = String(tid || 'platform-master').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
     const res = await stkPush({
       phone,
       amount: payableAmount,
-      accountRef: tid.slice(0, 12), // Max 12 chars for Safaricom
+      accountRef: accountRefStr, // Max 12 chars for Safaricom
       description: `EDU ${String(planId).toUpperCase()}`,
       consumerKey: gw.consumerKey,
       consumerSecret: gw.consumerSecret,
@@ -138,6 +139,6 @@ export async function POST(request) {
     return NextResponse.json({
       error: `Could not initiate M-Pesa billing prompt: ${e.message}`,
       darajaTestUrl: DARAJA_SANDBOX_URL
-    }, { status: 502 });
+    }, { status: 400 });
   }
 }
