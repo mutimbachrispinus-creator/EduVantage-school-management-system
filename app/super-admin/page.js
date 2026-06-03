@@ -552,7 +552,10 @@ export default function SuperAdminPage() {
                   </div>
                   <div className="field">
                     <label>Passkey</label>
-                    <input type="password" value={globalConfig.mpesaGateway?.passkey || ''} onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalC                 <div className="field">
+                    <input type="password" value={globalConfig.mpesaGateway?.passkey || ''} onChange={e => setGlobalConfig({...globalConfig, mpesaGateway: {...globalConfig.mpesaGateway, passkey: e.target.value}})} />
+                  </div>
+                </div>
+                <div className="field">
                   <label>Callback URL</label>
                   <input
                     value={globalConfig.mpesaGateway?.callbackUrl || ''}
@@ -577,7 +580,7 @@ export default function SuperAdminPage() {
                     <option value="production">Production (Live)</option>
                   </select>
                 </div>
-                <button className="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save M-Pesa Config</button>lassName="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save M-Pesa Config</button>
+                <button className="btn btn-primary" onClick={saveGlobalConfig} disabled={saving}>Save M-Pesa Config</button>
               </div>
             </div>
             <div className="panel" style={{ border: '2px solid #E11D48' }}>
