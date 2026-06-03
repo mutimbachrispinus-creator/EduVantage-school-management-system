@@ -51,7 +51,14 @@ export async function POST(request) {
 
     const darajaEnv = normalizeDarajaEnv(gw.env);
     const shortcode = String(gw.shortcode || '').trim();
-    const passkey = String(gw.passkey || '').trim();
+    let passkey = String(gw.passkey || '').trim();
+
+    const DARAJA_SANDBOX_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
+
+    // Override passkey to official sandbox passkey when using sandbox test shortcode
+    if (darajaEnv === 'sandbox' && shortcode === DARAJA_SANDBOX_SHORTCODE) {
+      passkey = DARAJA_SANDBOX_PASSKEY;
+    }
 
     if (!gw.consumerKey || !gw.consumerSecret || !shortcode || !passkey) {
       return NextResponse.json({

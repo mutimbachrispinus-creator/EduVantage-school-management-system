@@ -55,6 +55,7 @@ export async function POST(req) {
 
     const DARAJA_SANDBOX_SHORTCODE = '174379';
     const DARAJA_SANDBOX_URL = 'https://sandbox.safaricom.co.ke';
+    const DARAJA_SANDBOX_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
 
     if (darajaEnv === 'sandbox' && shortcode && shortcode !== DARAJA_SANDBOX_SHORTCODE) {
       return NextResponse.json({
@@ -72,19 +73,35 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    // Use school-level Daraja credentials if configured, else fall back to env vars
+    // Load global configuration as fallback
+    const gConf = (await kvGet('paav_global_config', {}, 'platform-master')) || {};
+    const gw = gConf.mpesaGateway || {};
+
+    const finalConsumerKey = paybill.consumerKey || gw.consumerKey || process.env.MPESA_CONSUMER_KEY || process.env.DARAJA_CONSUMER_KEY || '';
+    const finalConsumerSecret = paybill.consumerSecret || gw.consumerSecret || process.env.MPESA_CONSUMER_SECRET || process.env.DARAJA_CONSUMER_SECRET || '';
+    const finalShortcode = paybill.shortcode || gw.shortcode || process.env.MPESA_SHORTCODE || process.env.DARAJA_SHORTCODE || '';
+    let finalPasskey = paybill.passkey || gw.passkey || process.env.MPESA_PASSKEY || process.env.DARAJA_PASSKEY || '';
+    const finalCallbackUrl = paybill.callbackUrl || gw.callbackUrl || gw.callbackURL || process.env.MPESA_CALLBACK_URL || process.env.DARAJA_CALLBACK_URL || '';
+
+    // Override to correct Safaricom sandbox passkey if using the test shortcode
+    if (darajaEnv === 'sandbox' && finalShortcode === DARAJA_SANDBOX_SHORTCODE) {
+      finalPasskey = DARAJA_SANDBOX_PASSKEY;
+    }
+
+    // Use resolved Daraja credentials
     const stkResult = await stkPush({
       phone,
       amount: finalAmount,
       accountRef: safaricomRef,
       description: String(description || 'SchoolFees').replace(/[^a-zA-Z0-9]/g, '').slice(0, 13), // Sandbox strictness
-      shortcode:      paybill.shortcode     || undefined,
-      passkey:        paybill.passkey       || undefined,
-      consumerKey:    paybill.consumerKey   || undefined,
-      consumerSecret: paybill.consumerSecret|| undefined,
-      callbackUrl:    paybill.callbackUrl   || undefined,
+      shortcode:      finalShortcode     || undefined,
+      passkey:        finalPasskey       || undefined,
+      consumerKey:    finalConsumerKey   || undefined,
+      consumerSecret: finalConsumerSecret|| undefined,
+      callbackUrl:    finalCallbackUrl   || undefined,
       env:            darajaEnv,
     });
+
 
     if (stkResult.success && stkResult.checkoutRequestId) {
       // Record rate limit key only on success
