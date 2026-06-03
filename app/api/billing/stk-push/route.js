@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { kvGet, query } from '@/lib/db';
+import { kvGet, kvSet, query } from '@/lib/db';
 import { stkPush } from '@/lib/mpesa';
 
 const DARAJA_SANDBOX_URL = 'https://sandbox.safaricom.co.ke';
@@ -26,7 +26,6 @@ export async function POST(request) {
     }
 
     // 0. Rate Limiting (1 request per minute per phone)
-    const { kvSet } = await import('@/lib/db');
     const rlKey = `stk_rl_${phone}`;
     const lastReq = await kvGet(rlKey, null, 'platform-master');
     if (lastReq && (Date.now() - lastReq.time < 60000)) {

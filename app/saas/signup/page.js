@@ -133,8 +133,10 @@ export default function SignupPage() {
     try{
       const r=await fetch('/api/mpesa/stk',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({phone:form.phone,amount:totalDue,accountRef:`REG-${form.adminUsername||'SCHOOL'}`,description:`Activation: ${form.schoolName}`})});
-      const d=await r.json();
-      if(!d.success) throw new Error(d.error);
+      let d;
+      try { d = await r.json(); } catch(e) { throw new Error(`Invalid server response (HTTP ${r.status})`); }
+      if (!r.ok && d.error) throw new Error(d.error);
+      if(!d.success) throw new Error(d.error || 'Failed to initiate STK Push');
       setError(''); setSuccess('M-Pesa prompt sent! Enter your PIN, then click Confirm Registration below.');
     }catch(e){setError('M-Pesa: '+e.message);}
     finally{setPayLoading(false);}
@@ -145,8 +147,10 @@ export default function SignupPage() {
     try{
       const r=await fetch('/api/pesapal?action=initiate',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({registrationPayload:{...form},amount:totalDue})});
-      const d=await r.json();
-      if(!d.ok) throw new Error(d.error);
+      let d;
+      try { d = await r.json(); } catch(e) { throw new Error(`Invalid server response (HTTP ${r.status})`); }
+      if (!r.ok && d.error) throw new Error(d.error);
+      if(!d.ok) throw new Error(d.error || 'Failed to initiate card payment');
       window.location.href=d.redirect_url;
     }catch(e){setError('Card payment: '+e.message);}
     finally{setPayLoading(false);}

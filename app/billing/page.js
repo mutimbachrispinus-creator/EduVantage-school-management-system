@@ -22,8 +22,9 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId })
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, planId: plan.id, amount: total })
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); } catch (e) { throw new Error(`Invalid server response (HTTP ${res.status})`); }
+      if (!res.ok && data.error) throw new Error(data.error);
       if (data.success) {
         setMsg({ type: 'success', text: 'Prompt sent! Enter your M-Pesa PIN on your phone. Your portal activates automatically once paid.' });
       } else {
@@ -42,8 +43,9 @@ function PaymentPromptModal({ plan, payments, studentCount, onClose, tenantId })
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscriptionPayload: { tenantId, planId: plan.id, method }, amount: total })
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); } catch (e) { throw new Error(`Invalid server response (HTTP ${res.status})`); }
+      if (!res.ok && data.error) throw new Error(data.error);
       if (data.ok) { window.location.href = data.redirect_url; }
       else { setMsg({ type: 'error', text: data.error || `Failed to initiate ${method}` }); }
     } catch (e) { setMsg({ type: 'error', text: e.message }); }
@@ -164,8 +166,8 @@ export default function BillingPage() {
     async function load() {
       try {
         const res = await fetch('/api/billing');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+        let json;
+        try { json = await res.json(); } catch (e) { throw new Error(`Invalid server response (HTTP ${res.status})`); }
         setData(json);
       } catch (e) {
         console.error(e);
@@ -181,8 +183,8 @@ export default function BillingPage() {
       const check = async () => {
         try {
           const res = await fetch(`/api/pesapal?action=status&OrderTrackingId=${orderId}`);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const data = await res.json();
+          let data;
+          try { data = await res.json(); } catch (e) { throw new Error(`Invalid server response (HTTP ${res.status})`); }
           if (data.ok && data.status === 'Completed') {
             setPayStatus('✅ Payment Confirmed! Activating...');
             setTimeout(() => { window.location.reload(); }, 2000);
