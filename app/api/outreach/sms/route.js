@@ -10,6 +10,25 @@ function cleanSmsLabel(value) {
   return String(value || '').replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim();
 }
 
+/**
+ * Returns a human-readable, curriculum-aware grade label.
+ * e.g. 'GRADE 7' → 'Grade 7 (Junior Secondary)'
+ *      'MYP 2'   → 'MYP 2 (Middle School)'
+ *      'YEAR 8'  → 'Year 8 (Key Stage 3)'
+ */
+function gradeDisplayLabel(grade, curr) {
+  if (!grade) return grade;
+  // Title-case the raw grade key
+  const pretty = grade
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+  // Find which CATEGORY this grade belongs to
+  const cat = (curr.CATEGORIES || []).find(c => c.grades?.includes(grade));
+  if (cat) return `${pretty} (${cat.title})`;
+  return pretty;
+}
+
 export async function POST(request) {
   try {
     const session = await getSession();
@@ -58,11 +77,15 @@ export async function POST(request) {
     const rawAssessLabel = assess === 'term' ? `Whole ${labels.assessment} Average` : (assessMap[assess] || assess.toUpperCase());
     const assessLabel = cleanSmsLabel(rawAssessLabel);
 
+    // Curriculum-aware grade display label (e.g. "Grade 7 (Junior Secondary)")
+    const gradeLabel = gradeDisplayLabel(grade, curr);
+
     // Calculate totals for each learner
     const messages = [];
     for (const learner of gradeLearners) {
       let totalPts = 0;
-      let overallLevel = '—';
+      // Store full info object so we get both the code and the description
+      let overallInfo = { lv: '—', desc: '' };
       let enteredCount = 0;
       const mPts = maxPts(grade, subjects, curriculum);
 
@@ -78,7 +101,7 @@ export async function POST(request) {
           curr.DEFAULT_WEIGHTS
         );
         totalPts = report.totalAvgPts;
-        overallLevel = report.overallInfo?.lv || '—';
+        overallInfo = report.overallInfo || { lv: '—', desc: '' };
         enteredCount = subjects.filter(subj => assessments.some(a => {
           const score = getMark(marks, term, grade, subj, a.key, learner.adm);
           return score !== null && score !== undefined;
@@ -95,21 +118,31 @@ export async function POST(request) {
           }
         });
         const avgPct = enteredCount > 0 ? Math.round(scoreSum / enteredCount) : 0;
-        overallLevel = enteredCount > 0 ? gInfo(avgPct, grade, gradCfg, curriculum, null)?.lv : '—';
+        overallInfo = enteredCount > 0
+          ? (gInfo(avgPct, grade, gradCfg, curriculum, null) || { lv: '—', desc: '' })
+          : { lv: '—', desc: '' };
       }
+
+      // Build a clean, human-readable level string:
+      // e.g. "ME1 — Meeting Expectation (Good)"  or  "EE" for primary
+      const lvCode = overallInfo.lv || '—';
+      const lvDesc = overallInfo.desc ? cleanSmsLabel(overallInfo.desc) : '';
+      const generalLevelText = lvCode === '—'
+        ? '—'
+        : lvDesc ? `${lvCode} — ${lvDesc}` : lvCode;
 
       if (learner.phone) {
         const defaultMsg = `${termName} ${assessLabel} results are now available. Log in to view the full report card.`;
         const msg = [
           adminMessage || defaultMsg,
           `Learner: ${learner.name}`,
-          `${labels.grade}: ${grade}`,
+          `${labels.grade}: ${gradeLabel}`,
           `${labels.assessment}: ${assessLabel}`,
           `Term: ${termName}`,
           `Curriculum: ${curr.name || curriculum}`,
-          `Performance: ${totalPts}/${mPts} points`,
+          `Performance: ${totalPts}/${mPts} pts`,
           `${labels.subjects}: ${enteredCount}/${subjects.length} recorded`,
-          `General Level: ${overallLevel}`
+          `General Level: ${generalLevelText}`
         ].join('\n');
         messages.push({ to: learner.phone, message: `[${schoolName}]\n${msg}` });
       }
