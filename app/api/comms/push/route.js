@@ -149,21 +149,20 @@ export async function POST(request) {
 
         // Resolve full curriculum term label (e.g. "Term 1" or "Semester 2")
         let termLabel = TERMS.find(t => t.id === term)?.name || `Term ${term.replace(/^T/, '')}`;
+        let examLabel = 'Report';
         if (assess) {
           const assessObj = curr.ASSESSMENT_TYPES?.find(a => a.key === assess);
-          if (assessObj) {
-            termLabel = `${termLabel} ${assessObj.label.replace(/\p{Emoji}/gu, '').trim()}`;
-          } else {
-            termLabel = `${termLabel} ${assess.toUpperCase()}`;
-          }
+          examLabel = assessObj ? assessObj.label.replace(/\p{Emoji}/gu, '').trim() : assess.toUpperCase();
         }
+
+        const generalLevel = pct >= 80 ? 'Excellent' : pct >= 60 ? 'Good' : pct >= 40 ? 'Fair' : 'Needs Intervention';
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portal.eduvantage.app';
         const portalLink = `${baseUrl}/parent-home?adm=${learner.adm}`;
 
         if (channel === 'sms' || channel === 'both') {
           if (parentPhone) {
-            const message = getResultNotificationMessage(learner.name, termLabel, totalPts, maxPts, schoolName);
+            const message = getResultNotificationMessage(learner.name, termLabel, examLabel, totalPts, maxPts, generalLevel, schoolName);
             const res = await sendSMS({ to: parentPhone, message, schoolName, ...creds });
             results.push({ adm: learner.adm, channel: 'sms', ...res });
             if (res.success) {

@@ -42,34 +42,87 @@ export default function FeesPage() {
   const [paybillAccounts, setPaybillAccounts] = useState([]);
   const [alert, setAlert] = useState({ msg: '', type: '' });
 
+  const [summary, setSummary] = useState({ totalExp: 0, totalPaid: 0, totalBalance: 0, totalAccumulated: 0 });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFetchingPage, setIsFetchingPage] = useState(false);
+
+  const [paylogPage, setPaylogPage] = useState(1);
+  const [paylogTotalPages, setPaylogTotalPages] = useState(1);
+  const [isFetchingPaylog, setIsFetchingPaylog] = useState(false);
+
+  const fetchLearners = useCallback(async (p = 1) => {
+    setIsFetchingPage(true);
+    try {
+      const qs = new URLSearchParams({ page: p, limit: 20, search: query, grade: gradeF });
+      const res = await fetch(`/api/learners?${qs}`);
+      const data = await res.json();
+      if (data.data) {
+        setLearners(data.data);
+        setPage(data.page);
+        setTotalPages(data.totalPages);
+      }
+    } catch (e) { console.error(e); }
+    setIsFetchingPage(false);
+  }, [query, gradeF]);
+
+  const fetchPaylog = useCallback(async (p = 1) => {
+    setIsFetchingPaylog(true);
+    try {
+      const qs = new URLSearchParams({ page: p, limit: 10 });
+      const res = await fetch(`/api/paylog?${qs}`);
+      const data = await res.json();
+      if (data.data) {
+        setPaylog(data.data);
+        setPaylogPage(data.page);
+        setPaylogTotalPages(data.totalPages);
+      }
+    } catch (e) { console.error(e); }
+    setIsFetchingPaylog(false);
+  }, []);
+
+  const fetchSummary = useCallback(async () => {
+    try {
+      const res = await fetch('/api/fees/summary');
+      const data = await res.json();
+      if (!data.error) setSummary(data);
+    } catch (e) { console.error(e); }
+  }, []);
+
   const load = useCallback(async () => {
     try {
       const [u, db] = await Promise.all([
         getCachedUser(),
-        getCachedDBMulti([
-          'paav6_learners',
-          'paav6_feecfg',
-          'paav6_paylog',
-          'paav_paybill_accounts'
-        ])
+        getCachedDBMulti(['paav6_feecfg', 'paav_paybill_accounts'])
       ]);
 
       if (!u) { router.push('/login'); return; }
       if (u.role === 'parent') { router.push('/dashboard?tab=fees'); return; }
       if (!['admin','staff'].includes(u.role)) { router.push('/dashboard'); return; }
       setUser(u);
-      setLearners(db.paav6_learners || []);
-      setFeeCfg(  db.paav6_feecfg   || {});
-      setPaylog(  db.paav6_paylog   || []);
+      setFeeCfg(db.paav6_feecfg || {});
       setPaybillAccounts(db.paav_paybill_accounts || []);
+      
+      fetchSummary();
     } catch (e) {
       console.error('Fees load error:', e);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, fetchSummary]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (user) fetchLearners(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query, gradeF, user, fetchLearners]);
+
+  useEffect(() => {
+    if (user) fetchPaylog(1);
+  }, [user, fetchPaylog]);
 
   async function approvePayment(p) {
     if (!confirm(`Approve payment of KES ${p.amount} for ${p.name}?`)) return;
@@ -135,23 +188,14 @@ export default function FeesPage() {
     return getAnnualFee(l.grade) + (l.arrears || 0) - getPaidTotal(l);
   }
 
-  const filtered = learners.filter(l => {
-    const q   = query.toLowerCase();
-    const hit = !q || l.name?.toLowerCase().includes(q) || l.adm?.includes(q);
-    return hit && (!gradeF || l.grade === gradeF);
-  });
+  // Filtered is now paginated results directly from server
+  const filtered = learners;
 
-  const totalAccumulated = learners.reduce((s, l) => s + (l.arrears || 0), 0);
-  const totalExp = learners.reduce((s, l) => {
-    if (termF) return s + ((feeCfg[l.grade] || {})[termF.toLowerCase()] || 0);
-    return s + getAnnualFee(l.grade);
-  }, 0);
-  const totalPaid = learners.reduce((s, l) => {
-    if (termF) return s + (l[termF.toLowerCase()] || 0);
-    return s + getPaidTotal(l);
-  }, 0);
-  const totalBalance = totalExp + (termF ? 0 : totalAccumulated) - totalPaid;
-  const cleared = learners.filter(l => getBal(l, termF) <= 0).length;
+  const totalAccumulated = summary.totalAccumulated || 0;
+  const totalExp = summary.totalExp || 0;
+  const totalPaid = summary.totalPaid || 0;
+  const totalBalance = summary.totalBalance || 0;
+  const clearedText = summary.cleared === -1 ? 'Calculated Offline' : `${summary.cleared} / ${learners.length}`;
 
   if (loading || !user) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading collections hub…</div>;
 
@@ -189,7 +233,7 @@ export default function FeesPage() {
           <StatCard icon={<Clock size={20} />} label={termF ? `${termF} Expected` : "Total Expected"} value={fmtK(totalExp)} color="#2563eb" bg="rgba(37, 99, 235, 0.1)" />
           <StatCard icon={<CheckCircle size={20} />} label="Total Collected" value={fmtK(totalPaid)} color="#059669" bg="rgba(5, 150, 105, 0.1)" />
           <StatCard icon={<AlertCircle size={20} />} label="Outstanding" value={fmtK(totalBalance)} color="#dc2626" bg="rgba(220, 38, 38, 0.1)" />
-          <StatCard icon={<CheckCircle size={20} />} label="Cleared" value={`${cleared} / ${learners.length}`} color="#7c3aed" bg="rgba(124, 58, 237, 0.1)" />
+          <StatCard icon={<CheckCircle size={20} />} label="Cleared" value={clearedText} color="#7c3aed" bg="rgba(124, 58, 237, 0.1)" />
         </div>
 
         {user?.role === 'admin' && pendingCount > 0 && (
@@ -324,6 +368,17 @@ export default function FeesPage() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px 20px', gap: 15, borderTop: '1.5px solid var(--border)' }}>
+              <button className="btn btn-ghost btn-sm" disabled={page === 1 || isFetchingPage} onClick={() => fetchLearners(page - 1)}>
+                ◀ Previous
+              </button>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)' }}>Page {page} of {totalPages}</span>
+              <button className="btn btn-ghost btn-sm" disabled={page === totalPages || isFetchingPage} onClick={() => fetchLearners(page + 1)}>
+                Next ▶
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="panel premium-shadow no-print" style={{ border: 'none' }}>
@@ -362,6 +417,17 @@ export default function FeesPage() {
               </tbody>
             </table>
           </div>
+          {paylogTotalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px 20px', gap: 15, borderTop: '1.5px solid var(--border)' }}>
+              <button className="btn btn-ghost btn-sm" disabled={paylogPage === 1 || isFetchingPaylog} onClick={() => fetchPaylog(paylogPage - 1)}>
+                ◀ Newer
+              </button>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)' }}>Page {paylogPage} of {paylogTotalPages}</span>
+              <button className="btn btn-ghost btn-sm" disabled={paylogPage === paylogTotalPages || isFetchingPaylog} onClick={() => fetchPaylog(paylogPage + 1)}>
+                Older ▶
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -42,7 +42,7 @@ export default function LearnersPage() {
       setError(null);
       const [u, db] = await Promise.all([
         getCachedUser(), // 5s timeout
-        getCachedDBMulti(['paav6_learners', 'paav6_feecfg', 'paav7_streams'])
+        getCachedDBMulti(['paav6_feecfg', 'paav7_streams'])
       ]);
 
       if (!u) { router.push('/login'); return; }
@@ -51,7 +51,6 @@ export default function LearnersPage() {
       }
       setUser(u);
 
-      setLearners(db.paav6_learners || []);
       setFeeCfg(  db.paav6_feecfg   || {});
       setStreams( db.paav7_streams  || []);
     } catch (e) {
@@ -62,7 +61,38 @@ export default function LearnersPage() {
     }
   }, [router]);
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [isFetchingPage, setIsFetchingPage] = useState(false);
+
+  const fetchLearners = useCallback(async (p = 1) => {
+    setIsFetchingPage(true);
+    try {
+      const qs = new URLSearchParams({ page: p, limit: 50, search: query, grade: gradeF });
+      const res = await fetch(`/api/learners?${qs.toString()}`);
+      const data = await res.json();
+      if (data.data) {
+        setLearners(data.data);
+        setPage(data.page);
+        setTotalPages(data.totalPages);
+        setTotalRecords(data.total);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsFetchingPage(false);
+    }
+  }, [query, gradeF]);
+
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (user) fetchLearners(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query, gradeF, user, fetchLearners]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -74,14 +104,8 @@ export default function LearnersPage() {
 
   const [selAdms, setSelAdms] = useState([]);
 
-  /* ── Filtered list ── */
-  const filtered = learners.filter(l => {
-    const q = query.toLowerCase();
-    const nameMatch = l.name?.toLowerCase().includes(q);
-    const admMatch  = l.adm?.includes(q);
-    const gradeMatch = !gradeF || l.grade === gradeF;
-    return (!q || nameMatch || admMatch) && gradeMatch;
-  });
+  // With server-side pagination, 'filtered' is just 'learners'
+  const filtered = learners;
 
   const toggleSelect = adm => {
     setSelAdms(prev => prev.includes(adm) ? prev.filter(a => a !== adm) : [...prev, adm]);
@@ -159,8 +183,9 @@ export default function LearnersPage() {
                 <option value="ALUMNI">🎓 ALUMNI / GRADUATED</option>
               </select>
             </div>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-              {filtered.length} learner{filtered.length !== 1 ? 's' : ''}
+            <span style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {isFetchingPage && <span className="spinner" style={{ width: 14, height: 14, borderTopColor: 'var(--navy)' }} />}
+              {totalRecords} learner{totalRecords !== 1 ? 's' : ''}
             </span>
           </div>
 
@@ -260,6 +285,18 @@ export default function LearnersPage() {
               </tbody>
             </table>
           </div>
+          
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px 20px', gap: 15, borderTop: '1.5px solid var(--border)' }}>
+              <button className="btn btn-ghost btn-sm" disabled={page === 1 || isFetchingPage} onClick={() => fetchLearners(page - 1)}>
+                ◀ Previous
+              </button>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)' }}>Page {page} of {totalPages}</span>
+              <button className="btn btn-ghost btn-sm" disabled={page === totalPages || isFetchingPage} onClick={() => fetchLearners(page + 1)}>
+                Next ▶
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
