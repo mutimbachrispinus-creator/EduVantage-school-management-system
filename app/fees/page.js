@@ -56,6 +56,11 @@ export default function FeesPage() {
     try {
       const qs = new URLSearchParams({ page: p, limit: 20, search: query, grade: gradeF });
       const res = await fetch(`/api/learners?${qs}`);
+      if (!res.ok) {
+        console.warn('[fetchLearners] Non-OK response:', res.status);
+        setIsFetchingPage(false);
+        return;
+      }
       const data = await res.json();
       if (data.data) {
         setLearners(data.data);
@@ -71,6 +76,11 @@ export default function FeesPage() {
     try {
       const qs = new URLSearchParams({ page: p, limit: 10 });
       const res = await fetch(`/api/paylog?${qs}`);
+      if (!res.ok) {
+        console.warn('[fetchPaylog] Non-OK response:', res.status);
+        setIsFetchingPaylog(false);
+        return;
+      }
       const data = await res.json();
       if (data.data) {
         setPaylog(data.data);
@@ -84,6 +94,10 @@ export default function FeesPage() {
   const fetchSummary = useCallback(async () => {
     try {
       const res = await fetch('/api/fees/summary');
+      if (!res.ok) {
+        console.warn('[fetchSummary] Non-OK response:', res.status);
+        return;
+      }
       const data = await res.json();
       if (!data.error) setSummary(data);
     } catch (e) { console.error(e); }

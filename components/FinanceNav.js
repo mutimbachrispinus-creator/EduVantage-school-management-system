@@ -19,17 +19,26 @@ export default function FinanceNav() {
   const path = usePathname() || '';
 
   return (
-    <div style={{
+    <div className="finance-nav-scroll" style={{
       display: 'flex',
       gap: 6,
-      flexWrap: 'wrap',
+      flexWrap: 'nowrap',
       background: 'linear-gradient(135deg,#0F172A,#1E293B)',
       borderRadius: 14,
       padding: '10px 14px',
       marginBottom: 20,
       alignItems: 'center',
       maxWidth: '100%',
+      overflowX: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      msOverflowStyle: 'none',
+      scrollbarWidth: 'none'
     }}>
+      <style>{`
+        .finance-nav-scroll::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginRight: 6, whiteSpace: 'nowrap' }}>
         💼 Finance
       </span>
