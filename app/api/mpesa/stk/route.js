@@ -31,16 +31,18 @@ export async function POST(req) {
     const paybills = (await kvGet('paav_paybill_accounts', [], tenantId)) || [];
     const paybill = paybills.find(p => String(p.id) === String(paybillId)) || paybills[0] || {};
 
+    const intKeys = (await kvGet('paav_integration_keys', {}, tenantId)) || {};
     // If paybill has no Daraja credentials, fall back to the school's integration keys
     // (set via Settings → Integrations tab). Does NOT override existing paybill-level creds.
     if (!paybill.consumerKey) {
-      const intKeys = (await kvGet('paav_integration_keys', {}, tenantId)) || {};
       if (!paybill.consumerKey)    paybill.consumerKey    = intKeys.mpesaConsumerKey;
       if (!paybill.consumerSecret) paybill.consumerSecret = intKeys.mpesaConsumerSecret;
       if (!paybill.shortcode)      paybill.shortcode      = intKeys.mpesaShortcode;
       if (!paybill.passkey)        paybill.passkey        = intKeys.mpesaPasskey;
       if (!paybill.env)            paybill.env            = intKeys.mpesaEnv;
     }
+    // Always map the custom callback url if provided (like a RequestBin)
+    if (!paybill.callbackUrl) paybill.callbackUrl = intKeys.mpesaCallbackUrl;
 
     // Parse clean adm from accountRef which may be "2025/001:T1" or just "2025/001"
     const adm = String(accountRef).split(':')[0].trim();
@@ -75,11 +77,12 @@ export async function POST(req) {
       phone,
       amount: finalAmount,
       accountRef: safaricomRef,
-      description: description || 'School Fees',
+      description: String(description || 'SchoolFees').replace(/[^a-zA-Z0-9]/g, '').slice(0, 13), // Sandbox strictness
       shortcode:      paybill.shortcode     || undefined,
       passkey:        paybill.passkey       || undefined,
       consumerKey:    paybill.consumerKey   || undefined,
       consumerSecret: paybill.consumerSecret|| undefined,
+      callbackUrl:    paybill.callbackUrl   || undefined,
       env:            darajaEnv,
     });
 
