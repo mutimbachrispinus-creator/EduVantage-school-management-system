@@ -50,13 +50,20 @@
     --r3: 6px;
 }
 
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+}
+
 body {
     font-family: var(--font-inter), sans-serif;
     background: var(--bg);
     color: var(--text);
     font-size: 14px;
     line-height: 1.6;
-    min-height: 100vh
+    min-height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch
 }
 
 input,
@@ -1120,7 +1127,10 @@ button {
     margin: 0 auto;
     width: 100%;
     min-height: 100vh;
-    height: 100%;
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     box-sizing: border-box
 }
 
@@ -1128,7 +1138,9 @@ button {
     display: none;
     padding: 24px 22px 100px;
     flex: 1;
-    height: 100%;
+    /* height: auto — never lock to parent height or content clips on mobile */
+    height: auto;
+    min-height: 0;
     box-sizing: border-box;
     content-visibility: auto;
     contain-intrinsic-size: 1px 1000px;
@@ -1140,10 +1152,10 @@ button {
 .page.on {
     display: block;
     animation: pageEnter 0.2s ease-out forwards;
-    overflow-y: auto;
-    overflow-x: auto;
+    overflow-y: visible;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    touch-action: auto;
+    touch-action: pan-y;
     pointer-events: auto;
     min-height: 100%;
     height: auto;
@@ -1163,18 +1175,27 @@ button {
 
 @media screen and (max-width:600px) {
     #main {
-        padding: 14px 10px 94px;
+        padding: 14px 10px 100px;
         overflow-y: auto;
+        overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
-        touch-action: auto;
-        pointer-events: auto
+        touch-action: pan-y;
+        pointer-events: auto;
+        height: auto;
+        min-height: 100svh
     }
     .page {
-        padding: 16px 14px 80px;
+        padding: 16px 12px 90px;
         animation: none;
-        overflow-y: auto;
+        height: auto;
+        overflow-y: visible;
+        overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
-        touch-action: auto
+        touch-action: pan-y
+    }
+    .page.on {
+        overflow-y: visible;
+        touch-action: pan-y
     }
 }
 
