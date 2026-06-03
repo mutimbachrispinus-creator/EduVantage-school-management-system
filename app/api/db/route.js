@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 /**
  * app/api/db/route.js — Turso KV proxy
  *

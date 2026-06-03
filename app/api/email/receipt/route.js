@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { sendEmail, getReceiptTemplate } from '@/lib/mail';
 import { kvGet } from '@/lib/db';

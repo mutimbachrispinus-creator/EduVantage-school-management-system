@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getClient, execute, query } from '@/lib/db';
 import { sendSMS } from '@/lib/sms-client';

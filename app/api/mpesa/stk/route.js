@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { stkPush } from '@/lib/mpesa';
 import { getSession } from '@/lib/auth';

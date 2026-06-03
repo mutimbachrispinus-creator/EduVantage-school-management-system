@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { kvGet, query } from '@/lib/db';
