@@ -22,16 +22,12 @@ export default function FinanceNav() {
     <div style={{
       display: 'flex',
       gap: 6,
-      flexWrap: 'nowrap',
+      flexWrap: 'wrap',
       background: 'linear-gradient(135deg,#0F172A,#1E293B)',
       borderRadius: 14,
       padding: '10px 14px',
       marginBottom: 20,
       alignItems: 'center',
-      overflowX: 'auto',
-      overflowY: 'hidden',
-      WebkitOverflowScrolling: 'touch',
-      scrollbarGutter: 'stable',
       maxWidth: '100%',
     }}>
       <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginRight: 6, whiteSpace: 'nowrap' }}>

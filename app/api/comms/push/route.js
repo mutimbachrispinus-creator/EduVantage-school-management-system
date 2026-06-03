@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { kvGet, kvSet } from '@/lib/db';
-import { sendSMS, sendFeeReminderSMS, getResultNotificationMessage, getAbsenteeismAlertMessage } from '@/lib/sms-client';
+import { sendSMS, sendFeeReminderSMS, getResultNotificationMessage, getAbsenteeismAlertMessage, getAtRiskAlertMessage } from '@/lib/sms-client';
 import { sendEmail, getReportCardTemplate, getFeeBalanceTemplate } from '@/lib/mail';
 import { calcLearnerReportData, getDefaultSubjects, calcLearnerPoints } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
@@ -216,6 +216,29 @@ export async function POST(request) {
                 to: parentPhone,
                 message,
                 type: 'attendance_alert',
+                status: 'submitted',
+                sentBy: session.username || session.name,
+                atMessageId: recipient?.messageId || res.messageIds?.[0] || '',
+                providerStatus: recipient?.status || '',
+                providerStatusCode: recipient?.statusCode || null
+              });
+            }
+          }
+        }
+      }
+
+      if (type === 'risk') {
+        if (channel === 'sms' || channel === 'both') {
+          if (parentPhone) {
+            const message = getAtRiskAlertMessage(learner.name, schoolName);
+            const res = await sendSMS({ to: parentPhone, message, schoolName, ...creds });
+            results.push({ adm: learner.adm, channel: 'sms', ...res });
+            if (res.success) {
+              const recipient = res.recipients?.[0] || null;
+              logEntries.push({
+                to: parentPhone,
+                message,
+                type: 'risk_alert',
                 status: 'submitted',
                 sentBy: session.username || session.name,
                 atMessageId: recipient?.messageId || res.messageIds?.[0] || '',

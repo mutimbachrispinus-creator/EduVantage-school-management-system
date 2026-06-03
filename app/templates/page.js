@@ -31,6 +31,7 @@ export default function TemplatesPage() {
   const LABELS = getLabels(profile?.curriculum || 'CBC');
   const ALL_GRADES = (getAllGrades(profile?.curriculum || 'CBC') || []).filter(g => isLevelEnabled(g, profile, profile?.curriculum));
 
+  const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [learners, setLearners] = useState([]);
   const [marks, setMarks] = useState({});
@@ -60,9 +61,10 @@ export default function TemplatesPage() {
         setUser(auth);
         
         const db = await getCachedDBMulti([
-          'paav6_learners', 'paav6_marks', 'paav8_subj', 'paav6_fees', 'paav8_grad', 'paav6_paylog', 'paav6_feecfg', 'paav_student_attendance', 'paav_school_profile', 'paav_grading_weights', 'paav_terms', 'paav_grading_mode'
+          'paav6_learners', 'paav6_marks', 'paav8_subj', 'paav6_fees', 'paav8_grad', 'paav6_paylog', 'paav6_feecfg', 'paav_student_attendance', 'paav_school_profile', 'paav_grading_weights', 'paav_terms', 'paav_grading_mode', 'paav6_staff'
         ]);
         
+        setStaff(db.paav6_staff || []);
         setLearners(db.paav6_learners || []);
         setMarks(db.paav6_marks || {});
         setSubjCfg(db.paav8_subj || {});
@@ -147,6 +149,7 @@ export default function TemplatesPage() {
     { id: 'balance', label: '📊 Fee Balance List' },
     { id: 'receipt', label: `💰 Fee Receipts` },
     { id: 'id',      label: `🆔 ${LABELS.grades} IDs` },
+    { id: 'staff_id',label: `👔 Staff IDs`, adminOnly: true },
     { id: 'register',label: `📅 ${LABELS.attendance} Register` },
     { id: 'exam_summary', label: '📈 Exam Summary (School)', adminOnly: true },
   ].filter(t => !t.adminOnly || ['admin', 'super-admin'].includes(user?.role));
@@ -263,7 +266,10 @@ export default function TemplatesPage() {
           <ReceiptTemplate learners={filteredLearners} fees={fees} grade={grade} selLearner={selLearner} feeCfg={feeCfg} profile={profile} />
         </div>
         <div id="pct-id" className={`print-content ${tab === 'id' ? 'print-me' : ''}`} style={{ display: tab === 'id' ? 'block' : 'none' }}>
-          <IDCardTemplate learners={filteredLearners} grade={grade} profile={profile} />
+          <IDCardTemplate learners={filteredLearners} grade={grade} profile={profile} allGrades={ALL_GRADES} />
+        </div>
+        <div id="pct-staff_id" className={`print-content ${tab === 'staff_id' ? 'print-me' : ''}`} style={{ display: tab === 'staff_id' ? 'block' : 'none' }}>
+          <StaffIDCardTemplate staff={staff} profile={profile} />
         </div>
         <div id="pct-register" className={`print-content ${tab === 'register' ? 'print-me' : ''}`} style={{ display: tab === 'register' ? 'block' : 'none' }}>
           <AttendanceRegisterTemplate learners={filteredLearners} grade={grade} type={regType} att={att} profile={profile} />
@@ -1119,7 +1125,25 @@ function ReceiptTemplate({ learners, fees, grade, selLearner, feeCfg, profile })
   );
 }
 
-function IDCardTemplate({ learners, grade, profile }) {
+function getJoinYear(adm) {
+  if (!adm) return new Date().getFullYear();
+  const match = String(adm).match(/^(20\d{2})/);
+  if (match) return match[1];
+  return new Date().getFullYear(); // fallback
+}
+
+function getExpectedGradYear(currentGrade, allGrades) {
+  const currentYear = new Date().getFullYear();
+  if (!allGrades || !Array.isArray(allGrades) || allGrades.length === 0) return currentYear;
+  
+  const currentIndex = allGrades.indexOf(currentGrade);
+  if (currentIndex === -1) return currentYear;
+
+  const yearsLeft = allGrades.length - 1 - currentIndex;
+  return currentYear + yearsLeft;
+}
+
+function IDCardTemplate({ learners, grade, profile, allGrades }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
       {learners.map(l => (
@@ -1152,7 +1176,74 @@ function IDCardTemplate({ learners, grade, profile }) {
                 <div><span style={{ color: '#64748B' }}>GRADE:</span> <strong style={{ color: '#1E293B' }}>{l.grade}</strong></div>
                 <div><span style={{ color: '#64748B' }}>SEX:</span> <strong style={{ color: '#1E293B' }}>{l.sex || '—'}</strong></div>
                 <div><span style={{ color: '#64748B' }}>D.O.B:</span> <strong style={{ color: '#1E293B' }}>{l.dob || '—'}</strong></div>
+                <div><span style={{ color: '#64748B' }}>JOINED:</span> <strong style={{ color: '#1E293B' }}>{getJoinYear(l.adm)}</strong></div>
+                <div><span style={{ color: '#64748B' }}>EXPECTED GRAD:</span> <strong style={{ color: '#1E293B' }}>{getExpectedGradYear(l.grade, allGrades)}</strong></div>
                 <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#64748B' }}>CONTACT:</span> <strong style={{ color: '#1E293B' }}>{l.phone || '—'}</strong></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ background: '#F8FAFC', borderTop: '1px solid #E2E8F0', padding: '4px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 7, color: '#94A3B8', fontStyle: 'italic' }}>{profile.motto || 'Education Portal'}</div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 8, fontWeight: 700, color: '#1E293B' }}>{profile.name || 'PORTAL'}</div>
+              <div style={{ fontSize: 6, color: '#94A3B8' }}>{profile.address || 'Kenya'}</div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StaffIDCardTemplate({ staff, profile }) {
+  const STAFF_ROLES = {
+    'admin': 'School Administrator',
+    'admin_finance': 'Finance Manager',
+    'admin_academics': 'Director of Studies',
+    'admin_admissions': 'Admissions Officer',
+    'super_admin': 'System Administrator',
+    'teacher': 'Teacher',
+    'jss_teacher': 'JSS Teacher',
+    'senior_teacher': 'Senior Teacher',
+    'staff': 'Non-Teaching Staff',
+    'parent': 'Parent',
+    'member': 'Member',
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
+      {staff.map(s => (
+        <div key={s.id || s.username} style={{ width: 340, height: 215, border: '1.5px solid #0369A1', borderRadius: 10, overflow: 'hidden', position: 'relative', background: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
+          {/* Header */}
+          <div style={{ background: '#0369A1', color: '#fff', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <img src={profile.logo || "/eduvantage-logo.png"} alt="L" style={{ width: 22, height: 22, borderRadius: '50%', background: 'transparent', padding: 2 }} />
+            <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: 0.5 }}>{profile.name?.toUpperCase() || 'EDUVANTAGE SCHOOL MANAGEMENT SYSTEM'}</div>
+          </div>
+          
+          <div style={{ flex: 1, display: 'flex', padding: 10, gap: 12 }}>
+            {/* Photo Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 75, height: 85, border: '1px solid #ddd', borderRadius: 4, overflow: 'hidden', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {s.avatar ? (
+                  <img src={s.avatar} alt="P" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: 30 }}>👤</span>
+                )}
+              </div>
+              <div style={{ background: '#0369A1', color: '#fff', fontSize: 8, padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>STAFF</div>
+            </div>
+
+            {/* Info Section */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color: '#0369A1', textTransform: 'uppercase', marginBottom: 6, borderBottom: '1px solid #eee' }}>{s.name}</div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px 10px', fontSize: 9 }}>
+                <div><span style={{ color: '#64748B' }}>ROLE:</span> <strong style={{ color: '#1E293B' }}>{STAFF_ROLES[s.role] || (s.role || '').toUpperCase()}</strong></div>
+                <div><span style={{ color: '#64748B' }}>USERNAME:</span> <strong style={{ color: '#1E293B' }}>{s.username || '—'}</strong></div>
+                <div><span style={{ color: '#64748B' }}>CONTACT:</span> <strong style={{ color: '#1E293B' }}>{s.phone || '—'}</strong></div>
+                {s.grade && <div><span style={{ color: '#64748B' }}>CLASS/GRADE:</span> <strong style={{ color: '#1E293B' }}>{s.grade}</strong></div>}
               </div>
             </div>
           </div>

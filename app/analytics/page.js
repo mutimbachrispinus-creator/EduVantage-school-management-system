@@ -1072,8 +1072,7 @@ function OutreachTab({ learners, marks, grade, term, assess, stats, schoolName, 
     },
     {
       id: 'risk',
-      type: 'report', // Use report type for at-risk too, but logic filtered in API if we had it, 
-                     // for now we'll target specific learners
+      type: 'risk',
       title: 'At-Risk Interventions',
       desc: `Send personalized alerts to the ${atRiskLearners.length} parents of learners below 40% average.`,
       icon: <AlertCircle className="text-red-600" />,
