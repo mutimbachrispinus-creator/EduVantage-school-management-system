@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { kvGet, kvSet, execute, query } from '@/lib/db';
 import { getPesapalConfig, getPesapalToken, registerIPN, submitOrder, getTransactionStatus } from '@/lib/pesapal';

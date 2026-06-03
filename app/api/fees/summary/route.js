@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { query, getCachedDBMulti } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
-export const runtime = 'edge';
 
 export async function GET(request) {
   try {

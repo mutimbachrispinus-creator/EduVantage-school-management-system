@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { parseStkCallback } from '@/lib/mpesa';
 import { kvRecordPayment, kvGet, kvSet, query, execute } from '@/lib/db';

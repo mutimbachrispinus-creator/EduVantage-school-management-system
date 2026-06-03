@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 /**
  * POST /api/sms/delivery
  * Africa's Talking Delivery Report Webhook

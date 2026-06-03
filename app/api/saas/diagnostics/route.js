@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { diagnosticScan } from '@/lib/db';
 import { getSession } from '@/lib/auth';

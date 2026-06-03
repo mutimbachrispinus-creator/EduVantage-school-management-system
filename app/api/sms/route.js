@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 /**
  * app/api/sms/route.js — Secure SMS sending endpoint
  *

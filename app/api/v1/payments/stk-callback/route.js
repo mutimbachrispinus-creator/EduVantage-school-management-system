@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 
 import { db } from '@/lib/db/index';
 import { transactions, mpesaLogs, students, pendingReconciliation } from '@/lib/db/schema';

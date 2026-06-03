@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { kvGet } from '@/lib/db';
 
-export const runtime = 'edge';
 
 /**
  * GET /api/saas/lookup-learner?schoolId=xxx&adm=yyy

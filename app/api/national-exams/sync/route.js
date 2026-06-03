@@ -3,7 +3,6 @@ import { getSession } from '@/lib/auth';
 import { kvGet, query } from '@/lib/db';
 import { getCurriculum } from '@/lib/curriculum';
 
-export const runtime = 'edge';
 const ALLOWED_ROLES = ['admin', 'admin_academics', 'super-admin'];
 
 /**

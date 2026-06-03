@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 /**
  * app/api/auth/route.js — Authentication endpoints
  *
