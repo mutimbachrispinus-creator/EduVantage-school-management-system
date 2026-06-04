@@ -49,6 +49,7 @@ export default function SuperAdminPage() {
     plans: [],
     platformPayments: [],
     mpesaGateway: { consumerKey: '', consumerSecret: '', shortcode: '', passkey: '', callbackUrl: '', env: 'sandbox' },
+    resendGateway: { apiKey: '', fromEmail: '', fromName: '' },
     maintenanceMode: false
   });
   const [announcement, setAnnouncement] = useState({ message: '', priority: 'normal', active: false });
@@ -389,7 +390,7 @@ export default function SuperAdminPage() {
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button className="btn btn-sm btn-primary" onClick={() => { localStorage.setItem('paav_impersonate_id', s.id); window.location.href = '/dashboard'; }}>Login</button>
                           <button className="btn btn-sm btn-ghost" onClick={() => { setEditSchool(s); setShowConfig(true); }}>Config</button>
-                          <button className="btn btn-sm btn-ghost" onClick={() => loadPaybills(s)}>M-Pesa</button>
+                          <button className="btn btn-sm btn-ghost" onClick={() => loadPaybills(s)}>💳 Settlement</button>
                           <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s.id, s.name)}>Delete</button>
                         </div>
                       </td>
@@ -518,6 +519,34 @@ export default function SuperAdminPage() {
                   <div className="field"><label>Sender ID</label><input value={globalConfig.smsGateway.senderId} onChange={e => setGlobalConfig({...globalConfig, smsGateway: {...globalConfig.smsGateway, senderId: e.target.value}})} /></div>
                 </div>
                 <button className="btn btn-teal" onClick={saveGlobalConfig} disabled={saving}>Update SMS Gateway</button>
+              </div>
+            </div>
+            <div className="panel">
+              <div className="panel-hdr"><h3>📧 Resend Email Gateway</h3></div>
+              <div className="panel-body">
+                <p style={{ fontSize: 11, color: SLATE, marginBottom: 15 }}>Configure Resend credentials to enable automated email receipts, parent notifications, and platform alerts across all tenant schools.</p>
+                <div className="field">
+                  <label>Resend API Key</label>
+                  <input type="password" name="resend_api_key_random" autoComplete="new-password"
+                    value={globalConfig.resendGateway?.apiKey || ''}
+                    onChange={e => setGlobalConfig({...globalConfig, resendGateway: {...(globalConfig.resendGateway || {}), apiKey: e.target.value}})}
+                    placeholder="re_xxxxxxxxxxxxxxxxxxxx" />
+                </div>
+                <div className="field-row">
+                  <div className="field">
+                    <label>From Email</label>
+                    <input value={globalConfig.resendGateway?.fromEmail || ''}
+                      onChange={e => setGlobalConfig({...globalConfig, resendGateway: {...(globalConfig.resendGateway || {}), fromEmail: e.target.value}})}
+                      placeholder="noreply@yourdomain.com" />
+                  </div>
+                  <div className="field">
+                    <label>From Name</label>
+                    <input value={globalConfig.resendGateway?.fromName || ''}
+                      onChange={e => setGlobalConfig({...globalConfig, resendGateway: {...(globalConfig.resendGateway || {}), fromName: e.target.value}})}
+                      placeholder="EduVantage School Portal" />
+                  </div>
+                </div>
+                <button className="btn btn-teal" onClick={saveGlobalConfig} disabled={saving}>Update Email Gateway</button>
               </div>
             </div>
             <div className="panel">
@@ -936,12 +965,12 @@ export default function SuperAdminPage() {
           <p style={{ fontSize: 12, color: SLATE }}>Configure Paybills for this specific tenant to ensure parents pay directly into the school&apos;s account.</p>
           {paybills.map((p, i) => (
             <div key={p.id} style={{ padding: 10, background: '#FAFBFF', border: '1px solid #E2E8F0', borderRadius: 8, marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}><span style={{fontWeight:800, fontSize:11}}>ACCOUNT #{i+1}</span><button className="btn btn-ghost btn-sm" style={{color:'#EF4444', padding:0}} onClick={() => setPaybills(paybills.filter(x => x.id !== p.id))}>Remove</button></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}><span style={{fontWeight:800, fontSize:11}}>SETTLEMENT ACCOUNT #{i+1}</span><button className="btn btn-ghost btn-sm" style={{color:'#EF4444', padding:0}} onClick={() => setPaybills(paybills.filter(x => x.id !== p.id))}>Remove</button></div>
+              <p style={{ fontSize: 11, color: SLATE, marginBottom: 10 }}>Configure where EduVantage should automatically send collected fees for this school.</p>
               <div className="field-row">
-                <div className="field"><label>Name</label><input value={p.name} onChange={e => setPaybills(paybills.map(x => x.id === p.id ? {...x, name: e.target.value} : x))} placeholder="Tuition Fees" /></div>
-                <div className="field"><label>Shortcode</label><input value={p.shortcode} onChange={e => setPaybills(paybills.map(x => x.id === p.id ? {...x, shortcode: e.target.value} : x))} placeholder="400200" /></div>
+                <div className="field"><label>Label</label><input value={p.name} onChange={e => setPaybills(paybills.map(x => x.id === p.id ? {...x, name: e.target.value} : x))} placeholder="Tuition Fees" /></div>
+                <div className="field"><label>Till / Paybill Number</label><input value={p.shortcode} onChange={e => setPaybills(paybills.map(x => x.id === p.id ? {...x, shortcode: e.target.value} : x))} placeholder="400200" /></div>
               </div>
-              <div className="field"><label>Passkey</label><input value={p.passkey} onChange={e => setPaybills(paybills.map(x => x.id === p.id ? {...x, passkey: e.target.value} : x))} placeholder="Online Passkey..." /></div>
             </div>
           ))}
           <button className="btn btn-ghost btn-sm" style={{width:'100%', border:'1px dashed #E2E8F0'}} onClick={() => setPaybills([...paybills, {id: Date.now(), name:'', shortcode:'', passkey:'', type:'Paybill'}])}>+ Add Account</button>

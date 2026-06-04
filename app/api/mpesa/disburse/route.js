@@ -24,8 +24,13 @@ import { kvGet, kvSet, query, execute } from '@/lib/db';
 export async function POST(request) {
   try {
     const session = await getSession();
-    if (!session || (session.tenantId !== 'platform-master' && session.role !== 'super-admin')) {
-      return NextResponse.json({ error: 'Unauthorised. Super-admin access required.' }, { status: 403 });
+    
+    // Check for Vercel Cron authentication
+    const authHeader = request.headers.get('authorization');
+    const isCron = process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+    if (!isCron && (!session || (session.tenantId !== 'platform-master' && session.role !== 'super-admin'))) {
+      return NextResponse.json({ error: 'Unauthorised. Super-admin access or valid cron secret required.' }, { status: 403 });
     }
 
     const body = await request.json().catch(() => ({}));
@@ -98,15 +103,16 @@ export async function POST(request) {
         });
 
         if (b2bResult.success) {
-          // 6. Mark all items for this tenant as disbursed
+          // 6. Mark all items for this tenant as processing_b2b (final confirmation comes via ResultURL)
           group.items.forEach(item => {
             const idx = updatedQueue.findIndex(q => q.ref === item.ref && q.tenantId === item.tenantId);
             if (idx >= 0) {
               updatedQueue[idx] = {
                 ...updatedQueue[idx],
-                status: 'disbursed',
-                disbursedAt: new Date().toISOString(),
+                status: 'processing_b2b',
+                b2bRequestedAt: new Date().toISOString(),
                 disbursementRef: b2bResult.conversationId,
+                originConvId: b2bResult.originConvId,
                 disbursedTo: destShortcode
               };
             }
@@ -117,30 +123,11 @@ export async function POST(request) {
             school: schoolProfile.name,
             amount: group.total,
             destShortcode,
-            status: 'disbursed',
+            status: 'processing_b2b',
             ref: b2bResult.conversationId
           });
 
-          // 7. Notify school admin (best-effort)
-          try {
-            const { sendSMS } = await import('@/lib/sms-client');
-            const atCreds = await kvGet('paav_at_creds', null, tenantId).catch(() => null)
-              || await kvGet('paav_at_creds', null, 'platform-master').catch(() => null);
-            const adminUsers = await query(
-              `SELECT phone FROM users WHERE tenant_id = ? AND role = 'admin' AND phone IS NOT NULL LIMIT 1`,
-              [tenantId]
-            ).catch(() => []);
-            if (adminUsers[0]?.phone) {
-              await sendSMS({
-                to: adminUsers[0].phone,
-                message: `EduVantage: KES ${group.total.toLocaleString()} has been disbursed to your M-Pesa account (${destShortcode}). Reference: ${b2bResult.conversationId}. Regards, EduVantage.`,
-                schoolName: 'EduVantage',
-                ...(atCreds || {})
-              });
-            }
-          } catch (smsErr) {
-            console.warn('[Disburse] SMS notification failed:', smsErr.message);
-          }
+          // Note: SMS notification moved to ResultURL callback where we are 100% sure it succeeded.
 
         } else {
           group.items.forEach(item => {

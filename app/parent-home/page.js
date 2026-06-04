@@ -44,6 +44,7 @@ export default function ParentHome() {
   const [mpesaForm, setMpesaForm] = useState({ phone: '', amount: '', term: 'T1', paybillId: '' });
   const [mpesaBusy, setMpesaBusy] = useState(false);
   const [mpesaMsg, setMpesaMsg] = useState('');
+  const [attendance, setAttendance] = useState({});
 
   useEffect(() => {
     fetch('/api/saas/schools')
@@ -75,8 +76,8 @@ export default function ParentHome() {
       let allFullTT = {};
       let allPayInfo = {};
       let allFeeCfg = {};
-
       let allSubjCfgs = {};
+      let allAttendance = {};
 
       await Promise.all(uniqueTenants.map(async (tid) => {
         const dbRes = await fetch('/api/db', {
@@ -95,6 +96,7 @@ export default function ParentHome() {
             { type: 'get', key: 'paav_timetable' },
             { type: 'get', key: 'paav_profiles' },
             { type: 'get', key: 'paav8_subj' },
+            { type: 'get', key: 'paav_student_attendance' }
           ]})
         });
         const db = await dbRes.json();
@@ -109,6 +111,7 @@ export default function ParentHome() {
         const fullTTData = db.results[9]?.value || {};
         const profiles = db.results[10]?.value || {};
         const subjsVal = db.results[11]?.value || {};
+        const attData = db.results[12]?.value || {};
 
         allLearners = [...allLearners, ...learners.map(l => ({ ...l, tenantId: tid }))];
         allMarks = { ...allMarks, ...mks };
@@ -116,6 +119,7 @@ export default function ParentHome() {
         allMsgs = [...allMsgs, ...msgs];
         allProfiles = { ...allProfiles, ...profiles };
         allSubjCfgs[tid] = subjsVal;
+        allAttendance = { ...allAttendance, ...attData };
         
         allEvents[tid] = db.results[5]?.value || [];
         allPayInfo[tid] = {
@@ -154,9 +158,7 @@ export default function ParentHome() {
       setPayInfo(allPayInfo);
       setEvents(allEvents);
       setFullTT(allFullTT);
-      setMarks(allMarks);
-      setPaylog(allPaylogs);
-      setSubjCfg(allSubjCfgs);
+      setAttendance(allAttendance);
       setLoading(false);
     } catch(e) { console.error(e); } finally { setLoading(false); }
   }, [router, selAdm]);
@@ -309,6 +311,11 @@ export default function ParentHome() {
   const cfg = (feeCfg[currentTenant] || {})[child?.grade] || {};
   const curr = getCurriculum(currentPayInfo.profile?.curriculum || 'CBC', currentPayInfo.profile?.levels);
   const TERMS_LIST = curr.TERMS || [];
+  const currAssessments = curr.ASSESSMENT_TYPES || [
+    { key: 'op1', label: 'Opener Exam' },
+    { key: 'md1', label: 'Mid Term Exam' },
+    { key: 'et1', label: 'End Term Exam' }
+  ];
   const exp = TERMS_LIST.length
     ? TERMS_LIST.reduce((s, t) => s + (cfg[t.id.toLowerCase()] || 0), 0) || cfg.annual || 5000
     : (cfg.t1 || 0) + (cfg.t2 || 0) + (cfg.t3 || 0) || cfg.annual || 5000;
@@ -526,176 +533,372 @@ export default function ParentHome() {
 
       {/* PERFORMANCE TAB */}
       {tab==='perf' && (
-        <div className="animate-in">
-          <div style={{display:'flex',gap:12,marginBottom:18,flexWrap:'wrap',background:MB,padding:10,borderRadius:12}}>
-            <div style={{flex:1}}>
-              <label style={{fontSize:10,fontWeight:800,color:M,textTransform:'uppercase',display:'block',marginBottom:4}}>Academic Period</label>
-              <select value={term} onChange={e=>setTerm(e.target.value)} style={{width:'100%',borderRadius:8,padding:'8px 12px',border:`1.5px solid ${MB}`,fontSize:13,fontWeight:700,outline:'none',background:'#fff'}}>
-                {TERMS_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </div>
-            <div style={{flex:1}}>
-              <label style={{fontSize:10,fontWeight:800,color:M,textTransform:'uppercase',display:'block',marginBottom:4}}>Assessment Type</label>
-              <select value={assess} onChange={e=>setAssess(e.target.value)} style={{width:'100%',borderRadius:8,padding:'8px 12px',border:`1.5px solid ${MB}`,fontSize:13,fontWeight:700,outline:'none',background:'#fff'}}>
-                <option value="op1">Opener Assessment</option><option value="mt1">Mid-Term Assessment</option><option value="et1">Final Assessment</option>
-              </select>
-            </div>
-          </div>
+        <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {(() => {
+            const attKeys = Object.keys(attendance || {}).filter(k => k.endsWith(`|${child?.adm}`));
+            const present = Object.entries(attendance || {}).filter(([k, v]) => k.endsWith(`|${child?.adm}`) && v === 'P').length;
+            const totalAtt = attKeys.length;
+            const attRate = totalAtt > 0 ? Math.round((present / totalAtt) * 100) : 100;
+            const attStatus = attRate >= 95 ? 'Excellent' : attRate >= 85 ? 'Satisfactory' : 'Needs Attention';
+            const attColor = attRate >= 95 ? '#059669' : attRate >= 85 ? '#D97706' : '#DC2626';
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-            {/* Subject Mastery List */}
-            <div className="panel" style={{border:`1.5px solid ${MB}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)'}}>
-              <div className="panel-hdr" style={{background:`linear-gradient(135deg,${M},${M2})`,color:'#fff', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                <h3 style={{color:'#fff', margin:0}}>🎯 {child?.name.split(' ')[0]}'s Mastery</h3>
-                <button 
-                  onClick={() => window.open(`/report-card?adm=${child.adm}&grade=${child.grade}&term=${term}&assess=${assess}`, '_blank')}
-                  style={{ background: 'rgba(255,255,255,.2)', border: '1.5px solid rgba(255,255,255,.4)', borderRadius: 8, color: '#fff', padding: '5px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-                >
-                  📜 View Report Card
-                </button>
-              </div>
-              <div className="panel-body" style={{padding:'5px 15px'}}>
-                {subjs.map(s => {
-                  const sc = getMark(marks, term, child?.grade, s, assess, child?.adm);
-                  const info = sc!=null ? gInfo(Number(sc),child?.grade) : null;
-                  const isCBC = (child?.grade || '').startsWith('GRADE') || (child?.grade || '').startsWith('PP');
-                  
-                  return (
-                    <div key={s} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderBottom:'1px solid #F1F5F9'}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontWeight:800,fontSize:14,color:'var(--navy)'}}>{s}</div>
-                        <div style={{fontSize:10,color:'var(--muted)',fontWeight:700}}>{assess.toUpperCase()} · {term}</div>
+            const termAverages = {};
+            TERMS_LIST.forEach(t => {
+              let termSum = 0;
+              let termCount = 0;
+              subjs.forEach(s => {
+                const mk = getMark(marks, t.id, child?.grade, s, assess, child?.adm);
+                if (mk !== null) {
+                  termSum += mk;
+                  termCount++;
+                }
+              });
+              termAverages[t.id] = termCount > 0 ? Math.round(termSum / termCount) : null;
+            });
+
+            const subjectStats = {};
+            subjs.forEach(s => {
+              const scores = [];
+              const numMatch = String(term || '').match(/(\d+)/);
+              const aliases = new Set([term]);
+              if (numMatch) {
+                aliases.add(`T${numMatch[1]}`);
+                aliases.add(`TERM ${numMatch[1]}`);
+              }
+              for (const t of aliases) {
+                const k1 = `${t}:${child?.grade}|${s}|${assess}`;
+                if (marks[k1]) {
+                  Object.values(marks[k1]).forEach(v => {
+                    if (v !== undefined && v !== null && v !== '') {
+                      scores.push(Number(v));
+                    }
+                  });
+                }
+              }
+              if (scores.length === 0) {
+                const k0 = `${child?.grade}|${s}|${assess}`;
+                if (marks[k0]) {
+                  Object.values(marks[k0]).forEach(v => {
+                    if (v !== undefined && v !== null && v !== '') {
+                      scores.push(Number(v));
+                    }
+                  });
+                }
+              }
+              subjectStats[s] = {
+                avg: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+                max: scores.length ? Math.max(...scores) : null,
+                min: scores.length ? Math.min(...scores) : null,
+                count: scores.length
+              };
+            });
+
+            const scores = subjs.map(s => {
+              const sc = getMark(marks, term, child?.grade, s, assess, child?.adm);
+              return sc != null ? { s, sc: Number(sc) } : null;
+            }).filter(Boolean);
+
+            const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+            const info = gInfo(avg, child?.grade);
+
+            const currentTermIdx = TERMS_LIST.findIndex(t => t.id === term);
+            const prevTerm = currentTermIdx > 0 ? TERMS_LIST[currentTermIdx - 1] : null;
+            const prevAvg = prevTerm ? termAverages[prevTerm.id] : null;
+            const growth = (prevAvg !== null && avg > 0) ? (avg - prevAvg) : null;
+
+            return (
+              <>
+                {/* Selector Header Bar */}
+                <div style={{display:'flex',gap:12,flexWrap:'wrap',background:MB,padding:10,borderRadius:12}}>
+                  <div style={{flex:1, minWidth: 150}}>
+                    <label style={{fontSize:10,fontWeight:800,color:M,textTransform:'uppercase',display:'block',marginBottom:4}}>Academic Period</label>
+                    <select value={term} onChange={e=>setTerm(e.target.value)} style={{width:'100%',borderRadius:8,padding:'8px 12px',border:`1.5px solid ${MB}`,fontSize:13,fontWeight:700,outline:'none',background:'#fff'}}>
+                      {TERMS_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={{flex:1, minWidth: 150}}>
+                    <label style={{fontSize:10,fontWeight:800,color:M,textTransform:'uppercase',display:'block',marginBottom:4}}>Assessment Type</label>
+                    <select value={assess} onChange={e=>setAssess(e.target.value)} style={{width:'100%',borderRadius:8,padding:'8px 12px',border:`1.5px solid ${MB}`,fontSize:13,fontWeight:700,outline:'none',background:'#fff'}}>
+                      {currAssessments.map(a => <option key={a.key} value={a.key}>{a.label.replace(/\p{Emoji}/gu, '').trim()}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Grid Cards Row */}
+                <div className="sg sg3" style={{ gap: 16 }}>
+                  {/* Academic Average Card */}
+                  <div className="stat-card" style={{ borderTop: `4px solid ${info.c || M}` }}>
+                    <div className="sc-inner">
+                      <div className="sc-icon" style={{ background: info.bg || '#EFF6FF', fontSize: 22, color: info.c }}>🎓</div>
+                      <div>
+                        <div className="sc-n" style={{ color: info.c || M }}>{avg}%</div>
+                        <div className="sc-l">Term Average Score</div>
+                        {growth !== null && (
+                          <div style={{ fontSize: 10, fontWeight: 800, color: growth >= 0 ? '#059669' : '#DC2626', marginTop: 2 }}>
+                            {growth >= 0 ? `▲ +${growth}%` : `▼ ${growth}%`} compared to prior term
+                          </div>
+                        )}
                       </div>
-                      {sc!=null ? (
-                        <div style={{textAlign:'right'}}>
-                          <div style={{fontWeight:900,fontSize:18,color:info.c}}>{sc}<span style={{fontSize:10,fontWeight:700}}>%</span></div>
-                          <span style={{padding:'2px 8px',borderRadius:20,fontSize:10,fontWeight:900,background:info.bg,color:info.c,border:`1px solid ${info.c}33`}}>
-                            {isCBC ? info.lv : info.lv}
-                          </span>
-                        </div>
-                      ) : <span style={{color:'#CBD5E1',fontSize:11,fontStyle:'italic'}}>Pending...</span>}
                     </div>
-                  );
-                })}
-                {subjs.length===0&&<div style={{color:'var(--muted)',padding:40,textAlign:'center'}}>No curriculum data found.</div>}
-              </div>
-            </div>
+                  </div>
 
-            {/* Premium Analytics Panel */}
-            <div className="panel" style={{ border: '1.5px solid #BFDBFE', background: '#F8FAFF' }}>
-              <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #1E3A8A, #1D4ED8)', color: '#fff' }}>
-                <h3 style={{ color: '#fff' }}>🛡️ Competency Analysis</h3>
-              </div>
-              <div className="panel-body" style={{ padding: 20 }}>
-                {(() => {
-                  const scores = subjs.map(s => {
-                    const sc = getMark(marks, term, child?.grade, s, assess, child?.adm);
-                    return sc != null ? { s, sc: Number(sc) } : null;
-                  }).filter(Boolean);
-                  
-                  if (!scores.length) return (
-                    <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                      <div style={{ fontSize: 48, marginBottom: 15 }}>📝</div>
-                      <div style={{ fontWeight: 800, color: 'var(--navy)' }}>Assessment in Progress</div>
-                      <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Results for this period haven't been published yet. Please check back later.</p>
+                  {/* Attendance Card */}
+                  <div className="stat-card" style={{ borderTop: `4px solid ${attColor}` }}>
+                    <div className="sc-inner">
+                      <div className="sc-icon" style={{ background: `${attColor}15`, fontSize: 22, color: attColor }}>📅</div>
+                      <div>
+                        <div className="sc-n" style={{ color: attColor }}>{attRate}%</div>
+                        <div className="sc-l">Attendance ({present}/{totalAtt || 0} days)</div>
+                        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2, fontWeight: 700 }}>
+                          {attStatus} · High correlation with grades
+                        </div>
+                      </div>
                     </div>
-                  );
+                  </div>
 
-                  const avg = Math.round(scores.reduce((a, b) => a + b.sc, 0) / scores.length);
-                  const info = gInfo(avg, child?.grade);
-                  const best = scores.reduce((a, b) => a.sc > b.sc ? a : b);
-                  const worst = scores.reduce((a, b) => a.sc < b.sc ? a : b);
-
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                      <div style={{ position: 'relative', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: '50%', border: '8px solid #E2E8F0' }} />
-                        <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: '50%', border: `8px solid ${info.c}`, borderTopColor: 'transparent', transform: `rotate(${avg * 3.6}deg)`, transition: 'transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
-                        <div style={{ textAlign: 'center', zIndex: 1 }}>
-                          <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--navy)', lineHeight: 1 }}>{avg}%</div>
-                          <div style={{ fontSize: 10, fontWeight: 800, color: info.c, textTransform: 'uppercase' }}>{info.lv}</div>
+                  {/* Achievement Level Card */}
+                  <div className="stat-card" style={{ borderTop: `4px solid #7C3AED` }}>
+                    <div className="sc-inner">
+                      <div className="sc-icon" style={{ background: '#F5F3FF', fontSize: 22, color: '#7C3AED' }}>🏆</div>
+                      <div>
+                        <div className="sc-n" style={{ color: '#7C3AED', fontSize: 18 }}>{info.lv}</div>
+                        <div className="sc-l">Competency Standing</div>
+                        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2, fontWeight: 700 }}>
+                          {info.desc || 'Progression benchmark reached'}
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
 
-                      <div style={{ background: '#fff', padding: 15, borderRadius: 12, border: '1px solid #E2E8F0' }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 12, borderBottom: '1px solid #F1F5F9', paddingBottom: 8 }}>📊 Subject Trends</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          {scores.sort((a,b)=>b.sc - a.sc).slice(0, 5).map(s => {
-                            const si = gInfo(s.sc, child?.grade);
-                            return (
-                              <div key={s.s}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>
-                                  <span>{s.s}</span>
-                                  <span style={{ color: si.c }}>{s.sc}%</span>
-                                </div>
-                                <div style={{ height: 6, background: '#F1F5F9', borderRadius: 3, overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${s.sc}%`, background: si.c, borderRadius: 3 }} />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div style={{ background: '#F0FDF4', padding: 12, borderRadius: 12, border: '1px solid #DCFCE7' }}>
-                          <div style={{ fontSize: 9, color: '#166534', fontWeight: 800, textTransform: 'uppercase' }}>🌟 Strongest</div>
-                          <div style={{ fontWeight: 800, fontSize: 13, marginTop: 4 }}>{best.s}</div>
-                        </div>
-                        <div style={{ background: '#FFF7ED', padding: 12, borderRadius: 12, border: '1px solid #FFEDD5' }}>
-                          <div style={{ fontSize: 9, color: '#9A3412', fontWeight: 800, textTransform: 'uppercase' }}>🚀 Growth Area</div>
-                          <div style={{ fontWeight: 800, fontSize: 13, marginTop: 4 }}>{worst.s}</div>
-                        </div>
-                      </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+                  {/* Detailed Subject Standings */}
+                  <div className="panel" style={{ border: `1.5px solid ${MB}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                    <div className="panel-hdr" style={{ background: `linear-gradient(135deg,${M},${M2})`, color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h3 style={{ color: '#fff', margin: 0 }}>🎯 {child?.name.split(' ')[0]}'s Mastery & Class Distribution</h3>
+                      <button 
+                        onClick={() => window.open(`/report-card?adm=${child.adm}&grade=${child.grade}&term=${term}&assess=${assess}`, '_blank')}
+                        style={{ background: 'rgba(255,255,255,.2)', border: '1.5px solid rgba(255,255,255,.4)', borderRadius: 8, color: '#fff', padding: '5px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        📜 View Report Card
+                      </button>
+                    </div>
+                    <div className="panel-body" style={{ padding: '15px' }}>
+                      {subjs.map(s => {
+                        const sc = getMark(marks, term, child?.grade, s, assess, child?.adm);
+                        const info = sc != null ? gInfo(Number(sc), child?.grade) : null;
+                        const stats = subjectStats[s] || { avg: null, min: null, max: null };
 
-                      <div style={{ background: 'linear-gradient(135deg, #1E3A8A, #1D4ED8)', padding: 15, borderRadius: 12, color: '#fff', textAlign: 'center' }}>
-                         <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.8 }}>PREDICTED COMPETENCY</div>
-                         <div style={{ fontSize: 18, fontWeight: 900 }}>{info.desc}</div>
-                      </div>
-
-                      {(() => {
-                        const isCBC = (child?.grade || '').startsWith('GRADE') || (child?.grade || '').startsWith('PP');
-                        let pathway = 'General Education';
-                        let pathwayColor = '#3B82F6';
-                        let pathwayDesc = 'Mainstream learning path based on current competencies.';
-
-                        if (isCBC) {
-                          if (['GRADE 7','GRADE 8','GRADE 9'].includes(child?.grade)) {
-                            const stemScores = scores.filter(s => ['Math','Science','Computer','Pre-Technical'].some(x => s.s.includes(x)));
-                            const artsScores = scores.filter(s => ['Art','Music','Sports','Creative'].some(x => s.s.includes(x)));
-                            const socScores = scores.filter(s => ['Social','Language','English','Kiswahili'].some(x => s.s.includes(x)));
-                            
-                            const avgStem = stemScores.length ? stemScores.reduce((a, b) => a + b.sc, 0) / stemScores.length : 0;
-                            const avgArts = artsScores.length ? artsScores.reduce((a, b) => a + b.sc, 0) / artsScores.length : 0;
-                            const avgSoc = socScores.length ? socScores.reduce((a, b) => a + b.sc, 0) / socScores.length : 0;
-                            
-                            if (avgStem >= avgArts && avgStem >= avgSoc && avgStem > 50) { pathway = 'STEM Pathway'; pathwayColor = '#2563EB'; pathwayDesc = 'Strong aptitude in Science, Technology, Engineering, and Mathematics.'; }
-                            else if (avgArts >= avgStem && avgArts >= avgSoc && avgArts > 50) { pathway = 'Arts & Sports Pathway'; pathwayColor = '#D97706'; pathwayDesc = 'Exceptional talent in creative arts and sports disciplines.'; }
-                            else if (avgSoc > 50) { pathway = 'Social Sciences Pathway'; pathwayColor = '#059669'; pathwayDesc = 'High proficiency in languages and social sciences.'; }
-                            else { pathway = 'General / Remedial'; pathwayColor = '#DC2626'; pathwayDesc = 'Requires additional support across multiple core subjects.'; }
-                          } else {
-                             pathway = 'Progression to Next Grade';
-                             pathwayColor = '#059669';
-                          }
-                        } else {
-                          if (avg >= 60) { pathway = 'Advanced Stream'; pathwayColor = '#059669'; pathwayDesc = 'Capable of handling advanced curriculum content.'; }
-                          else { pathway = 'General Stream'; pathwayColor = '#3B82F6'; }
-                        }
+                        const min = stats.min ?? 0;
+                        const max = stats.max ?? 100;
+                        const sAvg = stats.avg ?? 50;
+                        const range = max - min || 1;
+                        const avgPos = ((sAvg - min) / range) * 100;
+                        const scorePos = sc != null ? (((Number(sc) - min) / range) * 100) : 0;
 
                         return (
-                          <div style={{ background: '#fff', border: `1.5px solid ${pathwayColor}40`, padding: 15, borderRadius: 12 }}>
-                            <div style={{ fontSize: 11, fontWeight: 800, color: pathwayColor, textTransform: 'uppercase', marginBottom: 4 }}>🛣️ Recommended Pathway</div>
-                            <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--navy)' }}>{pathway}</div>
-                            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 }}>{pathwayDesc}</div>
+                          <div key={s} style={{ padding: '16px 0', borderBottom: '1px solid #F1F5F9' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                              <div>
+                                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--navy)' }}>{s}</div>
+                                <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>
+                                  Class Size: {stats.count || 0} learners
+                                </span>
+                              </div>
+                              {sc != null ? (
+                                <div style={{ textAlign: 'right' }}>
+                                  <div style={{ fontWeight: 900, fontSize: 18, color: info.c }}>{sc}<span style={{ fontSize: 11, fontWeight: 700 }}>%</span></div>
+                                  <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 900, background: info.bg, color: info.c, border: `1px solid ${info.c}33` }}>
+                                    {info.lv}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span style={{ color: '#CBD5E1', fontSize: 11, fontStyle: 'italic' }}>Pending...</span>
+                              )}
+                            </div>
+
+                            {/* Relative Distribution Gauge */}
+                            {sc != null && stats.avg !== null && (
+                              <div style={{ position: 'relative', height: 8, background: '#E2E8F0', borderRadius: 4, margin: '15px 0 25px 0' }}>
+                                {/* Highlight fill between average and score */}
+                                <div style={{
+                                  position: 'absolute',
+                                  left: `${Math.min(avgPos, scorePos)}%`,
+                                  right: `${100 - Math.max(avgPos, scorePos)}%`,
+                                  height: '100%',
+                                  background: Number(sc) >= sAvg ? 'rgba(5, 150, 105, 0.2)' : 'rgba(220, 38, 38, 0.15)',
+                                  borderRadius: 4
+                                }} />
+                                
+                                {/* Class Average Marker */}
+                                <div style={{ position: 'absolute', left: `${avgPos}%`, top: -3, bottom: -3, width: 2, background: '#475569', zIndex: 2 }}>
+                                  <span style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', fontSize: 8, fontWeight: 800, color: '#475569', whiteSpace: 'nowrap', marginBottom: 2 }}>
+                                    Avg: {sAvg}%
+                                  </span>
+                                </div>
+
+                                {/* Learner Score Pointer */}
+                                <div style={{
+                                  position: 'absolute',
+                                  left: `${scorePos}%`,
+                                  top: '50%',
+                                  transform: 'translate(-50%, -50%)',
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: '50%',
+                                  background: Number(sc) >= sAvg ? '#059669' : '#DC2626',
+                                  border: '2px solid #fff',
+                                  boxShadow: '0 0 4px rgba(0,0,0,0.15)',
+                                  zIndex: 3
+                                }}>
+                                  <span style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', fontSize: 9, fontWeight: 900, color: Number(sc) >= sAvg ? '#059669' : '#DC2626', whiteSpace: 'nowrap', marginTop: 2 }}>
+                                    {sc}%
+                                  </span>
+                                </div>
+
+                                {/* Min/Max labels */}
+                                <span style={{ position: 'absolute', left: 0, top: '100%', fontSize: 8, color: 'var(--muted)', marginTop: 4, fontWeight: 700 }}>Min: {min}%</span>
+                                <span style={{ position: 'absolute', right: 0, top: '100%', fontSize: 8, color: 'var(--muted)', marginTop: 4, fontWeight: 700 }}>Max: {max}%</span>
+                              </div>
+                            )}
                           </div>
                         );
-                      })()}
+                      })}
+                      {subjs.length === 0 && <div style={{ color: 'var(--muted)', padding: 40, textAlign: 'center' }}>No curriculum data found.</div>}
                     </div>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
+                  </div>
+
+                  {/* Premium Analytics Panel */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {/* Progression Timeline */}
+                    <div className="panel" style={{ border: '1.5px solid #E2E8F0', background: '#fff' }}>
+                      <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #1E3A8A, #1D4ED8)', color: '#fff' }}>
+                        <h3 style={{ color: '#fff' }}>📈 Term-over-Term Progression</h3>
+                      </div>
+                      <div className="panel-body" style={{ padding: 20 }}>
+                        {(() => {
+                          const hasTimeline = Object.values(termAverages).some(x => x !== null);
+                          if (!hasTimeline) return (
+                            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--muted)', fontSize: 12 }}>
+                              Insufficient term data to build progression timeline.
+                            </div>
+                          );
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                              {TERMS_LIST.map((t, idx) => {
+                                const tAvg = termAverages[t.id];
+                                const isCurrent = t.id === term;
+                                return (
+                                  <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                      <div style={{
+                                        width: 24, height: 24, borderRadius: '50%',
+                                        background: tAvg ? '#1D4ED8' : '#CBD5E1',
+                                        color: '#fff', fontSize: 11, fontWeight: 800,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                      }}>
+                                        {idx + 1}
+                                      </div>
+                                      {idx < TERMS_LIST.length - 1 && (
+                                        <div style={{ width: 2, height: 36, background: '#F1F5F9' }} />
+                                      )}
+                                    </div>
+                                    <div style={{ flex: 1, background: isCurrent ? '#EFF6FF' : '#fff', padding: '10px 14px', borderRadius: 10, border: isCurrent ? '1.5px solid #3B82F6' : '1px solid #E2E8F0' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 13 }}>{t.name}</span>
+                                        {tAvg !== null ? (
+                                          <span style={{ fontWeight: 900, color: '#1D4ED8', fontSize: 15 }}>{tAvg}%</span>
+                                        ) : (
+                                          <span style={{ fontSize: 10, color: '#94A3B8', fontStyle: 'italic' }}>Pending Publication</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Recommendations & Pathway Recommendations */}
+                    <div className="panel" style={{ border: '1.5px solid #BFDBFE', background: '#F8FAFF' }}>
+                      <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #1E3A8A, #1D4ED8)', color: '#fff' }}>
+                        <h3 style={{ color: '#fff' }}>🛡️ Competency Analysis</h3>
+                      </div>
+                      <div className="panel-body" style={{ padding: 20 }}>
+                        {scores.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '30px 10px' }}>
+                            <div style={{ fontSize: 36, marginBottom: 10 }}>📝</div>
+                            <div style={{ fontWeight: 800, color: 'var(--navy)' }}>Assessment in Progress</div>
+                            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>Results for this period haven't been published yet.</p>
+                          </div>
+                        ) : (() => {
+                          const best = scores.reduce((a, b) => a.sc > b.sc ? a : b);
+                          const worst = scores.reduce((a, b) => a.sc < b.sc ? a : b);
+
+                          const isCBC = (child?.grade || '').startsWith('GRADE') || (child?.grade || '').startsWith('PP');
+                          let pathway = 'General Education';
+                          let pathwayColor = '#3B82F6';
+                          let pathwayDesc = 'Mainstream learning path based on current competencies.';
+
+                          if (isCBC) {
+                            if (['GRADE 7','GRADE 8','GRADE 9'].includes(child?.grade)) {
+                              const stemScores = scores.filter(s => ['Math','Science','Computer','Pre-Technical'].some(x => s.s.includes(x)));
+                              const artsScores = scores.filter(s => ['Art','Music','Sports','Creative'].some(x => s.s.includes(x)));
+                              const socScores = scores.filter(s => ['Social','Language','English','Kiswahili'].some(x => s.s.includes(x)));
+                              
+                              const avgStem = stemScores.length ? stemScores.reduce((a, b) => a + b.sc, 0) / stemScores.length : 0;
+                              const avgArts = artsScores.length ? artsScores.reduce((a, b) => a + b.sc, 0) / artsScores.length : 0;
+                              const avgSoc = socScores.length ? socScores.reduce((a, b) => a + b.sc, 0) / socScores.length : 0;
+                              
+                              if (avgStem >= avgArts && avgStem >= avgSoc && avgStem > 50) { pathway = 'STEM Pathway'; pathwayColor = '#2563EB'; pathwayDesc = 'Strong aptitude in Science, Technology, Engineering, and Mathematics.'; }
+                              else if (avgArts >= avgStem && avgArts >= avgSoc && avgArts > 50) { pathway = 'Arts & Sports Pathway'; pathwayColor = '#D97706'; pathwayDesc = 'Exceptional talent in creative arts and sports disciplines.'; }
+                              else if (avgSoc > 50) { pathway = 'Social Sciences Pathway'; pathwayColor = '#059669'; pathwayDesc = 'High proficiency in languages and social sciences.'; }
+                              else { pathway = 'General / Remedial'; pathwayColor = '#DC2626'; pathwayDesc = 'Requires additional support across multiple core subjects.'; }
+                            } else {
+                               pathway = 'Progression to Next Grade';
+                               pathwayColor = '#059669';
+                            }
+                          } else {
+                            if (avg >= 60) { pathway = 'Advanced Stream'; pathwayColor = '#059669'; pathwayDesc = 'Capable of handling advanced curriculum content.'; }
+                            else { pathway = 'General Stream'; pathwayColor = '#3B82F6'; }
+                          }
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <div style={{ background: '#F0FDF4', padding: 12, borderRadius: 12, border: '1px solid #DCFCE7' }}>
+                                  <div style={{ fontSize: 9, color: '#166534', fontWeight: 800, textTransform: 'uppercase' }}>🌟 Strongest</div>
+                                  <div style={{ fontWeight: 800, fontSize: 13, marginTop: 4 }}>{best.s}</div>
+                                </div>
+                                <div style={{ background: '#FFF7ED', padding: 12, borderRadius: 12, border: '1px solid #FFEDD5' }}>
+                                  <div style={{ fontSize: 9, color: '#9A3412', fontWeight: 800, textTransform: 'uppercase' }}>🚀 Growth Area</div>
+                                  <div style={{ fontWeight: 800, fontSize: 13, marginTop: 4 }}>{worst.s}</div>
+                                </div>
+                              </div>
+
+                              <div style={{ background: 'linear-gradient(135deg, #1E3A8A, #1D4ED8)', padding: 15, borderRadius: 12, color: '#fff', textAlign: 'center' }}>
+                                 <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.8 }}>PREDICTED COMPETENCY</div>
+                                 <div style={{ fontSize: 18, fontWeight: 900 }}>{info.desc}</div>
+                              </div>
+
+                              <div style={{ background: '#fff', border: `1.5px solid ${pathwayColor}40`, padding: 15, borderRadius: 12 }}>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: pathwayColor, textTransform: 'uppercase', marginBottom: 4 }}>🛣️ Recommended Pathway</div>
+                                <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--navy)' }}>{pathway}</div>
+                                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 }}>{pathwayDesc}</div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 

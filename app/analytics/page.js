@@ -20,6 +20,7 @@ export default function AnalyticsPage() {
   const profile = useSchoolProfile();
   const [grade, setGrade] = useState('');
   const [term, setTerm] = useState('');
+  const [stream, setStream] = useState('');
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('insights');
@@ -45,6 +46,10 @@ export default function AnalyticsPage() {
   const currAssessments = curr.ASSESSMENT_TYPES || [{ key: 'op1', label: '📝 Opener' }, { key: 'mt1', label: '📖 Mid-Term' }, { key: 'et1', label: '📋 End-Term' }];
   const currLabels = curr.LABELS || { grade: 'Grade', subject: 'Subject', learner: 'Learner', learners: 'Learners', assessment: 'Assessment' };
 
+  const streams = React.useMemo(() => {
+    return [...new Set(learners.filter(l => l.grade === grade && l.stream).map(l => l.stream))].sort();
+  }, [learners, grade]);
+
   // Sync grade & term defaults when profile/curriculum loads
   useEffect(() => {
     if (profile?.curriculum && grades.length) {
@@ -58,6 +63,10 @@ export default function AnalyticsPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.curriculum]);
+
+  useEffect(() => {
+    setStream('');
+  }, [grade]);
 
   useEffect(() => {
     if (profile?.tenantId && grade && term) {
@@ -75,6 +84,7 @@ export default function AnalyticsPage() {
             term,
             curriculum: profile.curriculum || 'CBC'
           });
+          if (stream) params.append('stream', stream);
           const response = await fetchWithRetry(`/api/analytics/academic?${params.toString()}`, { timeout: 20000 }, 1);
           const res = response ? await response.json() : { success: false, error: 'Request cancelled' };
           clearTimeout(timeout);
@@ -82,7 +92,7 @@ export default function AnalyticsPage() {
             setStats(res.data);
             setError(null);
           } else {
-            const fallback = await buildCachedAcademicStats({ grade, term, curriculum: profile.curriculum || 'CBC' });
+            const fallback = await buildCachedAcademicStats({ grade, term, stream, curriculum: profile.curriculum || 'CBC' });
             if (fallback) {
               setStats(fallback);
               setError(null);
@@ -92,7 +102,7 @@ export default function AnalyticsPage() {
           }
         } catch (e) {
           clearTimeout(timeout);
-          const fallback = await buildCachedAcademicStats({ grade, term, curriculum: profile.curriculum || 'CBC' });
+          const fallback = await buildCachedAcademicStats({ grade, term, stream, curriculum: profile.curriculum || 'CBC' });
           if (fallback) {
             setStats(fallback);
             setError(null);
@@ -103,7 +113,7 @@ export default function AnalyticsPage() {
       });
       return () => clearTimeout(timeout);
     }
-  }, [grade, term, profile, retryCount]);
+  }, [grade, term, stream, profile, retryCount]);
 
   // guard: don't render until grade/term are resolved
   const isReady = Boolean(grade && term);
@@ -155,6 +165,12 @@ export default function AnalyticsPage() {
               <select value={grade} onChange={(e) => setGrade(e.target.value)} style={{ background: 'var(--slate-50)', fontWeight: 700 }}>
                 {grades.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
+              {streams.length > 0 && (
+                <select value={stream} onChange={(e) => setStream(e.target.value)} style={{ background: 'var(--slate-50)', fontWeight: 700 }}>
+                  <option value="">All Streams</option>
+                  {streams.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              )}
               <select value={term} onChange={(e) => setTerm(e.target.value)} style={{ background: 'var(--slate-50)', fontWeight: 700 }}>
                 {currTerms.map(t => <option key={t.id} value={t.id}>{t.name.toUpperCase()}</option>)}
               </select>
@@ -605,10 +621,10 @@ export default function AnalyticsPage() {
   );
 }
 
-async function buildCachedAcademicStats({ grade, term, curriculum }) {
+async function buildCachedAcademicStats({ grade, term, stream = '', curriculum }) {
   try {
     const db = await getCachedDBMulti(['paav6_learners', 'paav6_marks', 'paav8_subj']);
-    const learners = (db.paav6_learners || []).filter(l => l?.grade === grade);
+    const learners = (db.paav6_learners || []).filter(l => l?.grade === grade && (!stream || l?.stream === stream));
     const marks = db.paav6_marks || {};
     const curr = getCurriculum(curriculum || 'CBC');
     const labels = curr.LABELS || {

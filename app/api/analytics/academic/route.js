@@ -12,6 +12,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const grade = searchParams.get('grade') || '';
   const term = searchParams.get('term') || '';
+  const stream = searchParams.get('stream') || '';
   const curriculum = searchParams.get('curriculum') || 'CBC';
   const headerTenant = request.headers.get('x-tenant-id');
   const tenantId = session.role === 'super-admin' && headerTenant
@@ -22,6 +23,6 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: 'Grade and term are required' }, { status: 400 });
   }
 
-  const result = await getAcademicStats({ tenantId, grade, term, curriculum });
+  const result = await getAcademicStats({ tenantId, grade, term, stream, curriculum });
   return NextResponse.json(result, { status: result.success ? 200 : 500 });
 }

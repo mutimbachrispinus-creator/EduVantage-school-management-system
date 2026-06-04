@@ -825,10 +825,10 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
               <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #E2E8F0' }}>
                 <div style={{ fontSize: 9, fontWeight: 800, color: '#94A3B8', marginBottom: 5 }}>PROFESSIONAL REMARKS</div>
                 <div style={{ fontSize: 11, color: '#1E293B', lineHeight: 1.4, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <strong>Class Teacher:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'teacher')}
+                  <strong>Class Teacher:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'teacher', l.adm || l.name)}
                 </div>
                 <div style={{ fontSize: 11, color: '#1E293B', lineHeight: 1.4, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <strong>Principal:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'principal')}
+                  <strong>Principal:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'principal', l.adm || l.name)}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
                   <div style={{ background: '#F8FAFF', padding: 10, borderRadius: 8, border: '1px solid #E2E8F0' }}>

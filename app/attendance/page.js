@@ -11,7 +11,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ALL_GRADES, getLabels } from '@/lib/cbe';
+import { getAllGrades, getLabels } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { useProfile } from '@/app/PortalShell';
@@ -68,6 +68,8 @@ export default function AttendancePage() {
   const curr = getCurriculum(profile?.curriculum || 'CBC', profile?.levels);
   const LABELS = getLabels(profile?.curriculum || 'CBC');
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
+  // Curriculum-aware grade list (respects school's enabled levels)
+  const ALL_CURR_GRADES = useMemo(() => getAllGrades(profile?.curriculum || 'CBC', profile), [profile]);
   const [user,         setUser]         = useState(null);
   const [dbTerms,      setDbTerms]      = useState([]);
 
@@ -116,7 +118,9 @@ export default function AttendancePage() {
         const myGrade = Object.entries(ctData).find(([g, id]) => id === u.id)?.[0] || '';
         setGrade(myGrade || u.grade || '');
       } else {
-        setGrade(g => g || ALL_GRADES[0]);
+        // Use curriculum-aware grade list for admin default
+        const currGrades = getAllGrades(u.curriculum || 'CBC');
+        setGrade(g => g || currGrades[0] || '');
       }
     } catch(e) { 
       console.error('Attendance load error:', e); 
@@ -132,7 +136,7 @@ export default function AttendancePage() {
   // Check if current user can mark this grade
   const canMark = isAdmin || classTeachers[grade] === user?.id;
 
-  const gradeList = useMemo(() => isAdmin ? ALL_GRADES : (grade ? [grade] : []), [isAdmin, grade]);
+  const gradeList = useMemo(() => isAdmin ? ALL_CURR_GRADES : (grade ? [grade] : []), [isAdmin, grade, ALL_CURR_GRADES]);
   const classList = useMemo(() => learners.filter(l => l.grade === grade).sort((a,b)=>a.name.localeCompare(b.name)), [learners, grade]);
   
   const activeTerms = useMemo(() => {
@@ -249,7 +253,7 @@ export default function AttendancePage() {
         <div className="page-hdr-acts" style={{gap:8,flexWrap:'wrap'}}>
           {isAdmin && (
             <select value={grade} onChange={e=>setGrade(e.target.value)} className="sc-inp">
-              {ALL_GRADES.map(g=><option key={g}>{g}</option>)}
+              {ALL_CURR_GRADES.map(g=><option key={g}>{g}</option>)}
             </select>
           )}
           <select value={term} onChange={e=>setTerm(e.target.value)} className="sc-inp">
