@@ -671,6 +671,119 @@ export default function ParentHome() {
                   </div>
                 </div>
 
+                {/* ══════ VISUAL CHARTS SECTION ══════ */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
+
+                  {/* ── BAR CHART: Subject Scores vs Class Average ── */}
+                  {scores.length > 0 && (() => {
+                    const barW = 28, gap = 14, chartH = 200, padL = 40, padB = 70, padT = 20, padR = 10;
+                    const totalW = padL + scores.length * (barW * 2 + gap) + padR;
+                    const svgW = Math.max(totalW, 360);
+                    return (
+                      <div className="panel" style={{ border: '1.5px solid #E2E8F0', overflow: 'hidden' }}>
+                        <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', color: '#fff' }}>
+                          <h3 style={{ color: '#fff', margin: 0 }}>📊 Subject Scores vs Class Average</h3>
+                        </div>
+                        <div className="panel-body" style={{ padding: '20px 10px', overflowX: 'auto' }}>
+                          <svg viewBox={`0 0 ${svgW} ${chartH + padB + padT}`} style={{ width: '100%', minWidth: totalW, height: 'auto' }}>
+                            {/* Y-axis gridlines */}
+                            {[0, 25, 50, 75, 100].map(v => {
+                              const y = padT + chartH - (v / 100) * chartH;
+                              return (
+                                <g key={v}>
+                                  <line x1={padL} y1={y} x2={svgW - padR} y2={y} stroke="#E2E8F0" strokeWidth="1" />
+                                  <text x={padL - 6} y={y + 4} textAnchor="end" fontSize="9" fill="#94A3B8" fontWeight="700">{v}%</text>
+                                </g>
+                              );
+                            })}
+                            {/* Bars */}
+                            {scores.map((item, i) => {
+                              const x = padL + i * (barW * 2 + gap) + gap / 2;
+                              const sH = (item.sc / 100) * chartH;
+                              const classAvg = subjectStats[item.s]?.avg ?? 0;
+                              const cH = (classAvg / 100) * chartH;
+                              const sColor = item.sc >= classAvg ? '#059669' : '#DC2626';
+                              return (
+                                <g key={item.s}>
+                                  {/* Student bar */}
+                                  <rect x={x} y={padT + chartH - sH} width={barW} height={sH} rx="4" fill={sColor} opacity="0.85">
+                                    <animate attributeName="height" from="0" to={sH} dur="0.6s" fill="freeze" />
+                                    <animate attributeName="y" from={padT + chartH} to={padT + chartH - sH} dur="0.6s" fill="freeze" />
+                                  </rect>
+                                  <text x={x + barW / 2} y={padT + chartH - sH - 5} textAnchor="middle" fontSize="8" fontWeight="800" fill={sColor}>{item.sc}</text>
+                                  {/* Class avg bar */}
+                                  <rect x={x + barW + 2} y={padT + chartH - cH} width={barW} height={cH} rx="4" fill="#94A3B8" opacity="0.45">
+                                    <animate attributeName="height" from="0" to={cH} dur="0.6s" fill="freeze" />
+                                    <animate attributeName="y" from={padT + chartH} to={padT + chartH - cH} dur="0.6s" fill="freeze" />
+                                  </rect>
+                                  <text x={x + barW + 2 + barW / 2} y={padT + chartH - cH - 5} textAnchor="middle" fontSize="8" fontWeight="700" fill="#64748B">{classAvg}</text>
+                                  {/* Subject label */}
+                                  <text x={x + barW} y={padT + chartH + 14} textAnchor="middle" fontSize="8" fontWeight="700" fill="#475569" transform={`rotate(35, ${x + barW}, ${padT + chartH + 14})`}>
+                                    {item.s.length > 10 ? item.s.slice(0, 9) + '…' : item.s}
+                                  </text>
+                                </g>
+                              );
+                            })}
+                          </svg>
+                          {/* Legend */}
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 10, fontSize: 10, fontWeight: 700 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: '#059669', display: 'inline-block' }} /> {child?.name?.split(' ')[0]}'s Score</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: '#94A3B8', opacity: 0.5, display: 'inline-block' }} /> Class Average</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── LINE GRAPH: Term-over-Term Progression ── */}
+                  {(() => {
+                    const pts = TERMS_LIST.map((t, i) => ({ label: t.name, val: termAverages[t.id], idx: i })).filter(p => p.val !== null);
+                    if (pts.length < 2) return null;
+                    const chartW = 320, chartH = 180, padL = 44, padB = 36, padT = 20, padR = 20;
+                    const svgW = padL + chartW + padR;
+                    const svgH = padT + chartH + padB;
+                    const xStep = chartW / (pts.length - 1);
+                    const yMin = 0, yMax = 100;
+                    const toX = i => padL + i * xStep;
+                    const toY = v => padT + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
+                    const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i)},${toY(p.val)}`).join(' ');
+                    const areaPath = linePath + ` L${toX(pts.length - 1)},${padT + chartH} L${toX(0)},${padT + chartH} Z`;
+                    return (
+                      <div className="panel" style={{ border: '1.5px solid #E2E8F0', overflow: 'hidden' }}>
+                        <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #1E3A8A, #1D4ED8)', color: '#fff' }}>
+                          <h3 style={{ color: '#fff', margin: 0 }}>📈 Term Average Trend</h3>
+                        </div>
+                        <div className="panel-body" style={{ padding: '20px 10px' }}>
+                          <svg viewBox={`0 0 ${svgW} ${svgH}`} style={{ width: '100%', height: 'auto' }}>
+                            <defs>
+                              <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25" />
+                                <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.02" />
+                              </linearGradient>
+                            </defs>
+                            {[0, 25, 50, 75, 100].map(v => (
+                              <g key={v}>
+                                <line x1={padL} y1={toY(v)} x2={padL + chartW} y2={toY(v)} stroke="#E2E8F0" strokeWidth="1" />
+                                <text x={padL - 6} y={toY(v) + 4} textAnchor="end" fontSize="9" fill="#94A3B8" fontWeight="700">{v}%</text>
+                              </g>
+                            ))}
+                            <path d={areaPath} fill="url(#lineGrad)" />
+                            <path d={linePath} fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            {pts.map((p, i) => (
+                              <g key={i}>
+                                <circle cx={toX(i)} cy={toY(p.val)} r="5" fill="#fff" stroke="#3B82F6" strokeWidth="2.5" />
+                                <text x={toX(i)} y={toY(p.val) - 10} textAnchor="middle" fontSize="10" fontWeight="900" fill="#1D4ED8">{p.val}%</text>
+                                <text x={toX(i)} y={padT + chartH + 16} textAnchor="middle" fontSize="8" fontWeight="700" fill="#64748B">{p.label.length > 8 ? p.label.slice(0, 7) + '…' : p.label}</text>
+                              </g>
+                            ))}
+                          </svg>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
                   {/* Detailed Subject Standings */}
                   <div className="panel" style={{ border: `1.5px solid ${MB}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>

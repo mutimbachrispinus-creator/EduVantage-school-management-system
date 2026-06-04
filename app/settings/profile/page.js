@@ -356,135 +356,17 @@ function SchoolProfileContent() {
 
             {tab === 'integrations' && (
               <div className="sg sg1">
-                {/* ── Safaricom Daraja M-Pesa ── */}
-                <div style={{ background: '#F0FDF4', padding: 20, borderRadius: 16, border: '1.5px solid #86EFAC', marginBottom: 20 }}>
+                {/* ── Centralized Gateways Removed ── */}
+                <div style={{ background: '#F8FAFC', padding: 20, borderRadius: 16, border: '1.5px solid #E2E8F0', marginBottom: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                    <span style={{ fontSize: 28 }}>🟢</span>
+                    <span style={{ fontSize: 28 }}>⚙️</span>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: 16 }}>Safaricom Daraja (M-Pesa)</h3>
-                      <p style={{ margin: 0, fontSize: 12, color: '#16A34A' }}>Required for STK Push fee payments and B2B disbursements</p>
+                      <h3 style={{ margin: 0, fontSize: 16 }}>Payment & Communication Gateways</h3>
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>Managed centrally by the platform</p>
                     </div>
                   </div>
-                  <div className="field-row">
-                    <div className="field">
-                      <label>Consumer Key</label>
-                      <input type="password" autoComplete="new-password" value={apiKeys.mpesaConsumerKey || ''} onChange={e => setApiKeys({...apiKeys, mpesaConsumerKey: e.target.value})} placeholder="Daraja Consumer Key" />
-                    </div>
-                    <div className="field">
-                      <label>Consumer Secret</label>
-                      <input type="password" autoComplete="new-password" value={apiKeys.mpesaConsumerSecret || ''} onChange={e => setApiKeys({...apiKeys, mpesaConsumerSecret: e.target.value})} placeholder="Daraja Consumer Secret" />
-                    </div>
-                  </div>
-                  <div className="field-row">
-                    <div className="field">
-                      <label>Paybill / Shortcode</label>
-                      <input value={apiKeys.mpesaShortcode || ''} onChange={e => setApiKeys({...apiKeys, mpesaShortcode: e.target.value})} placeholder="e.g. 174379" />
-                    </div>
-                    <div className="field">
-                      <label>Lipa Na M-Pesa Passkey</label>
-                      <input type="password" autoComplete="new-password" value={apiKeys.mpesaPasskey || ''} onChange={e => setApiKeys({...apiKeys, mpesaPasskey: e.target.value})} placeholder="Online Passkey from Daraja" />
-                    </div>
-                  </div>
-                  <div className="field-row">
-                    <div className="field">
-                      <label>Initiator Name <span style={{ fontSize: 11, color: '#64748B' }}>(for B2B/B2C)</span></label>
-                      <input value={apiKeys.mpesaInitiatorName || ''} onChange={e => setApiKeys({...apiKeys, mpesaInitiatorName: e.target.value})} placeholder="e.g. testapi" />
-                    </div>
-                    <div className="field">
-                      <label>Security Credential <span style={{ fontSize: 11, color: '#64748B' }}>(RSA encrypted)</span></label>
-                      <input type="password" autoComplete="new-password" value={apiKeys.mpesaSecurityCred || ''} onChange={e => setApiKeys({...apiKeys, mpesaSecurityCred: e.target.value})} placeholder="Base64 RSA password" />
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label>Environment</label>
-                    <select value={apiKeys.mpesaEnv || 'sandbox'} onChange={e => setApiKeys({...apiKeys, mpesaEnv: e.target.value})} style={{ height: 42, borderRadius: 8, border: '1px solid var(--border)', padding: '0 12px', background: '#fff' }}>
-                      <option value="sandbox">Sandbox (Testing)</option>
-                      <option value="production">Production (Live)</option>
-                    </select>
-                  </div>
-                  <p style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
-                    📌 Callback URL: <code style={{ background: '#dcfce7', padding: '2px 6px', borderRadius: 4 }}>https://[yourdomain]/api/mpesa/callback</code>
-                  </p>
-                </div>
-
-                {/* ── PesaPal ── */}
-                <div style={{ background: '#FFF7ED', padding: 20, borderRadius: 16, border: '1.5px solid #FED7AA', marginBottom: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                    <span style={{ fontSize: 28 }}>💳</span>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: 16 }}>PesaPal</h3>
-                      <p style={{ margin: 0, fontSize: 12, color: '#EA580C' }}>Card payments, Airtel Money, and global remittances</p>
-                    </div>
-                  </div>
-                  <div className="field-row">
-                    <div className="field">
-                      <label>Consumer Key</label>
-                      <input type="password" autoComplete="new-password" value={apiKeys.pesapalKey || ''} onChange={e => setApiKeys({...apiKeys, pesapalKey: e.target.value})} placeholder="PesaPal Consumer Key" />
-                    </div>
-                    <div className="field">
-                      <label>Consumer Secret</label>
-                      <input type="password" autoComplete="new-password" value={apiKeys.pesapalSecret || ''} onChange={e => setApiKeys({...apiKeys, pesapalSecret: e.target.value})} placeholder="PesaPal Consumer Secret" />
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label>Environment</label>
-                    <select value={apiKeys.pesapalEnv || 'sandbox'} onChange={e => setApiKeys({...apiKeys, pesapalEnv: e.target.value})} style={{ height: 42, borderRadius: 8, border: '1px solid var(--border)', padding: '0 12px', background: '#fff' }}>
-                      <option value="sandbox">Sandbox (Testing)</option>
-                      <option value="live">Live (Production)</option>
-                    </select>
-                  </div>
-                  <p style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
-                    📌 IPN URL to register in PesaPal dashboard: <code style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>https://[yourdomain]/api/pesapal</code>
-                  </p>
-                </div>
-
-                {/* ── Africa's Talking SMS ── */}
-                <div style={{ background: '#EFF6FF', padding: 20, borderRadius: 16, border: '1.5px solid #BFDBFE', marginBottom: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                    <span style={{ fontSize: 28 }}>📱</span>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: 16 }}>Africa's Talking (SMS)</h3>
-                      <p style={{ margin: 0, fontSize: 12, color: '#2563EB' }}>Attendance alerts, fee receipts, and bulk parent/staff SMS</p>
-                    </div>
-                  </div>
-                  <div className="field-row">
-                    <div className="field">
-                      <label>Username</label>
-                      <input value={apiKeys.atUsername || ''} onChange={e => setApiKeys({...apiKeys, atUsername: e.target.value})} placeholder="sandbox or your AT username" />
-                      <p style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>Use <strong>sandbox</strong> for testing.</p>
-                    </div>
-                    <div className="field">
-                      <label>API Key</label>
-                      <input type="password" autoComplete="new-password" value={apiKeys.atApiKey || ''} onChange={e => setApiKeys({...apiKeys, atApiKey: e.target.value})} placeholder="AT API Key" />
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label>Sender ID / Alphanumeric <span style={{ fontSize: 11, color: '#64748B' }}>(Optional — must be registered with AT)</span></label>
-                    <input value={apiKeys.atSenderId || ''} onChange={e => setApiKeys({...apiKeys, atSenderId: e.target.value})} placeholder="e.g. EDUVANTAGE" />
-                  </div>
-                </div>
-
-                {/* ── Resend Email ── */}
-                <div style={{ background: '#FDF4FF', padding: 20, borderRadius: 16, border: '1.5px solid #E9D5FF', marginBottom: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                    <span style={{ fontSize: 28 }}>📧</span>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: 16 }}>Resend (Email API)</h3>
-                      <p style={{ margin: 0, fontSize: 12, color: '#9333EA' }}>HTML fee receipts, password resets, and official circulars</p>
-                    </div>
-                  </div>
-                  <div className="field-row">
-                    <div className="field">
-                      <label>Resend API Key</label>
-                      <input type="password" autoComplete="new-password" value={apiKeys.resendApiKey || ''} onChange={e => setApiKeys({...apiKeys, resendApiKey: e.target.value})} placeholder="re_xxxxxxxxxxxx" />
-                    </div>
-                    <div className="field">
-                      <label>From Email Address</label>
-                      <input value={apiKeys.resendFromEmail || ''} onChange={e => setApiKeys({...apiKeys, resendFromEmail: e.target.value})} placeholder="e.g. fees@school.ac.ke" />
-                    </div>
-                  </div>
-                  <p style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
-                    Domain must be verified in your Resend dashboard. Get your API key at <strong>resend.com</strong>.
+                  <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
+                    M-Pesa, PesaPal, Africa's Talking (SMS), and Resend (Email) integrations are now configured globally at the platform level. If you need to update your settlement account, please contact the Super Admin.
                   </p>
                 </div>
 
