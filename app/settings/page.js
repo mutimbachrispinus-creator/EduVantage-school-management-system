@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { getCachedUser, getCachedDB } from '@/lib/client-cache';
+import { LanguageSwitcherFull } from '@/components/LanguageSwitcher';
 
 export default function SettingsHubPage() {
   const router = useRouter();
@@ -89,6 +90,10 @@ export default function SettingsHubPage() {
         <div>
           <h2>⚙️ System Settings</h2>
           <p>Configure portal behavior and academic standards</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>Language:</span>
+          <LanguageSwitcherFull />
         </div>
       </div>
 

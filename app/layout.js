@@ -1,5 +1,6 @@
 import '../styles/globals.css';
 import PortalShell from './PortalShell';
+import { I18nProvider } from '@/lib/i18n';
 
 // Using system font stacks to avoid network-dependent build errors
 const inter = { variable: 'font-inter' };
@@ -33,7 +34,9 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body style={{ fontFamily: 'var(--font-inter, Inter, sans-serif)' }}>
-        <PortalShell>{children}</PortalShell>
+        <I18nProvider>
+          <PortalShell>{children}</PortalShell>
+        </I18nProvider>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import '@/styles/signup.css';
 import { getCurriculum } from '@/lib/curriculum';
+import { LanguageSwitcherFull } from '@/components/LanguageSwitcher';
 
 const CURRICULA = [
   { id:'CBC',  icon:'🇰🇪', name:'CBC',        desc:'Kenya Competency Based' },
@@ -202,7 +203,10 @@ export default function SignupPage() {
       </div>
 
       {/* Right Panel */}
-      <div className="su-right">
+      <div className="su-right" style={{ position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 24, right: 24, zIndex: 50 }}>
+          <LanguageSwitcherFull />
+        </div>
         <div className="su-card">
           {/* Progress */}
           <div className="su-progress">
