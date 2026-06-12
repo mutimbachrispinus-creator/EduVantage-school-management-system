@@ -19,84 +19,64 @@ export async function GET() {
 
     const db = await getClient();
     
-    // 1. Fetch all schools (excluding the platform owner) by getting unique tenant IDs from staff
-    const schoolsRes = await db.execute(`
-      SELECT t.tenant_id, 
-             COALESCE(s.plan, 'basic') as plan, 
-             COALESCE(s.status, 'active') as status, 
-             COALESCE(s.amount, 0) as amount, 
-             COALESCE(s.billing_model, 'flat') as billing_model, 
-             COALESCE(s.cycle, 'annual') as cycle, 
-             s.expires_at, 
-             COALESCE(s.learner_limit, 0) as learner_limit, 
-             s.updated_at
-      FROM (SELECT DISTINCT tenant_id FROM staff WHERE tenant_id != 'platform-master') t
-      LEFT JOIN subscriptions s ON t.tenant_id = s.tenant_id
+    // 1. Fetch all schools and aggregate data in a single SQL query to avoid N+1 problem
+    const statsQuery = await db.execute(`
+      SELECT 
+        t.tenant_id as id,
+        COALESCE(sub.plan, 'trial') as plan,
+        COALESCE(sub.status, 'active') as status,
+        COALESCE(sub.amount, 0) as amount,
+        COALESCE(sub.billing_model, 'flat') as billingModel,
+        COALESCE(sub.cycle, 'termly') as cycle,
+        sub.expires_at as expiresAt,
+        COALESCE(sub.learner_limit, 0) as learnerLimit,
+        sub.updated_at as updatedAt,
+        (SELECT COUNT(*) FROM learners l WHERE l.tenant_id = t.tenant_id) as students,
+        (SELECT COUNT(DISTINCT adm) FROM marks m WHERE m.tenant_id = t.tenant_id) as activityCount,
+        (SELECT SUM(amount) FROM paylog p WHERE p.tenant_id = t.tenant_id) as paylogRevenue,
+        (SELECT value FROM kv k WHERE k.key = 'paav_school_profile' AND k.tenant_id = t.tenant_id) as profileJson,
+        (SELECT value FROM kv k WHERE k.key = 'paav_finance_ledger' AND k.tenant_id = t.tenant_id) as ledgerJson
+      FROM (
+        SELECT DISTINCT tenant_id FROM subscriptions WHERE tenant_id != 'platform-master'
+        UNION
+        SELECT DISTINCT tenant_id FROM staff WHERE tenant_id != 'platform-master'
+      ) t
+      LEFT JOIN subscriptions sub ON t.tenant_id = sub.tenant_id
     `);
-    const schools = schoolsRes.rows;
 
-    const schoolStats = await Promise.all(schools.map(async (s) => {
-      // Get student count for this tenant
-      const learnerCount = await db.execute({
-        sql: 'SELECT COUNT(*) as count FROM learners WHERE tenant_id = ?',
-        args: [s.tenant_id]
-      });
-      
-      // Get school name from KV (paav_school_profile)
-      const profileRes = await db.execute({
-        sql: "SELECT value FROM kv WHERE key = 'paav_school_profile' AND tenant_id = ?",
-        args: [s.tenant_id]
-      });
-      
-      let name = s.tenant_id;
+    const schools = statsQuery.rows;
+
+    const schoolStats = schools.map((s) => {
+      let name = s.id;
       let curriculum = 'CBC';
+      
       try {
-        if (profileRes.rows.length) {
-          const profile = JSON.parse(profileRes.rows[0].value);
-          name = profile.name || s.tenant_id;
+        if (s.profileJson) {
+          const profile = JSON.parse(s.profileJson);
+          name = profile.name || s.id;
           curriculum = profile.curriculum || 'CBC';
         }
       } catch (e) {}
 
-      // Actualised Revenue logic: Sum up successful paylog entries and double-entry finance ledgers
-      let totalRevenue = 0;
+      let totalRevenue = Number(s.paylogRevenue || 0);
       try {
-        const revenueRes = await db.execute({
-          sql: "SELECT SUM(amount) as total FROM paylog WHERE tenant_id = ? AND status = 'approved'",
-          args: [s.tenant_id]
-        });
-        totalRevenue += Number(revenueRes.rows[0]?.total || 0);
-
-        // Also aggregate directly from the KV finance ledger
-        const ledgerRes = await db.execute({
-          sql: "SELECT value FROM kv WHERE key = 'paav_finance_ledger' AND tenant_id = ?",
-          args: [s.tenant_id]
-        });
-        if (ledgerRes.rows.length > 0) {
-          const ledger = JSON.parse(ledgerRes.rows[0].value);
+        if (s.ledgerJson) {
+          const ledger = JSON.parse(s.ledgerJson);
           const ledgerTotal = ledger
             .filter(entry => entry.creditAcc === '4001-FEES')
             .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
           totalRevenue += ledgerTotal;
         }
-      } catch (e) {
-        console.error('[SAAS Stats] Failed to parse revenue for tenant:', s.tenant_id, e);
-      }
+      } catch (e) {}
 
-      // Get unique students in marks table for pattern analysis (anti-fraud)
-      const activityRes = await db.execute({
-        sql: 'SELECT COUNT(DISTINCT adm) as count FROM marks WHERE tenant_id = ?',
-        args: [s.tenant_id]
-      });
-
-      const studentsCount = Number(learnerCount.rows[0]?.count || 0);
-      const activityCount = Number(activityRes.rows[0]?.count || 0);
+      const studentsCount = Number(s.students || 0);
+      const activityCount = Number(s.activityCount || 0);
       const planAmount = s.amount || 0;
-      const billingModel = s.billing_model || 'flat';
+      const billingModel = s.billingModel || 'flat';
       const expectedPay = billingModel === 'per-learner' ? Math.max(studentsCount, activityCount) * planAmount : planAmount;
 
       return {
-        id: s.tenant_id,
+        id: s.id,
         name: name,
         plan: s.plan,
         curriculum: curriculum,
@@ -104,19 +84,19 @@ export async function GET() {
         amount: planAmount,
         billingModel: billingModel,
         expectedPay: expectedPay,
-        cycle: s.cycle || 'annual',
-        expiresAt: s.expires_at,
+        cycle: s.cycle,
+        expiresAt: s.expiresAt,
         students: studentsCount,
         activityCount: activityCount,
-        learnerLimit: Number(s.learner_limit || 0), // 0 means unlimited
+        learnerLimit: Number(s.learnerLimit || 0),
         revenue: totalRevenue,
-        lastSync: s.updated_at ? new Date(s.updated_at * 1000).toLocaleString() : 'Never'
+        lastSync: s.updatedAt ? new Date(s.updatedAt * 1000).toLocaleString() : 'Never'
       };
-    }));
+    });
 
     return NextResponse.json({
       totalSchools: schools.length,
-      activeSchools: schools.filter(s => s.status === 'active').length,
+      activeSchools: schoolStats.filter(s => s.status === 'active').length,
       totalRevenue: schoolStats.reduce((acc, s) => acc + s.revenue, 0),
       schools: schoolStats
     });
