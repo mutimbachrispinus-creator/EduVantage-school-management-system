@@ -70,7 +70,8 @@ export default function SettingsHubPage() {
 
   const ALL_SETTINGS_LINKS = [
     { title: '📅 School Calendar', desc: 'Define academic term start and end dates', href: '/settings/calendar', icon: '🗓️' },
-    { title: '⚖️ Assessment Weights', desc: 'Configure contribution of Opener, Mid, and End assessments', href: '/settings/weights', icon: '⚖️' },
+    { title: '⚖️ Assessment Weights', desc: 'Configure contribution of each assessment type towards the final grade', href: '/settings/weights', icon: '⚖️' },
+    { title: '📝 Custom Exams', desc: 'Add school-specific assessments (Mock, CAT, Project Work) beyond curriculum defaults', href: '/settings/exams', icon: '📝' },
     { title: '📊 Grading Scale', desc: 'Configure EE/ME/AE/BE score thresholds', href: '/settings/grading', icon: '📈' },
     { title: '🎓 Education System', desc: 'Switch between CBC, British, and IB curriculums', href: '/settings/profile?tab=info', icon: '📜' },
     { title: '📚 Subjects', desc: 'Add or remove subjects per grade level', href: '/settings/subjects', icon: '📖' },

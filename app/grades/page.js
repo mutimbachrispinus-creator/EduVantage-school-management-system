@@ -12,7 +12,7 @@
 
 import { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getMark } from '@/lib/cbe';
+import { getMark, mergeAssessments } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 import { usePersistedState } from '@/components/TabState';
 import { getCachedUser, getCachedDBMulti, updateLocalDBCache } from '@/lib/client-cache';
@@ -41,6 +41,7 @@ export default function GradesPage() {
   const [justSaved, setJustSaved] = useState(false);
   const [alert,    setAlert]    = useState({ msg: '', type: '' });
   const [teacherAssigns, setTeacherAssigns] = useState({});
+  const [customExams, setCustomExams] = useState([]);
 
   const [grade,  setGrade]  = usePersistedState('paav_grades_grade',  '');
   const [stream, setStream] = usePersistedState('paav_grades_stream', '');
@@ -50,6 +51,7 @@ export default function GradesPage() {
 
   const curr = getCurriculum(school?.curriculum || 'CBC', school?.levels);
   const ALL_GRADES = getAllGrades(school?.curriculum || 'CBC', school);
+  const ASSESSMENTS = mergeAssessments(curr.ASSESSMENT_TYPES || [], customExams);
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const { DEFAULT_SUBJECTS, gInfo, maxPts, LABELS } = curr;
   const isJSSGrade = curr.isJSSGrade || curr.isSecondary || (() => false);
@@ -78,7 +80,8 @@ export default function GradesPage() {
           'paav7_streams',
           'paav8_grad',
           'paav8_subj',
-          'paav_allocations'
+          'paav_allocations',
+          'paav_custom_exams'
         ])
       ]);
 
@@ -113,6 +116,7 @@ export default function GradesPage() {
       setGradCfg( db.paav8_grad     || null);
       setSubjCfg( db.paav8_subj     || {});
       setTeacherAssigns(db.paav_allocations || {});
+      setCustomExams(db.paav_custom_exams || []);
     } catch (e) {
       console.error('Grades load error:', e);
     } finally {
@@ -615,7 +619,7 @@ export default function GradesPage() {
           <div className="field" style={{ marginBottom: 0 }}>
             <label>{LABELS.assessment}</label>
             <select value={assess} onChange={e => setAssess(e.target.value)}>
-              {(curr.ASSESSMENT_TYPES || []).map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
+              {ASSESSMENTS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
             </select>
           </div>
           <div className="field" style={{ marginBottom: 0, minWidth: 200 }}>

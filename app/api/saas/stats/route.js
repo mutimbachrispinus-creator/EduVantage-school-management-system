@@ -19,8 +19,20 @@ export async function GET() {
 
     const db = await getClient();
     
-    // 1. Fetch all schools from subscriptions (excluding the platform owner)
-    const schoolsRes = await db.execute("SELECT * FROM subscriptions WHERE tenant_id != 'platform-master' ORDER BY updated_at DESC");
+    // 1. Fetch all schools (excluding the platform owner) by getting unique tenant IDs from staff
+    const schoolsRes = await db.execute(`
+      SELECT t.tenant_id, 
+             COALESCE(s.plan, 'basic') as plan, 
+             COALESCE(s.status, 'active') as status, 
+             COALESCE(s.amount, 0) as amount, 
+             COALESCE(s.billing_model, 'flat') as billing_model, 
+             COALESCE(s.cycle, 'annual') as cycle, 
+             s.expires_at, 
+             COALESCE(s.learner_limit, 0) as learner_limit, 
+             s.updated_at
+      FROM (SELECT DISTINCT tenant_id FROM staff WHERE tenant_id != 'platform-master') t
+      LEFT JOIN subscriptions s ON t.tenant_id = s.tenant_id
+    `);
     const schools = schoolsRes.rows;
 
     const schoolStats = await Promise.all(schools.map(async (s) => {

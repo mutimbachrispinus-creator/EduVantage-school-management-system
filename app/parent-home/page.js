@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDefaultSubjects, gInfo, fmtK, getMark } from '@/lib/cbe';
+import { getDefaultSubjects, gInfo, fmtK, getMark, isSeniorLevel } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 
 const M = '#8B1A1A', M2 = '#6B1212', ML = '#FDF2F2', MB = '#F5E6E6';
@@ -297,15 +297,8 @@ export default function ParentHome() {
   const currentEvents = events[currentTenant] || [];
   const currentMessages = messages.filter(m => m.tenantId === currentTenant);
 
-  if (children.length === 0) {
-    return (
-      <div className="page on">
-        <div style={{background:`linear-gradient(135deg,${M},${M2})`,padding:24,borderRadius:12,color:'#fff',marginBottom:22}}>
-          <h2>Welcome, {user?.name}</h2>
-          <p>No learner linked to your account. Contact school admin.</p>
-        </div>
-      </div>
-    );
+  if (children.length === 0 && tab !== 'addchild') {
+    setTab('addchild');
   }
 
   const cfg = (feeCfg[currentTenant] || {})[child?.grade] || {};
@@ -324,9 +317,19 @@ export default function ParentHome() {
     : (child?.t1||0)+(child?.t2||0)+(child?.t3||0);
   const bal = exp + (child?.arrears || 0) - paid;
   const tSubjCfg = subjCfg[child?.tenantId] || {};
-  const subjs = (tSubjCfg[child?.grade] && tSubjCfg[child?.grade].length > 0)
+  let subjs = (tSubjCfg[child?.grade] && tSubjCfg[child?.grade].length > 0)
     ? tSubjCfg[child?.grade]
     : getDefaultSubjects(child?.grade, currentPayInfo.profile?.curriculum || 'CBC');
+    
+  if (child?.elective_subjects && isSeniorLevel(child.grade, currentPayInfo.profile?.curriculum || 'CBC')) {
+    try {
+      const electives = JSON.parse(child.elective_subjects);
+      if (Array.isArray(electives) && electives.length > 0) {
+        subjs = subjs.filter(s => electives.includes(s));
+      }
+    } catch(e){}
+  }
+    
   const unr = currentMessages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).filter(m=>!(m.read||[]).includes(user.username)).length;
 
   const TABS = [
@@ -382,7 +385,10 @@ export default function ParentHome() {
             </div>
           )}
           {children.length === 1 && (
-            <p style={{margin:0,opacity:.9,fontSize:13}}>Monitoring: <strong style={{color:'#FCD34D'}}>{child?.name}</strong> — {child?.grade} · {child?.adm}</p>
+            <p style={{margin:0,opacity:.9,fontSize:13}}>
+              Monitoring: <strong style={{color:'#FCD34D'}}>{child?.name}</strong> — {child?.grade} · {child?.adm}
+              {child?.pathway && <span style={{ marginLeft: 8, padding: '2px 6px', background: 'rgba(255,255,255,0.2)', borderRadius: 4, fontSize: 10, fontWeight: 800 }}>🛣️ {child.pathway}</span>}
+            </p>
           )}
         </div>
         <div style={{textAlign:'right'}}>
@@ -414,6 +420,7 @@ export default function ParentHome() {
             <button key={c.adm} onClick={()=>setSelAdm(c.adm)}
               style={{padding:'5px 14px',borderRadius:20,border:`1.5px solid ${selAdm===c.adm?M:'var(--border)'}`,background:selAdm===c.adm?M:'#fff',color:selAdm===c.adm?'#fff':'var(--navy)',cursor:'pointer',fontSize:12,fontWeight:700,transition:'all .2s'}}>
               {c.name} · {c.grade}
+              {c.pathway && <span style={{ marginLeft: 6, fontSize: 10, opacity: 0.8 }}>({c.pathway})</span>}
             </button>
           ))}
         </div>
@@ -463,6 +470,7 @@ export default function ParentHome() {
                     ['Full Name', child?.name],
                     ['Grade / Class', child?.grade],
                     ['Stream', child?.stream || '—'],
+                    ...(child?.pathway ? [['Pathway', child.pathway]] : []),
                     ['DOB', child?.dob || '—'],
                     ['Gender', child?.sex === 'F' ? 'Female' : 'Male'],
                   ].map(([l, v]) => (
@@ -1062,28 +1070,77 @@ export default function ParentHome() {
               <div className="panel-body" style={{ padding: 25 }}>
                 {(() => {
                   const cfg2 = (feeCfg[currentTenant] || {})[child?.grade] || {};
+                  let breakdownItems = [];
+                  
+                  TERMS_LIST.forEach(t => {
+                    const tk = t.id.toLowerCase();
+                    const bd = cfg2[`${tk}_breakdown`];
+                    if (bd && bd.length > 0) {
+                      breakdownItems.push({ isHeader: true, label: `${t.name} Total`, val: cfg2[tk] || 0 });
+                      bd.forEach(item => {
+                        if (Number(item.amount) > 0) {
+                          breakdownItems.push({ isSubItem: true, label: item.name || 'Item', val: Number(item.amount) });
+                        }
+                      });
+                    } else if (cfg2[tk] > 0) {
+                      breakdownItems.push({ label: `${t.name} Expected`, val: cfg2[tk] });
+                    }
+                  });
+
+                  if (!TERMS_LIST.length) {
+                    ['t1', 't2', 't3'].forEach((tk, idx) => {
+                      const bd = cfg2[`${tk}_breakdown`];
+                      if (bd && bd.length > 0) {
+                        breakdownItems.push({ isHeader: true, label: `Term ${idx + 1} Total`, val: cfg2[tk] || 0 });
+                        bd.forEach(item => {
+                          if (Number(item.amount) > 0) {
+                            breakdownItems.push({ isSubItem: true, label: item.name || 'Item', val: Number(item.amount) });
+                          }
+                        });
+                      } else if (cfg2[tk] > 0) {
+                        breakdownItems.push({ label: `Term ${idx + 1} Expected`, val: cfg2[tk] });
+                      }
+                    });
+                  }
+
                   const items = [
-                    ...TERMS_LIST.map(t => ({ label: `${t.name} Expected`, val: cfg2[t.id.toLowerCase()] || 0 })),
-                    ...(!TERMS_LIST.length ? [
-                      { label: 'Term 1 Expected', val: cfg2.t1 || 0 },
-                      { label: 'Term 2 Expected', val: cfg2.t2 || 0 },
-                      { label: 'Term 3 Expected', val: cfg2.t3 || 0 },
-                    ] : []),
+                    ...breakdownItems,
                     { label: 'Transport / Meals', val: (cfg2.transport || 0) + (cfg2.lunch || 0) },
                     { label: 'Activities / Other', val: cfg2.other || 0 },
                     { label: 'Previous Arrears', val: child?.arrears || 0, isRed: true },
-                  ].filter(i => i.val > 0);
+                  ].filter(i => i.val > 0 || i.isHeader);
 
                   if (items.length === 0) return <div style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '40px 0' }}>Detailed breakdown not yet configured.</div>;
 
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {items.map((it, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i === items.length - 1 ? 'none' : '1px dashed #E2E8F0' }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#64748B' }}>{it.label}</span>
-                          <span style={{ fontSize: 14, fontWeight: 800, color: it.isRed ? '#B91C1C' : 'var(--navy)' }}>KES {fmtK(it.val)}</span>
-                        </div>
-                      ))}
+                      {items.map((it, i) => {
+                        if (it.isHeader) {
+                          return (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 6px 0', borderBottom: '2px solid #E2E8F0', marginTop: i > 0 ? 8 : 0 }}>
+                              <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--navy)' }}>{it.label}</span>
+                              <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--navy)' }}>KES {fmtK(it.val)}</span>
+                            </div>
+                          );
+                        }
+                        if (it.isSubItem) {
+                          return (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', paddingLeft: 16, borderBottom: '1px dashed #E2E8F0' }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: '#64748B', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#94A3B8' }}></span>
+                                {it.label}
+                              </span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>KES {fmtK(it.val)}</span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i === items.length - 1 ? 'none' : '1px dashed #E2E8F0' }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: '#64748B' }}>{it.label}</span>
+                            <span style={{ fontSize: 14, fontWeight: 800, color: it.isRed ? '#B91C1C' : 'var(--navy)' }}>KES {fmtK(it.val)}</span>
+                          </div>
+                        );
+                      })}
                       <div style={{ marginTop: 10, padding: 12, background: '#F1F5F9', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>TOTAL REQUIREMENT</span>
                         <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--primary)' }}>KES {fmtK(exp + (child?.arrears || 0))}</span>

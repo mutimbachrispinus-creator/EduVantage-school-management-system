@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getCachedUser } from '@/lib/client-cache';
 import { useSchoolProfile } from '@/lib/school-profile';
 import { getCurriculum } from '@/lib/curriculum';
+import { mergeAssessments } from '@/lib/cbe';
 
 const NAVY = '#0F172A';
 const SLATE = '#64748B';
@@ -13,11 +14,15 @@ export default function WeightsSettingsPage() {
   const router = useRouter();
   const school = useSchoolProfile();
   const curr = useMemo(() => getCurriculum(school?.curriculum || 'CBC', school?.levels), [school?.curriculum]);
-  const assessments = useMemo(() => curr.ASSESSMENT_TYPES || [], [curr]);
+  const builtInAssessments = useMemo(() => curr.ASSESSMENT_TYPES || [], [curr]);
   
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [customExams, setCustomExams] = useState([]);
+  
+  // Merge built-in + custom assessments
+  const assessments = useMemo(() => mergeAssessments(builtInAssessments, customExams), [builtInAssessments, customExams]);
   
   // Default weights based on curriculum
   const defaultWeights = useMemo(() => {
@@ -42,15 +47,21 @@ export default function WeightsSettingsPage() {
       const res = await fetch('/api/db', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [{ type: 'get', key: 'paav_grading_weights' }] })
+        body: JSON.stringify({ requests: [
+          { type: 'get', key: 'paav_grading_weights' },
+          { type: 'get', key: 'paav_custom_exams' }
+        ] })
       });
       const data = await res.json();
       const val = data.results?.[0]?.value;
+      const customVal = data.results?.[1]?.value;
+      const mergedList = mergeAssessments(builtInAssessments, Array.isArray(customVal) ? customVal : []);
+      setCustomExams(Array.isArray(customVal) ? customVal : []);
       
       if (val) {
         const loadedWeights = {};
-        assessments.forEach(a => {
-          loadedWeights[a.key] = (val[a.key] !== undefined) ? (val[a.key] * 100).toFixed(2) : (100 / assessments.length).toFixed(2);
+        mergedList.forEach(a => {
+          loadedWeights[a.key] = (val[a.key] !== undefined) ? (val[a.key] * 100).toFixed(2) : (100 / mergedList.length).toFixed(2);
         });
         setWeights(loadedWeights);
       } else {
@@ -62,7 +73,7 @@ export default function WeightsSettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, assessments, defaultWeights]);
+  }, [router, builtInAssessments, defaultWeights]);
 
   useEffect(() => { load(); }, [load]);
 

@@ -679,6 +679,7 @@ function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
   const [busy,    setBusy]   = useState(false);
   const [saved,   setSaved]  = useState(false);
   const [search,  setSearch] = useState('');
+  const [expandedGrade, setExpandedGrade] = useState(null);
 
   // Compute annual total for a grade from all terms
   function annualFor(g) {
@@ -697,10 +698,28 @@ function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
       [grade]: {
         ...(prev[grade] || {}),
         [key]: Number(val) || 0,
+        [`${key}_breakdown`]: null, // Clear breakdown if total is updated directly
         // Keep the annual field in sync for backward compat
         annual: TERMS.reduce((s, t) => {
           const k = t.id.toLowerCase();
           return s + (k === key ? (Number(val) || 0) : (prev[grade]?.[k] || 0));
+        }, 0)
+      }
+    }));
+  }
+
+  function updateBreakdown(grade, termId, breakdown) {
+    const key = termId.toLowerCase();
+    const total = breakdown.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    setCfg(prev => ({
+      ...prev,
+      [grade]: {
+        ...(prev[grade] || {}),
+        [key]: total,
+        [`${key}_breakdown`]: breakdown,
+        annual: TERMS.reduce((s, t) => {
+          const k = t.id.toLowerCase();
+          return s + (k === key ? total : (prev[grade]?.[k] || 0));
         }, 0)
       }
     }));
@@ -788,25 +807,97 @@ function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
                 transition: 'border-color 0.2s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <span style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 12 }}>{g}</span>
-                  {configured
-                    ? <span className="badge bg-green" style={{ fontSize: 9 }}>✓ Configured — {fmtK(annual)}/yr</span>
-                    : <span className="badge bg-amber" style={{ fontSize: 9 }}>Not set</span>}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      style={{ fontSize: 10, padding: '2px 8px', height: 'auto', border: '1px solid #E2E8F0' }}
+                      onClick={() => setExpandedGrade(expandedGrade === g ? null : g)}
+                    >
+                      {expandedGrade === g ? 'Hide Breakdown' : 'Edit Breakdown'}
+                    </button>
+                    {configured
+                      ? <span className="badge bg-green" style={{ fontSize: 9 }}>✓ Configured — {fmtK(annual)}/yr</span>
+                      : <span className="badge bg-amber" style={{ fontSize: 9 }}>Not set</span>}
+                  </div>
                 </div>
-                <div className="field-row">
-                  {TERMS.map((t, idx) => (
-                    <div className="field" key={t.id}>
-                      <label style={{ fontSize: 10 }}>{t.name}</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={cfg[g]?.[t.id.toLowerCase()] || ''}
-                        onChange={e => updateFee(g, t.id, e.target.value)}
-                        placeholder={idx === 0 ? 'e.g. 15000' : idx === 1 ? 'e.g. 12000' : 'e.g. 10000'}
-                        style={{ borderColor: configured ? 'rgba(5,150,105,0.4)' : undefined }}
-                      />
-                    </div>
-                  ))}
-                </div>
+                
+                {expandedGrade !== g ? (
+                  <div className="field-row">
+                    {TERMS.map((t, idx) => (
+                      <div className="field" key={t.id}>
+                        <label style={{ fontSize: 10 }}>{t.name}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={cfg[g]?.[t.id.toLowerCase()] || ''}
+                          onChange={e => updateFee(g, t.id, e.target.value)}
+                          placeholder={idx === 0 ? 'e.g. 15000' : idx === 1 ? 'e.g. 12000' : 'e.g. 10000'}
+                          style={{ borderColor: configured ? 'rgba(5,150,105,0.4)' : undefined }}
+                          disabled={cfg[g]?.[`${t.id.toLowerCase()}_breakdown`]?.length > 0}
+                          title={cfg[g]?.[`${t.id.toLowerCase()}_breakdown`]?.length > 0 ? "Edit breakdown instead" : ""}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, marginTop: 10 }}>
+                    {TERMS.map(t => {
+                      const tKey = t.id.toLowerCase();
+                      const items = cfg[g]?.[`${tKey}_breakdown`] || [];
+                      return (
+                        <div key={t.id} style={{ marginBottom: 15, paddingBottom: 15, borderBottom: '1px dashed #E2E8F0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--navy)' }}>{t.name} Breakdown</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: '#059669' }}>Total: {fmtK(cfg[g]?.[tKey] || 0)}</span>
+                          </div>
+                          
+                          {items.map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                              <input 
+                                placeholder="Item name (e.g. Tuition)" 
+                                value={item.name}
+                                onChange={e => {
+                                  const newItems = [...items];
+                                  newItems[i].name = e.target.value;
+                                  updateBreakdown(g, t.id, newItems);
+                                }}
+                                style={{ flex: 1, padding: '4px 8px', fontSize: 11 }}
+                              />
+                              <input 
+                                type="number" 
+                                placeholder="Amount" 
+                                value={item.amount}
+                                onChange={e => {
+                                  const newItems = [...items];
+                                  newItems[i].amount = e.target.value;
+                                  updateBreakdown(g, t.id, newItems);
+                                }}
+                                style={{ width: 100, padding: '4px 8px', fontSize: 11 }}
+                              />
+                              <button 
+                                className="btn btn-ghost btn-sm" 
+                                style={{ color: '#EF4444', padding: '0 8px' }}
+                                onClick={() => {
+                                  const newItems = items.filter((_, idx) => idx !== i);
+                                  updateBreakdown(g, t.id, newItems);
+                                }}
+                              >✕</button>
+                            </div>
+                          ))}
+                          <button 
+                            className="btn btn-ghost btn-sm" 
+                            style={{ fontSize: 10, padding: '4px 8px', color: '#3B82F6', border: '1px dashed #BFDBFE' }}
+                            onClick={() => {
+                              const newItems = [...items, { name: '', amount: '' }];
+                              updateBreakdown(g, t.id, newItems);
+                            }}
+                          >+ Add Item</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
                 {configured && (
                   <div style={{ fontSize: 10, color: '#059669', marginTop: 4, textAlign: 'right', fontWeight: 700 }}>
                     Annual Total: {fmtK(annual)}

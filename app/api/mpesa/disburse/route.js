@@ -154,15 +154,16 @@ export async function POST(request) {
       ['platform-master', 'DISBURSE', JSON.stringify(results), Math.floor(Date.now() / 1000)]
     ).catch(() => {});
 
-    const disbursed = results.filter(r => r.status === 'disbursed').length;
+    const initiated = results.filter(r => r.status === 'processing_b2b').length;
     const failed = results.filter(r => r.status === 'failed' || r.status === 'error').length;
 
     return NextResponse.json({
       ok: true,
-      disbursed,
+      initiated,
       failed,
       skipped: results.filter(r => r.status === 'skipped').length,
-      results
+      results,
+      message: `${initiated} school(s) initiated for disbursement. Confirmation arrives via Safaricom callback.`
     });
 
   } catch (e) {

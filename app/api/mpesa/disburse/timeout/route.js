@@ -28,10 +28,11 @@ export async function POST(request) {
     for (let i = 0; i < updatedQueue.length; i++) {
       const item = updatedQueue[i];
       if (item.status === 'processing_b2b' && item.disbursementRef === conversationId) {
-        // Mark as failed due to timeout
+        // Mark as timed_out (distinct from 'failed' — can be retried)
         updatedQueue[i] = {
           ...item,
-          status: 'failed',
+          status: 'timed_out',
+          timedOutAt: new Date().toISOString(),
           failReason: resultDesc
         };
         itemsUpdated++;

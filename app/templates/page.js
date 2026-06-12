@@ -15,7 +15,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
-import { getAllGrades, getCurriculum, gInfo, getDefaultSubjects, maxPts, calcLearnerReportData, getMark, isJSSGrade, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled, buildMeritList, getLabels, getProfessionalRemarks } from '@/lib/cbe';
+import { getAllGrades, getCurriculum, gInfo, getDefaultSubjects, maxPts, calcLearnerReportData, getMark, isJSSGrade, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled, buildMeritList, getLabels, getProfessionalRemarks, mergeAssessments, isSeniorLevel, calcLearnerPoints } from '@/lib/cbe';
 import { useSchoolProfile } from '@/lib/school-profile';
 import { useProfile } from '@/app/PortalShell';
 
@@ -50,6 +50,12 @@ export default function TemplatesPage() {
   const [selLearner, setSelLearner] = useState('');
   const [regType, setRegType] = useState('monthly');
   const [gradingMode, setGradingMode] = useState('per-level');
+  const [customExams, setCustomExams] = useState([]);
+
+  const ASSESSMENTS = useMemo(() => {
+    const currTypes = getCurriculum(profile?.curriculum || 'CBC').ASSESSMENT_TYPES || [];
+    return mergeAssessments(currTypes, customExams);
+  }, [profile?.curriculum, customExams]);
 
   // One-time: read deep-link query params (?grade=...&stream=...&tab=...)
   useEffect(() => {
@@ -82,7 +88,7 @@ export default function TemplatesPage() {
         setUser(auth);
         
         const db = await getCachedDBMulti([
-          'paav6_learners', 'paav6_marks', 'paav8_subj', 'paav6_fees', 'paav8_grad', 'paav6_paylog', 'paav6_feecfg', 'paav_student_attendance', 'paav_school_profile', 'paav_grading_weights', 'paav_terms', 'paav_grading_mode', 'paav6_staff'
+          'paav6_learners', 'paav6_marks', 'paav8_subj', 'paav6_fees', 'paav8_grad', 'paav6_paylog', 'paav6_feecfg', 'paav_student_attendance', 'paav_school_profile', 'paav_grading_weights', 'paav_terms', 'paav_grading_mode', 'paav6_staff', 'paav_custom_exams'
         ]);
         
         setStaff(db.paav6_staff || []);
@@ -99,6 +105,7 @@ export default function TemplatesPage() {
         setFees([...feeList, ...paylogList]);
         setAtt(db.paav_student_attendance || {});
         setGradingMode(db.paav_grading_mode || 'per-level');
+        setCustomExams(db.paav_custom_exams || []);
         
         // Profile is now handled by the useSchoolProfile hook
       } catch (e) { console.error(e); }
@@ -177,6 +184,7 @@ export default function TemplatesPage() {
   const TABS = [
     { id: 'merit',   label: '🏆 Merit List' },
     { id: 'report',  label: '📋 Report Cards' },
+    { id: 'single_exam_rc', label: '📄 Single Exam RC' },
     { id: 'class',   label: '🏫 Class List' },
     { id: 'balance', label: '📊 Fee Balance List' },
     { id: 'receipt', label: `💰 Fee Receipts` },
@@ -245,13 +253,11 @@ export default function TemplatesPage() {
               <option value="T3">Term 3</option>
             </select>
           </div>
-          {tab === 'merit' && (
+          {(tab === 'merit' || tab === 'single_exam_rc' || tab === 'exam_summary') && (
             <div className="field" style={{ marginBottom: 0 }}>
               <label>Assessment</label>
               <select value={assess} onChange={e => setAssess(e.target.value)}>
-                <option value="op1">Opener</option>
-                <option value="mt1">Mid-Term</option>
-                <option value="et1">End-Term</option>
+                {ASSESSMENTS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
               </select>
             </div>
           )}
@@ -300,10 +306,13 @@ export default function TemplatesPage() {
         `}</style>
         
         <div id="pct-merit" className={`print-content ${tab === 'merit' ? 'print-me' : ''}`} style={{ display: tab === 'merit' ? 'block' : 'none' }}>
-          <MeritListTemplate learners={filteredLearners} allGradeLearners={allGradeLearners} subjects={subjects} marks={marks} grade={grade} stream={stream} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} />
+          <MeritListTemplate learners={filteredLearners} allGradeLearners={allGradeLearners} subjects={subjects} marks={marks} grade={grade} stream={stream} term={term} assess={assess} gradCfg={gradCfg} profile={profile} mode={gradingMode} ASSESSMENTS={ASSESSMENTS} />
         </div>
         <div id="pct-report" className={`print-content ${tab === 'report' ? 'print-me' : ''}`} style={{ display: tab === 'report' ? 'block' : 'none' }}>
-          <ReportCardTemplate learners={filteredLearners} allGradeLearners={allGradeLearners} subjects={subjects} marks={marks} grade={grade} stream={stream} term={term} gradCfg={gradCfg} profile={profile} att={att} weights={weights} terms={terms} mode={gradingMode} />
+          <ReportCardTemplate learners={filteredLearners} allGradeLearners={allGradeLearners} subjects={subjects} marks={marks} grade={grade} stream={stream} term={term} gradCfg={gradCfg} profile={profile} att={att} weights={weights} terms={terms} mode={gradingMode} ASSESSMENTS={ASSESSMENTS} customExams={customExams} />
+        </div>
+        <div id="pct-single_exam_rc" className={`print-content ${tab === 'single_exam_rc' ? 'print-me' : ''}`} style={{ display: tab === 'single_exam_rc' ? 'block' : 'none' }}>
+          <SingleExamReportCard learners={filteredLearners} allGradeLearners={allGradeLearners} subjects={subjects} marks={marks} grade={grade} stream={stream} term={term} assess={assess} gradCfg={gradCfg} profile={profile} ASSESSMENTS={ASSESSMENTS} mode={gradingMode} />
         </div>
         <div id="pct-class" className={`print-content ${tab === 'class' ? 'print-me' : ''}`} style={{ display: tab === 'class' ? 'block' : 'none' }}>
           <ClassListTemplate learners={filteredLearners} grade={grade} stream={stream} profile={profile} />
@@ -324,7 +333,7 @@ export default function TemplatesPage() {
           <AttendanceRegisterTemplate learners={filteredLearners} grade={grade} stream={stream} type={regType} att={att} profile={profile} />
         </div>
         <div id="pct-exam_summary" className={`print-content ${tab === 'exam_summary' ? 'print-me' : ''}`} style={{ display: tab === 'exam_summary' ? 'block' : 'none' }}>
-          <ExamSummaryTemplate learners={learners} subjects={subjCfg} marks={marks} gradCfg={gradCfg} profile={profile} mainTerm={term} mainAssess={assess} mode={gradingMode} />
+          <ExamSummaryTemplate learners={learners} subjects={subjCfg} marks={marks} gradCfg={gradCfg} profile={profile} mainTerm={term} mainAssess={assess} mode={gradingMode} ASSESSMENTS={ASSESSMENTS} />
         </div>
       </div>
     </div>
@@ -351,7 +360,7 @@ function PrintHeader({ title, grade, stream = '', profile = {} }) {
   );
 }
 
-function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, grade, stream = '', term, assess, gradCfg, profile, mode = 'per-level' }) {
+function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, grade, stream = '', term, assess, gradCfg, profile, mode = 'per-level', ASSESSMENTS }) {
   const curr = profile?.curriculum || 'CBC';
   const filteredSubjects = (subjects || []).filter(s => s && s.trim());
   const data = buildMeritList(learners, marks, grade, term, assess, gradCfg, curr, filteredSubjects, mode);
@@ -414,7 +423,7 @@ function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, g
     <div>
       <PrintHeader title="MERIT LIST" grade={grade} stream={stream} profile={profile} />
       <div style={{ textAlign: 'center', marginBottom: 15, fontSize: 13, fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: 1 }}>
-        TERM {term.replace('T','')} — {assess === 'op1' ? 'OPENER' : assess === 'mt1' ? 'MID-TERM' : 'END-TERM'} EXAMINATION
+        TERM {term.replace('T','')} — {ASSESSMENTS?.find(a => a.key === assess)?.label?.toUpperCase() || assess.toUpperCase()} EXAMINATION
         {stream && <span style={{ marginLeft: 8, color: '#0369A1' }}>· STREAM {stream}</span>}
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9.5 }}>
@@ -631,13 +640,22 @@ function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, g
   );
 }
 
-function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, grade, stream = '', term, gradCfg, profile, att, weights, terms, mode = 'per-level' }) {
+function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, grade, stream = '', term, gradCfg, profile, att, weights, terms, mode = 'per-level', ASSESSMENTS, customExams = [] }) {
   const curr = profile?.curriculum || 'CBC';
   const themeColor = curr === 'BRITISH' ? '#1E3A8A' : curr === 'CAMBRIDGE' ? '#065F46' : curr === 'IB' ? '#4338CA' : '#8B1A1A';
 
   // Pre-calculate stream ranks (within the passed learners list)
   const rankedData = learners.map(l => {
-    const report = calcLearnerReportData(marks, l.adm, grade, term, subjects, gradCfg, curr, weights, mode);
+    let learnerSubjects = subjects;
+    if (l.elective_subjects && isSeniorLevel(grade, curr)) {
+      try {
+        const electives = JSON.parse(l.elective_subjects);
+        if (Array.isArray(electives) && electives.length > 0) {
+          learnerSubjects = subjects.filter(s => electives.includes(s));
+        }
+      } catch(e){}
+    }
+    const report = calcLearnerReportData(marks, l.adm, grade, term, learnerSubjects, gradCfg, curr, weights, mode, customExams);
     return { ...l, report };
   }).sort((a, b) => {
     if (shouldRankByMarks(grade, curr)) return (b.report?.totalAvgScore || 0) - (a.report?.totalAvgScore || 0);
@@ -656,7 +674,16 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
   // Grade rank (across entire grade, not just this stream)
   const gradeSource = allGradeLearners.length > 0 ? allGradeLearners : learners;
   const allRanked = gradeSource.map(l => {
-    const report = calcLearnerReportData(marks, l.adm, grade, term, subjects, gradCfg, curr, weights, mode);
+    let learnerSubjects = subjects;
+    if (l.elective_subjects && isSeniorLevel(grade, curr)) {
+      try {
+        const electives = JSON.parse(l.elective_subjects);
+        if (Array.isArray(electives) && electives.length > 0) {
+          learnerSubjects = subjects.filter(s => electives.includes(s));
+        }
+      } catch(e){}
+    }
+    const report = calcLearnerReportData(marks, l.adm, grade, term, learnerSubjects, gradCfg, curr, weights, mode, customExams);
     return { adm: l.adm, val: shouldRankByMarks(grade, curr) ? report.totalAvgScore : report.totalAvgPts };
   }).sort((a, b) => b.val - a.val);
   const gradeRankMap = {};
@@ -699,6 +726,7 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
               <div style={{ fontSize: 14, fontWeight: 900, color: themeColor }}>{l.name}</div>
               <div style={{ fontSize: 11, color: '#475569' }}>ADM: <strong>{l.adm}</strong> · Sex: <strong>{l.sex || '—'}</strong></div>
               {l.stream && <div style={{ fontSize: 10, color: '#0369A1', fontWeight: 700, marginTop: 2 }}>🌊 Stream: {l.stream}</div>}
+              {l.pathway && <div style={{ fontSize: 10, color: '#059669', fontWeight: 700, marginTop: 2 }}>🛣️ Pathway: {l.pathway}</div>}
             </div>
             <div style={{ padding: 12, borderRight: `1px solid ${themeColor}33`, background: `${themeColor}05` }}>
               <div style={{ fontSize: 9, color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Academic Period</div>
@@ -733,7 +761,7 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
             <thead>
               <tr style={{ background: themeColor, color: '#fff' }}>
                 <th style={{ padding: 8, textAlign: 'left', borderRadius: '8px 0 0 0' }}>Learning Area / Subject</th>
-                {(getCurriculum(curr).ASSESSMENT_TYPES || []).map(a => (
+                {(ASSESSMENTS || []).map(a => (
                   <th key={a.key} style={{ padding: 8 }}>{a.label.replace(/^[^\s]+\s/, '')}</th>
                 ))}
                 <th style={{ padding: 8, background: 'rgba(255,255,255,0.1)' }}>Avg %</th>
@@ -747,7 +775,7 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
                 return (
                   <tr key={s.subj} style={{ background: idx % 2 === 0 ? '#fff' : '#F8FAFF' }}>
                     <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, fontWeight: 700, color: '#1E293B' }}>{s.subj}</td>
-                    {(getCurriculum(curr).ASSESSMENT_TYPES || []).map(a => {
+                    {(ASSESSMENTS || []).map(a => {
                       const score = s.scores[a.key];
                       const info = s.infos[a.key];
                       return (
@@ -764,10 +792,9 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
                     <td style={{ borderBottom: '1px solid #E2E8F0', padding: 7, textAlign: 'center' }}>
                       {(() => {
                         let dev = 0;
-                        if (s.scores?.et1 !== undefined && s.scores?.mt1 !== undefined && s.scores?.et1 !== null && s.scores?.mt1 !== null) {
-                           dev = s.scores.et1 - s.scores.mt1;
-                        } else if (s.scores?.mt1 !== undefined && s.scores?.op1 !== undefined && s.scores?.mt1 !== null && s.scores?.op1 !== null) {
-                           dev = s.scores.mt1 - s.scores.op1;
+                        const validKeys = ASSESSMENTS.filter(a => s.scores[a.key] !== undefined && s.scores[a.key] !== null).map(a => a.key);
+                        if (validKeys.length >= 2) {
+                           dev = s.scores[validKeys[validKeys.length - 1]] - s.scores[validKeys[validKeys.length - 2]];
                         } else {
                            return <span style={{ color: '#94A3B8' }}>—</span>;
                         }
@@ -825,10 +852,10 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
               <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #E2E8F0' }}>
                 <div style={{ fontSize: 9, fontWeight: 800, color: '#94A3B8', marginBottom: 5 }}>PROFESSIONAL REMARKS</div>
                 <div style={{ fontSize: 11, color: '#1E293B', lineHeight: 1.4, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <strong>Class Teacher:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'teacher', l.adm || l.name)}
+                  <strong>Class Teacher:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'teacher', l.adm || l.name, '', l.pathway)}
                 </div>
                 <div style={{ fontSize: 11, color: '#1E293B', lineHeight: 1.4, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <strong>Principal:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'principal', l.adm || l.name)}
+                  <strong>Principal:</strong> {getProfessionalRemarks(l.report.totalAvgScore, curr, 'principal', l.adm || l.name, '', l.pathway)}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
                   <div style={{ background: '#F8FAFF', padding: 10, borderRadius: 8, border: '1px solid #E2E8F0' }}>
@@ -874,13 +901,14 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
                 <div style={{ fontSize: 9, fontWeight: 800, color: '#94A3B8', marginBottom: 8, textTransform: 'uppercase' }}>Assessment Trend (Avg)</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 60, padding: '0 5px' }}>
                   {[
-                    { label: 'OP', val: l.report.subjects.reduce((a, s) => a + (s.op || 0), 0) / (subjects.length || 1) },
-                    { label: 'MT', val: l.report.subjects.reduce((a, s) => a + (s.mt || 0), 0) / (subjects.length || 1) },
-                    { label: 'ET', val: l.report.subjects.reduce((a, s) => a + (s.et || 0), 0) / (subjects.length || 1) },
-                    { label: 'Final', val: l.report.totalAvgScore }
+                    ...(ASSESSMENTS || []).map(a => ({
+                      label: a.label.substring(0, 3).toUpperCase(),
+                      val: l.report.subjects.reduce((sum, s) => sum + (s.scores?.[a.key] || 0), 0) / (subjects.length || 1)
+                    })),
+                    { label: 'AVG', val: l.report.totalAvgScore }
                   ].map((d, i) => (
                     <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <div style={{ width: '100%', height: `${Math.min(d.val, 100)}%`, background: i === 3 ? themeColor : `${themeColor}44`, borderRadius: '3px 3px 0 0' }}></div>
+                      <div style={{ width: '100%', height: `${Math.min(d.val, 100)}%`, background: i === (ASSESSMENTS || []).length ? themeColor : `${themeColor}44`, borderRadius: '3px 3px 0 0' }}></div>
                       <div style={{ fontSize: 7, fontWeight: 800, marginTop: 4 }}>{d.label}</div>
                     </div>
                   ))}
@@ -911,6 +939,207 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
             </div>
           </div>
 
+          </>
+          )}
+
+          <div style={{ marginTop: 25, paddingTop: 10, borderTop: `2px solid ${themeColor}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 9, color: '#94A3B8' }}>
+            <div>System Generated by <strong>EduVantage SaaS</strong></div>
+            <div>{new Date().toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+            <div style={{ fontWeight: 800 }}>Page {rankedData.indexOf(l) + 1} of {rankedData.length}</div>
+          </div>
+          </div>{/* end rc-page-inner */}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SingleExamReportCard({ learners, allGradeLearners = [], subjects, marks, grade, stream = '', term, assess, gradCfg, profile, mode = 'per-level', ASSESSMENTS }) {
+  const curr = profile?.curriculum || 'CBC';
+  const themeColor = curr === 'BRITISH' ? '#1E3A8A' : curr === 'CAMBRIDGE' ? '#065F46' : curr === 'IB' ? '#4338CA' : '#8B1A1A';
+  const assessLabel = ASSESSMENTS?.find(a => a.key === assess)?.label || assess.toUpperCase();
+
+  // Pre-calculate stream ranks
+  const rankedData = learners.map(l => {
+    let learnerSubjects = subjects;
+    if (l.elective_subjects && isSeniorLevel(grade, curr)) {
+      try {
+        const electives = JSON.parse(l.elective_subjects);
+        if (Array.isArray(electives) && electives.length > 0) {
+          learnerSubjects = subjects.filter(s => electives.includes(s));
+        }
+      } catch(e){}
+    }
+    const report = calcLearnerPoints(marks, l.adm, grade, term, assess, learnerSubjects, gradCfg, curr, mode);
+    return { ...l, report, pct: report.maxTotal > 0 ? (report.totalPts / report.maxTotal * 100) : 0 };
+  }).sort((a, b) => b.pct - a.pct);
+
+  let r = 1;
+  for (let i = 0; i < rankedData.length; i++) {
+    if (i > 0 && rankedData[i].pct < rankedData[i - 1].pct) r = i + 1;
+    rankedData[i].streamRank = r;
+    rankedData[i].streamTotal = learners.length;
+  }
+
+  // Grade rank
+  const gradeSource = allGradeLearners.length > 0 ? allGradeLearners : learners;
+  const allRanked = gradeSource.map(l => {
+    let learnerSubjects = subjects;
+    if (l.elective_subjects && isSeniorLevel(grade, curr)) {
+      try {
+        const electives = JSON.parse(l.elective_subjects);
+        if (Array.isArray(electives) && electives.length > 0) {
+          learnerSubjects = subjects.filter(s => electives.includes(s));
+        }
+      } catch(e){}
+    }
+    const report = calcLearnerPoints(marks, l.adm, grade, term, assess, learnerSubjects, gradCfg, curr, mode);
+    return { adm: l.adm, pct: report.maxTotal > 0 ? (report.totalPts / report.maxTotal * 100) : 0 };
+  }).sort((a, b) => b.pct - a.pct);
+  
+  const gradeRankMap = {};
+  let gr = 1;
+  for (let i = 0; i < allRanked.length; i++) {
+    if (i > 0 && allRanked[i].pct < allRanked[i - 1].pct) gr = i + 1;
+    gradeRankMap[allRanked[i].adm] = gr;
+  }
+  const gradeTotal = gradeSource.length;
+
+  return (
+    <div className="rc-batch">
+      {rankedData.map(l => (
+        <div key={l.adm} className="rc-page" style={{ background: '#FFFDF9', position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
+          <div className="watermark-overlay"></div>
+          <div className="rc-page-inner">
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <PrintHeader title="OFFICIAL PERFORMANCE REPORT" grade={grade} profile={profile} />
+          </div>
+          
+          {(!l.report || !l.report.detail) ? (
+            <div style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>
+              <p>Unable to generate report for {l.name}. Data may be incomplete.</p>
+            </div>
+          ) : (
+          <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 0.8fr', gap: 0, marginBottom: 20, border: `2px solid ${themeColor}`, borderRadius: 10, overflow: 'hidden', fontSize: 11, background: '#fff' }}>
+            <div style={{ padding: 12, borderRight: `1px solid ${themeColor}33` }}>
+              <div style={{ fontSize: 9, color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Learner Identification</div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: themeColor }}>{l.name}</div>
+              <div style={{ fontSize: 11, color: '#475569' }}>ADM: <strong>{l.adm}</strong> · Sex: <strong>{l.sex || '—'}</strong></div>
+              {l.stream && <div style={{ fontSize: 10, color: '#0369A1', fontWeight: 700, marginTop: 2 }}>🌊 Stream: {l.stream}</div>}
+              {l.pathway && <div style={{ fontSize: 10, color: '#059669', fontWeight: 700, marginTop: 2 }}>🛣️ Pathway: {l.pathway}</div>}
+            </div>
+            <div style={{ padding: 12, borderRight: `1px solid ${themeColor}33`, background: `${themeColor}05` }}>
+              <div style={{ fontSize: 9, color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Academic Period</div>
+              <div style={{ fontSize: 14, fontWeight: 800 }}>Term {term.replace('T','')} — {new Date().getFullYear()}</div>
+              <div style={{ fontSize: 11, color: '#475569', fontWeight: 800 }}>Assessment: {assessLabel}</div>
+            </div>
+            <div style={{ padding: 10, textAlign: 'center', background: themeColor, color: '#fff' }}>
+              {stream && allGradeLearners.length > learners.length ? (
+                <>
+                  <div style={{ fontSize: 8, opacity: 0.8, fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>Stream Rank</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1 }}>{l.streamRank}</div>
+                  <div style={{ fontSize: 9, opacity: 0.85 }}>of {l.streamTotal}</div>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: 6, paddingTop: 5 }}>
+                    <div style={{ fontSize: 8, opacity: 0.8, fontWeight: 800, textTransform: 'uppercase' }}>Grade Rank</div>
+                    <div style={{ fontSize: 15, fontWeight: 900 }}>{gradeRankMap[l.adm] || '—'}</div>
+                    <div style={{ fontSize: 8, opacity: 0.85 }}>of {gradeTotal}</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 9, opacity: 0.8, fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Class Rank</div>
+                  <div style={{ fontSize: 24, fontWeight: 900 }}>{l.streamRank}</div>
+                  <div style={{ fontSize: 10, opacity: 0.9 }}>Out of {l.streamTotal} students</div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 11, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+            <thead>
+              <tr style={{ background: themeColor, color: '#fff' }}>
+                <th style={{ padding: 10, textAlign: 'left', borderRadius: '8px 0 0 0' }}>Learning Area / Subject</th>
+                <th style={{ padding: 10, textAlign: 'center' }}>Score</th>
+                <th style={{ padding: 10, textAlign: 'center', borderRadius: '0 8px 0 0' }}>Performance Level</th>
+              </tr>
+            </thead>
+            <tbody>
+              {l.report.detail.map((s, idx) => {
+                const colors = getGradeColors(curr);
+                return (
+                  <tr key={s.subj} style={{ background: idx % 2 === 0 ? '#fff' : '#F8FAFF' }}>
+                    <td style={{ borderBottom: '1px solid #E2E8F0', padding: 8, fontWeight: 700, color: '#1E293B' }}>{s.subj}</td>
+                    <td style={{ borderBottom: '1px solid #E2E8F0', padding: 8, textAlign: 'center', fontWeight: 800 }}>
+                      {s.score !== null ? s.score : '—'}
+                    </td>
+                    <td style={{ borderBottom: '1px solid #E2E8F0', padding: 8, textAlign: 'center' }}>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 900, background: (colors[s.lv] || '#333') + '22', color: colors[s.lv] || '#333', border: `1px solid ${colors[s.lv] || '#333'}` }}>
+                        {s.lv}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 20 }}>
+            <div style={{ padding: 15, borderRadius: 12, border: `2.5px solid ${themeColor}22`, background: '#fff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h4 style={{ margin: 0, color: themeColor, fontSize: 12, fontWeight: 800, textTransform: 'uppercase' }}>Performance Summary</h4>
+                <div style={{ fontSize: 10, color: '#64748B' }}>Total Points: <strong>{l.report.totalPts} / {l.report.maxTotal}</strong></div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
+                <div style={{ background: `${themeColor}08`, padding: 10, borderRadius: 8 }}>
+                  <div style={{ fontSize: 8, color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase' }}>Overall Proficiency</div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: themeColor }}>{gInfo(l.pct, grade, gradCfg, curr, null, mode).lv}</div>
+                  <div style={{ fontSize: 9, color: '#475569', fontStyle: 'italic' }}>{gInfo(l.pct, grade, gradCfg, curr, null, mode).desc}</div>
+                </div>
+                <div style={{ background: '#F0FDF4', padding: 10, borderRadius: 8 }}>
+                  <div style={{ fontSize: 8, color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase' }}>Aggregate Score</div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: '#166534' }}>{l.pct.toFixed(1)}%</div>
+                  <div style={{ fontSize: 9, color: '#166534' }}>Across {l.report.enteredCount} areas</div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #E2E8F0' }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: '#94A3B8', marginBottom: 5 }}>PROFESSIONAL REMARKS</div>
+                <div style={{ fontSize: 11, color: '#1E293B', lineHeight: 1.4, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <strong>Class Teacher:</strong> {getProfessionalRemarks(l.pct, curr, 'teacher', l.adm || l.name, '', l.pathway)}
+                </div>
+                <div style={{ fontSize: 11, color: '#1E293B', lineHeight: 1.4, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <strong>Principal:</strong> {getProfessionalRemarks(l.pct, curr, 'principal', l.adm || l.name, '', l.pathway)}
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ padding: 12, borderRadius: 12, border: '1.5px solid #E2E8F0', background: '#fff', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                 <div style={{ fontSize: 32, marginBottom: 5 }}>{l.pct >= 80 ? '🥇' : l.pct >= 60 ? '🌟' : '📚'}</div>
+                 <div style={{ fontSize: 10, fontWeight: 800, color: themeColor }}>Competency Status</div>
+                 <div style={{ fontSize: 14, fontWeight: 900 }}>{gInfo(l.pct, grade, gradCfg, curr, null, mode).lv}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 30, marginTop: 10 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ height: 40, borderBottom: '1px solid #94A3B8', marginBottom: 5 }}></div>
+              <div style={{ fontSize: 9, color: '#64748B', fontWeight: 700 }}>Class Teacher's Signature</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ height: 40, borderBottom: '1px solid #94A3B8', marginBottom: 5, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {profile.principalSignature && <img src={profile.principalSignature} alt="Principal Sig" style={{ maxHeight: 35, objectFit: 'contain' }} />}
+              </div>
+              <div style={{ fontSize: 9, color: '#64748B', fontWeight: 700 }}>Principal's Stamp & Signature</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ height: 40, borderBottom: '1px solid #94A3B8', marginBottom: 5 }}></div>
+              <div style={{ fontSize: 9, color: '#64748B', fontWeight: 700 }}>Parent / Guardian's Signature</div>
+            </div>
+          </div>
           </>
           )}
 
@@ -1510,7 +1739,7 @@ function AttendanceRegisterTemplate({ learners, grade, type, att, profile }) {
   );
 }
 
-function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, mainTerm, mainAssess, mode = 'per-level' }) {
+function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, mainTerm, mainAssess, mode = 'per-level', ASSESSMENTS }) {
   const [localTerm, setLocalTerm]     = useState(mainTerm || 'T1');
   const [localAssess, setLocalAssess] = useState(mainAssess || 'et1');
   const [localGrade, setLocalGrade]   = useState('ALL');
@@ -1524,7 +1753,6 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
   const assess = localAssess;
   const curr = profile?.curriculum || 'CBC';
   const LABELS = getLabels(curr);
-  const ASSESS_LABELS = { op1: 'Opener Exam', mt1: 'Mid-Term Exam', et1: 'End-Term Exam' };
 
   const ALL_GRADES = getAllGrades(curr, profile);
   const filteredGrades  = localGrade === 'ALL' ? ALL_GRADES : [localGrade];
@@ -1652,9 +1880,7 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
         <div>
           <label style={{ fontSize: 10, fontWeight: 800, color: '#0369A1', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Exam</label>
           <select value={localAssess} onChange={e => setLocalAssess(e.target.value)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #BAE6FD', fontSize: 13, fontWeight: 700, color: '#0369A1' }}>
-            <option value="op1">Opener</option>
-            <option value="mt1">Mid-Term</option>
-            <option value="et1">End-Term</option>
+            {(ASSESSMENTS || []).map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
           </select>
         </div>
         <div>
@@ -1665,14 +1891,14 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
           </select>
         </div>
         <div style={{ fontSize: 12, color: '#0369A1', fontWeight: 700, paddingBottom: 4, marginLeft: 'auto' }}>
-          📊 {totalStudents} learner{totalStudents !== 1 ? 's' : ''} · {ASSESS_LABELS[assess]} · Term {term.replace('T','')}
+          📊 {totalStudents} learner{totalStudents !== 1 ? 's' : ''} · {ASSESSMENTS?.find(a => a.key === assess)?.label || assess} · Term {term.replace('T','')}
         </div>
       </div>
 
       <PrintHeader title={titleLabel} grade={localGrade === 'ALL' ? 'Whole School' : localGrade} profile={profile} />
 
-      <div style={{ textAlign: 'center', marginBottom: 25, fontSize: 13, fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: 1 }}>
-        {localGrade === 'ALL' ? 'Institutional Performance Analysis' : `${localGrade} Performance Analysis`} — Term {term.replace('T','')} {ASSESS_LABELS[assess]}
+      <div style={{ textAlign: 'center', marginBottom: 15, fontSize: 13, fontWeight: 800, color: '#1E293B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        {localGrade === 'ALL' ? 'Institutional Performance Analysis' : `${localGrade} Performance Analysis`} — Term {term.replace('T','')} {ASSESSMENTS?.find(a => a.key === assess)?.label || assess}
       </div>
 
       {/* Overview Cards */}

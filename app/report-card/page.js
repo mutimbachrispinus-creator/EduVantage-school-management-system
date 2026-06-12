@@ -464,9 +464,10 @@ function ReportCardContent() {
         }
 
         /* ── Page container (A4 preview on screen) ── */
-        .rc-pages { padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+        .rc-pages { padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 32px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
         .rc-page {
           width: 210mm;
+          min-width: 210mm;
           min-height: 297mm;
           background: #fff;
           box-shadow: 0 8px 30px rgba(0,0,0,.18);
@@ -502,7 +503,7 @@ function ReportCardContent() {
           margin-bottom: 8px;
         }
         .rc-logo { height: 72px; border-radius: 50%; margin-bottom: 4px; }
-        .rc-school-name { font-size: 17pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
+        .rc-school-name { font-size: 17pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; color: #0f172a; }
         .rc-tagline { font-size: 9pt; color: #475569; margin-top: 2px; }
         .rc-address { font-size: 8.5pt; color: #475569; margin-top: 1px; }
         .rc-card-title {
@@ -605,6 +606,13 @@ function ReportCardContent() {
           border-top: 1px solid #e2e8f0; padding-top: 5px; margin-top: auto;
         }
 
+        @media screen and (max-width: 800px) {
+          .rc-pages {
+            align-items: flex-start;
+            padding: 16px;
+          }
+        }
+
         /* ══════════════ PRINT STYLES ══════════════ */
         @media print {
           @page {
@@ -615,7 +623,7 @@ function ReportCardContent() {
           body { margin: 0; padding: 0; background: #fff !important; }
           .no-print { display: none !important; }
           .rc-root { background: #fff !important; }
-          .rc-pages { padding: 0 !important; gap: 0 !important; background: #fff !important; }
+          .rc-pages { padding: 0 !important; gap: 0 !important; background: #fff !important; overflow: visible !important; width: auto !important; display: block !important; }
           .rc-page {
             width: 100% !important;
             min-height: 0 !important;
@@ -623,14 +631,17 @@ function ReportCardContent() {
             margin: 0 !important;
             box-shadow: none !important;
             page-break-inside: avoid;
+            page-break-after: always;
           }
+          .rc-page:last-child { page-break-after: auto; }
           .rc-page-break { page-break-after: always !important; }
           .rc-outer-border { border: 3px solid #0f172a !important; min-height: 0 !important; }
           .rc-inner-border { border: 1.5px solid #0f172a !important; min-height: 0 !important; }
           .rc-marks-thead { background: #0f172a !important; color: #fff !important; }
           .rc-totals-row  { background: #0f172a !important; color: #fff !important; }
           .rc-card-title  { background: #0f172a !important; color: #fff !important; }
-          .rc-school-name, .rc-card-title, .rc-totals-row, .rc-marks-thead { color: #fff !important; }
+          .rc-school-name { color: #0f172a !important; }
+          .rc-card-title, .rc-totals-row, .rc-marks-thead, .rc-totals-row td, .rc-marks-thead th { color: #fff !important; }
           .rc-score, .rc-pts { font-weight: 800 !important; }
           .rc-overall-grade { font-size: 36pt !important; }
         }

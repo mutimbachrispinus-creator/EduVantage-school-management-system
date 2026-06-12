@@ -13,7 +13,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { fmtK } from '@/lib/cbe';
+import { fmtK, isSeniorLevel, getSeniorPathways, getDefaultSubjects } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 import { useProfile } from '@/app/PortalShell';
 import { usePersistedState } from '@/components/TabState';
@@ -350,7 +350,7 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
     name: '', grade: ALL_GRADES[0] || '', dob: '', adm: '', sex: 'F', age: '',
     stream: '', parent: '', phone: '', parentEmail: '', addr: '', arrears: 0,
     bloodGroup: '', allergies: '', medicalCondition: '', emergencyContact: '', biometric_id: '',
-    nemis_upi: '', index_number: ''
+    nemis_upi: '', index_number: '', pathway: '', elective_subjects: '[]'
   });
   const [err,  setErr]  = useState('');
   const [busy, setBusy] = useState(false);
@@ -395,7 +395,8 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
       bloodGroup: form.bloodGroup, allergies: form.allergies,
       medicalCondition: form.medicalCondition, emergencyContact: form.emergencyContact,
       biometric_id: form.biometric_id || '',
-      nemis_upi: form.nemis_upi || '', index_number: form.index_number || ''
+      nemis_upi: form.nemis_upi || '', index_number: form.index_number || '',
+      pathway: form.pathway || null, elective_subjects: form.elective_subjects || '[]'
     };
 
     const saveRes = await fetch('/api/db', {
@@ -468,13 +469,8 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
           </select></div>
         <div className="field"><label>Age</label>
           <input autoComplete="off" type="number" value={form.age} onChange={e => F('age', e.target.value)} min="3" max="20" /></div>
-        <div className="field">
-          <label>Stream</label>
+        <div className="field"><label>Stream</label>
           <select value={form.stream} onChange={e => F('stream', e.target.value)}>
-            <option value="">Select Stream</option>
-            {streams.filter(s => s.grade === form.grade).map(s => (
-              <option key={s.name} value={s.name}>{s.name}</option>
-            ))}
           </select>
         </div>
       </div>
@@ -671,9 +667,54 @@ function PromoteLearnersModal({ onClose, learners, curr }) {
 /* ─── Edit Learner Modal ───────────────────────────────────────────────── */
 function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
   const { ALL_GRADES } = curr;
-  const [form, setForm] = useState({ ...learner });
+  const [form, setForm] = useState({ ...learner, pathway: learner.pathway || '', elective_subjects: learner.elective_subjects || '[]' });
   const [err,  setErr]  = useState('');
   const [busy, setBusy] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(learner.avatar || null);
+  const [avatarFile, setAvatarFile]       = useState(null); // new base64 photo
+
+  // Compress uploaded image to portrait ID-card dimensions (200×260 JPEG)
+  function compressIDPhoto(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.src = ev.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const TW = 200, TH = 260;
+          const srcR = img.width / img.height, tgtR = TW / TH;
+          let sx = 0, sy = 0, sw = img.width, sh = img.height;
+          if (srcR > tgtR) { sw = img.height * tgtR; sx = (img.width - sw) / 2; }
+          else { sh = img.width / tgtR; sy = (img.height - sh) / 2; }
+          canvas.width = TW; canvas.height = TH;
+          canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, TW, TH);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  }
+
+  async function handlePhotoSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressIDPhoto(file);
+      setAvatarPreview(compressed);
+      setAvatarFile(compressed);
+    } catch { alert('Could not process image. Try a different file.'); }
+  }
+
+  async function removePhoto() {
+    if (!confirm('Remove this learner\'s profile photo?')) return;
+    try {
+      await fetch(`/api/learners/${encodeURIComponent(learner.adm)}/avatar`, { method: 'DELETE' });
+      setAvatarPreview(null); setAvatarFile(null);
+    } catch { /* swallow */ }
+  }
 
   function calculateAge(dobString) {
     if (!dobString) return '';
@@ -692,6 +733,15 @@ function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
     if (!form.name || !form.grade || !form.adm) { setErr('Name, Grade and Adm No are required'); return; }
     setBusy(true);
     try {
+      // Save avatar first if a new one was selected
+      if (avatarFile) {
+        await fetch(`/api/learners/${encodeURIComponent(learner.adm)}/avatar`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatar: avatarFile })
+        });
+      }
+
       const res = await fetch('/api/db', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -702,7 +752,8 @@ function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
             details: {
               ...form,
               name: form.name.toUpperCase(),
-              age: Number(form.age) || ''
+              age: Number(form.age) || '',
+              avatar: avatarFile || form.avatar || null
             }
           }]
         })
@@ -729,6 +780,28 @@ function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
   return (
     <ModalOverlay title={`✏️ Edit Learner: ${learner.name}`} onClose={onClose}>
       {err && <div className="alert alert-err show">{err}</div>}
+
+      {/* ── Profile Photo Upload ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0 16px', borderBottom: '1.5px solid var(--border)', marginBottom: 14 }}>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{ width: 80, height: 104, border: '2px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {avatarPreview
+              ? <img src={avatarPreview} alt="Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontSize: 36 }}>👤</span>}
+          </div>
+          {avatarPreview && (
+            <button onClick={removePhoto} title="Remove photo" style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#EF4444', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>✕</button>
+          )}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', marginBottom: 6 }}>📷 Profile Photo (for ID Cards)</div>
+          <label htmlFor={`photo-${learner.adm}`} style={{ display: 'inline-block', padding: '7px 14px', background: 'var(--primary)', color: '#fff', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>📁 Choose Photo</label>
+          <input id={`photo-${learner.adm}`} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoSelect} style={{ display: 'none' }} />
+          <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 5 }}>JPEG/PNG · Auto-cropped to portrait · Max 500KB</div>
+          {avatarFile && <div style={{ fontSize: 10, color: '#059669', marginTop: 3, fontWeight: 700 }}>✅ New photo ready — will save when you click "Save Changes"</div>}
+        </div>
+      </div>
+
       <div className="field-row">
         <div className="field"><label>Full Name</label>
           <input autoComplete="off" value={form.name} onChange={e => F('name', e.target.value)} /></div>
@@ -786,6 +859,33 @@ function EditLearnerModal({ onClose, learner, isAdmin, streams, curr }) {
         <div className="field"><label>National Exam Index Number</label>
           <input value={form.index_number || ''} onChange={e => F('index_number', e.target.value)} placeholder="e.g. 10000100" /></div>
       </div>
+      {isSeniorLevel(form.grade, curr?.name || 'CBC') && (
+        <div className="field-row">
+          <div className="field"><label>Pathway / Track</label>
+            <select value={form.pathway || ''} onChange={e => F('pathway', e.target.value)}>
+              <option value="">Select Pathway</option>
+              {getSeniorPathways(curr?.name || 'CBC').map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>Elective Subjects</label>
+            <div style={{ maxHeight: 100, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
+              {getDefaultSubjects(form.grade, curr?.name || 'CBC').map(s => {
+                let current = [];
+                try { current = JSON.parse(form.elective_subjects) || []; } catch(e){}
+                if (!Array.isArray(current)) current = [];
+                return (
+                  <label key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, cursor: 'pointer', textTransform: 'none', letterSpacing: 0, padding: '3px 0' }}>
+                    <input type="checkbox" style={{ width: 'auto' }} checked={current.includes(s)} onChange={e => {
+                      const updated = e.target.checked ? [...current, s] : current.filter(x => x !== s);
+                      F('elective_subjects', JSON.stringify(updated));
+                    }} /> {s}
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="field"><label>Address</label>
         <input value={form.addr || ''} onChange={e => F('addr', e.target.value)} /></div>
 
