@@ -188,9 +188,13 @@ export default function LanguageSwitcher({ variant = 'dropdown', showFlags = tru
     return null;
 }
 
-// Compact version for navbar
-export function LanguageSwitcherCompact() {
-    return <LanguageSwitcher variant="icon" />;
+// Compact version for navbar (dark topbar variant)
+export function LanguageSwitcherCompact({ dark = false }) {
+    return (
+        <div style={dark ? { filter: 'brightness(0) invert(1)', opacity: 0.85 } : undefined}>
+            <LanguageSwitcher variant="icon" />
+        </div>
+    );
 }
 
 // Full version for settings page

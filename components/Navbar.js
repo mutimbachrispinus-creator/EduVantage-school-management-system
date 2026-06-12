@@ -16,6 +16,7 @@ import { ALL_NAV } from '@/lib/navigation';
 import { prefetchKeys, clearAllCache } from '@/lib/client-cache';
 import { useProfile } from '@/app/PortalShell';
 import NotificationBell from '@/components/NotificationBell';
+import { LanguageSwitcherCompact } from '@/components/LanguageSwitcher';
 
 
 export default function Navbar({ user, profile, unreadCount = 0, pendingDuties = 0, pendingReqs = 0, onProfileClick }) {
@@ -186,6 +187,11 @@ export default function Navbar({ user, profile, unreadCount = 0, pendingDuties =
         {/* Notification Bell (Hidden on mobile topbar) */}
         <div className="desktop-only">
           <NotificationBell userId={user?.id || user?.username} />
+        </div>
+
+        {/* Language Switcher — compact globe icon */}
+        <div className="desktop-only" title="Switch Language" style={{ display: 'flex', alignItems: 'center' }}>
+          <LanguageSwitcherCompact dark />
         </div>
 
         {/* Message badge (Hidden on mobile topbar) */}
