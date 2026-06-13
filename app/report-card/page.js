@@ -18,11 +18,7 @@ function ReportCardContent() {
   const [gradCfg, setGradCfg] = useState(null);
   const [subjCfg, setSubjCfg] = useState({});
   const [loading, setLoading] = useState(true);
-  const [outreachModal, setOutreachModal] = useState(false);
-  const [outreachTerm, setOutreachTerm] = useState('');
-  const [outreachAssess, setOutreachAssess] = useState('');
-  const [outreachGrade, setOutreachGrade] = useState('');
-  const [outreachMessage, setOutreachMessage] = useState('');
+  const [zoom, setZoom] = useState(1.0);
 
   const admParam   = sp.get('adm')    || '';
   const gradeParam = sp.get('grade')  || '';
@@ -56,10 +52,7 @@ function ReportCardContent() {
     { key: 'et1', label: 'End-Term' },
   ];
   const assessMap = assessments.reduce((acc,a) => ({...acc,[a.key]:a.label}),{});
-  const outreachAssessments = [
-    ...assessments,
-    { key: 'term', label: `Whole ${labels.assessment} Average` }
-  ];
+
 
   const cleanLabel = (value) => String(value || '').replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim();
   const getTermName = (term) => TERMS.find(t => t.id === term)?.name || term;
@@ -68,39 +61,7 @@ function ReportCardContent() {
     `Dear parent, ${getTermName(term)} ${cleanLabel(getAssessName(assess))} results for ${labels.grade} ${grade || ''} are now available. Please log in to the parent portal for the full report card.`
   );
 
-  useEffect(() => {
-    setOutreachTerm(termParam);
-    setOutreachAssess(assessParam);
-    let grade = '';
-    if (admParam) {
-      const learner = learners.find(l => l.adm === admParam);
-      if (learner) grade = learner.grade;
-    }
-    if (!grade && gradeParam) grade = gradeParam;
-    if (!grade && ALL_GRADES.length > 0) grade = ALL_GRADES[0];
-    setOutreachGrade(grade);
-    setOutreachMessage(buildOutreachMessage(termParam, assessParam, grade));
-   }, [termParam, assessParam, admParam, gradeParam, learners, ALL_GRADES]);
 
-  const handleOutreachSubmit = async (e) => {
-    e.preventDefault();
-    setOutreachModal(false);
-    try {
-      const res = await fetch('/api/outreach/sms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ term: outreachTerm, assess: outreachAssess, grade: outreachGrade, message: outreachMessage })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        alert('Outreach SMS sent successfully!');
-      } else {
-        alert('Failed to send outreach SMS: ' + (data.error || 'Unknown error'));
-      }
-    } catch (err) {
-      alert('Error: ' + err.message);
-    }
-  };
 
   if (loading) return <div style={{padding:60,textAlign:'center',color:'#64748b'}}>Generating report card…</div>;
 
@@ -125,11 +86,15 @@ function ReportCardContent() {
          <button onClick={() => router.back()} className="rc-btn-back">← Back</button>
          <span className="rc-info">{targetLearners.length} card{targetLearners.length!==1?'s':''} · {termLabel} · {assessLabel}</span>
          <button onClick={() => window.print()} className="rc-btn-print">🖨️ Print / Save PDF</button>
-         <button onClick={() => setOutreachModal(true)} className="rc-btn-outreach" style={{ marginLeft: '8px' }}>📣 Outreach</button>
+         <button onClick={() => setZoom(z => Math.min(2, +(z + 0.1).toFixed(1)))} title="Zoom In"
+           style={{ background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.25)', color: '#fff', padding: '7px 13px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>+</button>
+         <span style={{ color: 'rgba(255,255,255,.7)', fontSize: 12, fontWeight: 700, minWidth: 36, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
+         <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.1).toFixed(1)))} title="Zoom Out"
+           style={{ background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.25)', color: '#fff', padding: '7px 13px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>-</button>
        </div>
 
       {/* Cards */}
-      <div className="rc-pages">
+      <div className="rc-pages" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
         {targetLearners.map((learner, idx) => {
           const subjects = (subjCfg[learner.grade]?.length > 0 ? subjCfg[learner.grade] : curr.DEFAULT_SUBJECTS?.[learner.grade]) || [];
           const cfg = feeCfg[learner.grade] || {};
@@ -311,145 +276,14 @@ function ReportCardContent() {
         })}
       </div>
 
-      {/* Outreach Modal */}
-      {outreachModal && (
-        <div
-          className="outreach-modal-backdrop"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'rgba(15,23,42,0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '12px'
-          }}
-        >
-          <div
-            className="outreach-modal-content"
-            style={{
-              background: '#fff',
-              borderRadius: 16,
-              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
-              maxWidth: 420,
-              width: '100%',
-              padding: 24
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#0F172A' }}>Send Parent Outreach</h3>
-              <button
-                onClick={() => setOutreachModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: 22, color: '#64748B', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleOutreachSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
-                  Term
-                </label>
-                <select
-                  value={outreachTerm}
-                  onChange={e => {
-                    const nextTerm = e.target.value;
-                    setOutreachTerm(nextTerm);
-                    setOutreachMessage(buildOutreachMessage(nextTerm, outreachAssess, outreachGrade));
-                  }}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
-                >
-                  {TERMS.map(t => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
-                  {labels.assessment} / Exam
-                </label>
-                <select
-                  value={outreachAssess}
-                  onChange={e => {
-                    const nextAssess = e.target.value;
-                    setOutreachAssess(nextAssess);
-                    setOutreachMessage(buildOutreachMessage(outreachTerm, nextAssess, outreachGrade));
-                  }}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
-                >
-                  {outreachAssessments.map(a => (
-                    <option key={a.key} value={a.key}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
-                  Grade
-                </label>
-                <select
-                  value={outreachGrade}
-                  onChange={e => {
-                    const nextGrade = e.target.value;
-                    setOutreachGrade(nextGrade);
-                    setOutreachMessage(buildOutreachMessage(outreachTerm, outreachAssess, nextGrade));
-                  }}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14 }}
-                >
-                  {ALL_GRADES.map(g => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500, color: '#475569' }}>
-                  Message
-                </label>
-                <textarea
-                  value={outreachMessage}
-                  onChange={e => setOutreachMessage(e.target.value)}
-                  rows={4}
-                  placeholder="Write the message parents should receive..."
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 14, resize: 'vertical', lineHeight: 1.5 }}
-                />
-                <div style={{ marginTop: 4, fontSize: 11, color: '#64748B' }}>
-                  School admin controls this message. Learner performance details are appended privately per learner.
-                </div>
-              </div>
-              <button
-                type="submit"
-                style={{
-                  background: '#1E293B',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  marginTop: 8
-                }}
-              >
-                Send SMS to Parents
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+
 
        <style>{`
         /* ── Root & toolbar ── */
-        .rc-root { background: #e5e7eb; min-height: 100vh; }
+        .rc-root { background: #e5e7eb; min-height: 100vh; max-width: 100vw; overflow-x: auto; }
         .rc-toolbar {
-          display: flex; align-items: center; gap: 12;
-          padding: 12px 24px; background: #0F172A;
+          display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+          padding: 10px 20px; background: #0F172A;
           position: sticky; top: 0; z-index: 100;
         }
         .rc-btn-back {
@@ -457,14 +291,14 @@ function ReportCardContent() {
           color: #fff; padding: 7px 16px; border-radius: 8px; cursor: pointer;
           font-size: 13px; font-weight: 600;
         }
-        .rc-info { color: rgba(255,255,255,.65); font-size: 12px; flex: 1; margin-left: 12px; }
+        .rc-info { color: rgba(255,255,255,.65); font-size: 12px; flex: 1; margin-left: 4px; min-width: 80px; }
         .rc-btn-print {
           background: #2563EB; border: none; color: #fff; padding: 8px 22px;
           border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700;
         }
 
         /* ── Page container (A4 preview on screen) ── */
-        .rc-pages { padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 32px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+        .rc-pages { padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 32px; overflow-x: visible; -webkit-overflow-scrolling: touch; width: 100%; box-sizing: border-box; transition: transform 0.2s ease; }
         .rc-page {
           width: 210mm;
           min-width: 210mm;

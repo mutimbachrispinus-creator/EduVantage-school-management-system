@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDefaultSubjects, gInfo, fmtK, getMark, isSeniorLevel } from '@/lib/cbe';
+import { getDefaultSubjects, gInfo, fmtK, getMark, isSeniorLevel, getSeniorPathways } from '@/lib/cbe';
 import { getCurriculum } from '@/lib/curriculum';
 
 const M = '#8B1A1A', M2 = '#6B1212', ML = '#FDF2F2', MB = '#F5E6E6';
@@ -45,6 +45,7 @@ export default function ParentHome() {
   const [mpesaBusy, setMpesaBusy] = useState(false);
   const [mpesaMsg, setMpesaMsg] = useState('');
   const [attendance, setAttendance] = useState({});
+  const [seniorSubjFilter, setSeniorSubjFilter] = useState([]); // selected subjects for senior perf view
 
   useEffect(() => {
     fetch('/api/saas/schools')
@@ -339,7 +340,6 @@ export default function ParentHome() {
     { id:'payments', label:'🧾 Receipts',     icon:'🧾' },
     { id:'timetable',label:'🗓 Timetable',    icon:'🗓' },
     { id:'calendar', label:'📅 Calendar',     icon:'📅' },
-    { id:'msgs',     label:`💬 Messages${unr>0?` (${unr})`:''}`, icon:'💬' },
     { id:'docs',     label:'📂 Files',        icon:'📂' },
     { id:'addchild', label:'➕ Add Child',    icon:'➕' },
   ];
@@ -450,13 +450,6 @@ export default function ParentHome() {
               <div><div className="sc-n" style={{color:bal<=0?'#059669':M}}>{fmtK(bal)}</div><div className="sc-l">Fee Balance</div></div>
             </div>
           </div>
-          <div className="stat-card" style={{borderTop:`4px solid #7C3AED`}}>
-            <div className="sc-inner">
-              <div className="sc-icon" style={{background:'#F5F3FF',fontSize:22}}>💬</div>
-              <div><div className="sc-n" style={{color:'#7C3AED'}}>{unr}</div><div className="sc-l">New Messages</div></div>
-            </div>
-          </div>
-          {/* Child info card */}
           <div className="panel" style={{gridColumn:'1/-1',border:`1.5px solid ${MB}`}}>
             <div className="panel-hdr" style={{background:`linear-gradient(135deg,${M},${M2})`,color:'#fff'}}>
               <h3 style={{color:'#fff'}}>🏠 {child?.name} — Home Dashboard</h3>
@@ -606,13 +599,20 @@ export default function ParentHome() {
               return sc != null ? { s, sc: Number(sc) } : null;
             }).filter(Boolean);
 
-            const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-            const info = gInfo(avg, child?.grade);
+            const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b.sc, 0) / scores.length) : 0;
+            const info = gInfo(avg, child?.grade, null, currentPayInfo.profile?.curriculum || 'CBC');
 
             const currentTermIdx = TERMS_LIST.findIndex(t => t.id === term);
             const prevTerm = currentTermIdx > 0 ? TERMS_LIST[currentTermIdx - 1] : null;
             const prevAvg = prevTerm ? termAverages[prevTerm.id] : null;
             const growth = (prevAvg !== null && avg > 0) ? (avg - prevAvg) : null;
+
+            // Senior subject/pathway selector
+            const curriculum = currentPayInfo.profile?.curriculum || 'CBC';
+            const isSenior = isSeniorLevel(child?.grade, curriculum);
+            const seniorPathways = getSeniorPathways(curriculum);
+            // Determine which subjects to display (respecting senior filter)
+            const displaySubjs = isSenior && seniorSubjFilter.length > 0 ? subjs.filter(s => seniorSubjFilter.includes(s)) : subjs;
 
             return (
               <>
@@ -631,6 +631,32 @@ export default function ParentHome() {
                     </select>
                   </div>
                 </div>
+
+                {/* Senior Subject Selector */}
+                {isSenior && subjs.length > 0 && (
+                  <div style={{background:'#F8F0FF',border:'1.5px solid #DDD6FE',borderRadius:12,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,fontWeight:800,color:'#7C3AED',textTransform:'uppercase',marginBottom:8}}>🎯 {curriculum === 'CBC' ? 'Senior School' : 'Senior / Upper'} — Subject Filter</div>
+                    <div style={{fontSize:11,color:'#6B7280',marginBottom:8}}>Select subjects to view performance. Leave all unchecked to show all.</div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                      {subjs.map(s => {
+                        const checked = seniorSubjFilter.includes(s);
+                        return (
+                          <button key={s}
+                            onClick={() => setSeniorSubjFilter(prev => checked ? prev.filter(x=>x!==s) : [...prev, s])}
+                            style={{padding:'5px 12px',borderRadius:20,border:`1.5px solid ${checked?'#7C3AED':'#DDD6FE'}`,background:checked?'#7C3AED':'#fff',color:checked?'#fff':'#374151',cursor:'pointer',fontSize:11,fontWeight:700,transition:'all .15s'}}>
+                            {s}
+                          </button>
+                        );
+                      })}
+                      {seniorSubjFilter.length > 0 && (
+                        <button onClick={() => setSeniorSubjFilter([])}
+                          style={{padding:'5px 12px',borderRadius:20,border:'1.5px solid #DC2626',background:'transparent',color:'#DC2626',cursor:'pointer',fontSize:11,fontWeight:700}}>
+                          ✕ Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Grid Cards Row */}
                 <div className="sg sg3" style={{ gap: 16 }}>
@@ -683,10 +709,15 @@ export default function ParentHome() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
 
                   {/* ── BAR CHART: Subject Scores vs Class Average ── */}
-                  {scores.length > 0 && (() => {
+                  {(() => {
+                    const filteredScores = displaySubjs.map(s => {
+                      const sc = getMark(marks, term, child?.grade, s, assess, child?.adm);
+                      return sc != null ? { s, sc: Number(sc) } : null;
+                    }).filter(Boolean);
                     const barW = 28, gap = 14, chartH = 200, padL = 40, padB = 70, padT = 20, padR = 10;
-                    const totalW = padL + scores.length * (barW * 2 + gap) + padR;
+                    const totalW = padL + filteredScores.length * (barW * 2 + gap) + padR;
                     const svgW = Math.max(totalW, 360);
+                    if (filteredScores.length === 0) return null;
                     return (
                       <div className="panel" style={{ border: '1.5px solid #E2E8F0', overflow: 'hidden' }}>
                         <div className="panel-hdr" style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', color: '#fff' }}>
@@ -705,7 +736,7 @@ export default function ParentHome() {
                               );
                             })}
                             {/* Bars */}
-                            {scores.map((item, i) => {
+                            {filteredScores.map((item, i) => {
                               const x = padL + i * (barW * 2 + gap) + gap / 2;
                               const sH = (item.sc / 100) * chartH;
                               const classAvg = subjectStats[item.s]?.avg ?? 0;
@@ -805,7 +836,7 @@ export default function ParentHome() {
                       </button>
                     </div>
                     <div className="panel-body" style={{ padding: '15px' }}>
-                      {subjs.map(s => {
+                      {displaySubjs.map(s => {
                         const sc = getMark(marks, term, child?.grade, s, assess, child?.adm);
                         const info = sc != null ? gInfo(Number(sc), child?.grade) : null;
                         const stats = subjectStats[s] || { avg: null, min: null, max: null };
@@ -1221,7 +1252,6 @@ export default function ParentHome() {
                             className="btn btn-success btn-sm w-full" 
                             style={{ background: '#059669', border: 'none', height: 42, borderRadius: 10, fontWeight: 800, boxShadow: '0 4px 12px rgba(5,150,105,0.2)' }}
                             onClick={() => {
-                              const bal = Array.isArray(db.paav_student_fees) ? (db.paav_student_fees.find(f => f.adm === child.adm)?.balance || 0) : 0;
                               setMpesaForm(f => ({ ...f, term: 'T' + term.replace('Term ', '').replace('T', ''), paybillId: acc.id }));
                               setMpesaModal({ adm: child.adm, name: child.name, bal });
                             }}
@@ -1371,29 +1401,6 @@ export default function ParentHome() {
         </div>
       )}
 
-      {/* MESSAGES TAB */}
-      {tab==='msgs' && (
-        <div className="panel" style={{border:`1.5px solid ${MB}`}}>
-          <div className="panel-hdr" style={{background:`linear-gradient(135deg,${M},${M2})`,color:'#fff'}}>
-            <h3 style={{color:'#fff'}}>💬 School Messages</h3>
-          </div>
-          <div className="panel-body">
-            {currentMessages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username||m.from===user.username)
-              .slice(-20).reverse().map((m,i)=>(
-              <div key={i} style={{padding:'12px 0',borderBottom:'1px solid var(--border)'}}>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                  <span style={{fontWeight:700,fontSize:13,color:M}}>{m.from===user.username?`To: ${m.to}`:`From: ${m.from}`}</span>
-                  <span style={{fontSize:11,color:'var(--muted)'}}>{new Date(m.time||Date.now()).toLocaleString()}</span>
-                </div>
-                <div style={{fontSize:13,color:'#334155'}}>{m.text}</div>
-              </div>
-            ))}
-            {currentMessages.filter(m=>m.to==='ALL'||m.to==='ALL_PARENTS'||m.to===user.username).length===0&&(
-              <div style={{color:'var(--muted)',fontSize:12,textAlign:'center',padding:30}}>No messages yet</div>
-            )}
-          </div>
-        </div>
-      )}
       {/* DOCUMENTS TAB */}
       {tab==='docs' && (
         <div className="panel" style={{border:`1.5px solid ${MB}`}}>
