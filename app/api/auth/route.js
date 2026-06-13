@@ -288,14 +288,46 @@ async function handleRegister({ role, name, username, phone, password, links, gr
 
   const hashedPassword = await hashPassword(password);
   const userId = (role === 'parent' ? 'p' : 's') + Date.now() + Math.floor(Math.random() * 100);
-  const tenantId = session?.tenantId || (links && links[0]?.schoolId);
+  
+  let finalLinks = links || [];
+  let tenantId = session?.tenantId || (finalLinks[0]?.schoolId);
 
-  if (!tenantId) return err('Institutional context (tenantId) is missing.');
+  // Auto-link children for parents
+  if (role === 'parent' && phone) {
+    const cleanPhone = phone.replace(/\\D/g, '').slice(-9);
+    if (cleanPhone.length >= 9) {
+      const autoLearners = await query('SELECT tenant_id, adm FROM learners WHERE phone LIKE ? OR parentEmail = ?', [`%${cleanPhone}`, username.toLowerCase()]);
+      const linkMap = new Map();
+      for (const l of finalLinks) {
+        if (l.schoolId && l.adm) {
+          if (!linkMap.has(l.schoolId)) linkMap.set(l.schoolId, new Set());
+          l.adm.split(',').forEach(a => linkMap.get(l.schoolId).add(a.trim()));
+        }
+      }
+      for (const al of autoLearners) {
+        if (!linkMap.has(al.tenant_id)) linkMap.set(al.tenant_id, new Set());
+        linkMap.get(al.tenant_id).add(al.adm);
+      }
+      
+      finalLinks = [];
+      for (const [tid, adms] of linkMap.entries()) {
+        if (adms.size > 0) {
+          finalLinks.push({ schoolId: tid, adm: Array.from(adms).join(',') });
+        }
+      }
+      
+      if (!tenantId && finalLinks.length > 0) {
+        tenantId = finalLinks[0].schoolId;
+      }
+    }
+  }
+
+  if (!tenantId && role !== 'parent') return err('Institutional context (tenantId) is missing.');
+  if (role === 'parent' && finalLinks.length === 0) return err('No students found linked to this phone number. Please contact the school to update their records.');
 
   if (role === 'parent') {
     // Parents can be linked to multiple schools
-    for (const link of (links || [])) {
-      if (!link.schoolId || !link.adm) continue;
+    for (const link of finalLinks) {
       await execute(
         `INSERT INTO staff (id, tenant_id, name, username, role, phone, password, status, childAdm, createdAt)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

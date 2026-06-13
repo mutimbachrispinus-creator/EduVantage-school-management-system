@@ -1407,9 +1407,10 @@
           .btn-xl { padding: 14px 28px; font-size: 15px; }
           .card-1, .card-2 { display: none; }
 
-          /* Stats */
+          /* Stats & Experience Grid */
           .stats-box { flex-direction: column; gap: 30px; }
           .stat-sep { width: 100px; height: 1px; }
+          .experience-grid { flex-direction: column; }
 
           /* Section headers */
           .section-title { font-size: 32px; }

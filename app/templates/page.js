@@ -426,7 +426,8 @@ function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, g
         TERM {term.replace('T','')} — {ASSESSMENTS?.find(a => a.key === assess)?.label?.toUpperCase() || assess.toUpperCase()} EXAMINATION
         {stream && <span style={{ marginLeft: 8, color: '#0369A1' }}>· STREAM {stream}</span>}
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9.5 }}>
+      <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9.5 }}>
         <thead>
           <tr>
             <th style={{ border: '1px solid #ddd', padding: 2, textAlign: 'center' }}>Pos</th>
@@ -576,6 +577,7 @@ function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, g
           )}
         </tbody>
       </table>
+</div>
 
       {/* Distribution Graph (at bottom) */}
       <div style={{ marginTop: 25, padding: 12, border: '1px solid #E2E8F0', borderRadius: 8, background: '#F8FAFF', display: 'flex', alignItems: 'center', gap: 24, pageBreakInside: 'avoid' }}>
@@ -609,7 +611,8 @@ function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, g
       {/* Subject-wise Distribution Table */}
       <div style={{ marginTop: 20, pageBreakInside: 'avoid' }}>
         <div style={{ fontSize: 9, fontWeight: 800, color: '#475569', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Subject-wise Distribution Analysis</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9 }}>
+        <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9 }}>
           <thead>
             <tr style={{ background: '#f8fafc' }}>
               <th style={{ border: '1px solid #ddd', padding: 4, textAlign: 'left' }}>Subject</th>
@@ -635,6 +638,7 @@ function MeritListTemplate({ learners, allGradeLearners = [], subjects, marks, g
             ))}
           </tbody>
         </table>
+</div>
       </div>
     </div>
   );
@@ -757,7 +761,8 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
             </div>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 10.5, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 10.5, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
             <thead>
               <tr style={{ background: themeColor, color: '#fff' }}>
                 <th style={{ padding: 8, textAlign: 'left', borderRadius: '8px 0 0 0' }}>Learning Area / Subject</th>
@@ -815,6 +820,7 @@ function ReportCardTemplate({ learners, allGradeLearners = [], subjects, marks, 
               })}
             </tbody>
           </table>
+</div>
 
           {/* Competency Badge Summary */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 20, justifyContent: 'center', background: '#fff', padding: 10, borderRadius: 12, border: '1px solid #eee' }}>
@@ -1056,7 +1062,8 @@ function SingleExamReportCard({ learners, allGradeLearners = [], subjects, marks
             </div>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 11, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 11, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
             <thead>
               <tr style={{ background: themeColor, color: '#fff' }}>
                 <th style={{ padding: 10, textAlign: 'left', borderRadius: '8px 0 0 0' }}>Learning Area / Subject</th>
@@ -1083,6 +1090,7 @@ function SingleExamReportCard({ learners, allGradeLearners = [], subjects, marks
               })}
             </tbody>
           </table>
+</div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 20 }}>
             <div style={{ padding: 15, borderRadius: 12, border: `2.5px solid ${themeColor}22`, background: '#fff' }}>
@@ -1202,7 +1210,8 @@ function ClassListTemplate({ learners, grade, stream = '', profile }) {
                   <span>🌊 STREAM {s}</span>
                   <span style={{ fontSize: 10, opacity: 0.9 }}>{grp.length} learners · {girls}F / {boys}M</span>
                 </div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
+                <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
                   <TableHead />
                   <tbody>{grp.map((l, i) => <Row key={l.adm} l={l} idx={i} />)}</tbody>
                   <tfoot>
@@ -1213,6 +1222,7 @@ function ClassListTemplate({ learners, grade, stream = '', profile }) {
                     </tr>
                   </tfoot>
                 </table>
+</div>
               </div>
             );
           })}
@@ -1227,7 +1237,8 @@ function ClassListTemplate({ learners, grade, stream = '', profile }) {
         </>
       ) : (
         // Single-stream or filtered stream view
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
+        <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
           <TableHead />
           <tbody>{learners.map((l, i) => <Row key={l.adm} l={l} idx={i} />)}</tbody>
           <tfoot>
@@ -1238,6 +1249,7 @@ function ClassListTemplate({ learners, grade, stream = '', profile }) {
             </tr>
           </tfoot>
         </table>
+</div>
       )}
     </div>
   );
@@ -1265,7 +1277,8 @@ function FeeBalanceListTemplate({ learners, fees, grade, feeCfg, profile }) {
   return (
     <div>
       <PrintHeader title="FEE BALANCE LIST" grade={grade} profile={profile} />
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+      <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
         <thead>
           <tr style={{ background: '#f4f4f4' }}>
             <th style={{ border: '1px solid #ddd', padding: 5, textAlign: 'center' }}>#</th>
@@ -1314,6 +1327,7 @@ function FeeBalanceListTemplate({ learners, fees, grade, feeCfg, profile }) {
           </tr>
         </tbody>
       </table>
+</div>
     </div>
   );
 }
@@ -1458,7 +1472,8 @@ function ReceiptTemplate({ learners, fees, grade, selLearner, feeCfg, profile })
 
             {/* Payment History */}
             <div style={{ fontSize: 10, marginBottom: 5, fontWeight: 700 }}>PAYMENT HISTORY</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+            <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
               <thead>
                 <tr style={{ background: '#F1F5F9', textAlign: 'left' }}>
                   <th style={{ padding: 5, borderBottom: '1px solid #ddd' }}>Date</th>
@@ -1481,6 +1496,7 @@ function ReceiptTemplate({ learners, fees, grade, selLearner, feeCfg, profile })
                 )}
               </tbody>
             </table>
+</div>
 
             <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#8B1A1A', marginTop: 15 }}>
               Thank you for your payment!
@@ -1675,7 +1691,8 @@ function AttendanceRegisterTemplate({ learners, grade, type, att, profile }) {
         <div><strong>Period:</strong> {isAnnual ? new Date().getFullYear() : new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</div>
         <div><strong>Teacher:</strong> ____________________</div>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+      <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
         <thead>
           <tr style={{ background: '#F1F5F9' }}>
             <th style={{ border: '1px solid #333', padding: '3px 4px', width: 30 }}>#</th>
@@ -1725,6 +1742,7 @@ function AttendanceRegisterTemplate({ learners, grade, type, att, profile }) {
           ))}
         </tbody>
       </table>
+</div>
       <div style={{ marginTop: 25, fontSize: 11, display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #ccc', paddingTop: 15 }}>
         <div style={{ display: 'flex', gap: 15 }}>
           <strong>KEY:</strong>
@@ -1952,7 +1970,8 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
         {/* Grade Breakdown Table */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 900, color: '#1E293B', marginBottom: 12, textTransform: 'uppercase' }}>Grade Performance Breakdown</div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+          <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
             <thead>
               <tr style={{ background: '#F1F5F9', borderBottom: '2px solid #E2E8F0' }}>
                 <th style={{ padding: 10, textAlign: 'left' }}>Grade Level</th>
@@ -1982,6 +2001,7 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
               })}
             </tbody>
           </table>
+</div>
         </div>
 
         {/* Graphical Curriculum-Aware Distribution Analysis */}
@@ -2110,7 +2130,8 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
 
         <div>
           <div style={{ fontSize: 11, fontWeight: 900, color: '#1E293B', marginBottom: 12, textTransform: 'uppercase' }}>🚻 Gender Performance Analysis</div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+          <div className="table-responsive">
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
                 <th style={{ padding: 10, textAlign: 'left' }}>Gender</th>
@@ -2133,6 +2154,7 @@ function ExamSummaryTemplate({ learners, subjects, marks, gradCfg, profile, main
               })}
             </tbody>
           </table>
+</div>
           <div style={{ marginTop: 15, padding: 12, background: '#F0FDF4', borderRadius: 10, border: '1px solid #DCFCE7', fontSize: 9, color: '#166534' }}>
             <strong>Gender Insight:</strong> The institution maintains a {Math.abs(genderAnalysis[0].avg - genderAnalysis[1].avg).toFixed(1)}% performance gap between genders.
           </div>

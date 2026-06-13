@@ -5,8 +5,8 @@ import { getCachedUser, getCachedDB, mutateDB } from '@/lib/client-cache';
 import { readSchoolProfile } from '@/lib/school-profile';
 import { useProfile } from '@/app/PortalShell';
 import { useSearchParams } from 'next/navigation';
-
 import { getCurriculum } from '@/lib/curriculum';
+import { COUNTRIES } from '@/lib/country-config';
 
 const PRESET_COLORS = [
   { name: 'Maroon (Default)', p: '#8B1A1A', s: '#D4AF37' },
@@ -22,9 +22,12 @@ function SchoolProfileContent() {
   const [user, setUser] = useState(null);
   
   const [profile, setProfile] = useState(() => {
-    if (typeof window === 'undefined') return { name: '', motto: '', phone: '', email: '', address: '', website: '', logo: '', bankAccounts: [], levels: { pre: true, primary: true, junior: true, senior: true } };
-    const p = readSchoolProfile() || { name: '', motto: '', phone: '', email: '', address: '', website: '', logo: '', bankAccounts: [], levels: { pre: true, primary: true, junior: true, senior: true } };
+    if (typeof window === 'undefined') return { name: '', motto: '', phone: '', email: '', address: '', website: '', logo: '', country: 'KE', currency: 'KES', phonePrefix: '+254', bankAccounts: [], levels: { pre: true, primary: true, junior: true, senior: true } };
+    const p = readSchoolProfile() || { name: '', motto: '', phone: '', email: '', address: '', website: '', logo: '', country: 'KE', currency: 'KES', phonePrefix: '+254', bankAccounts: [], levels: { pre: true, primary: true, junior: true, senior: true } };
     if (!p.levels) p.levels = { pre: true, primary: true, junior: true, senior: true };
+    if (!p.country) p.country = 'KE';
+    if (!p.currency) p.currency = 'KES';
+    if (!p.phonePrefix) p.phonePrefix = '+254';
     return p;
   });
   
@@ -423,10 +426,60 @@ function SchoolProfileContent() {
 
             {tab === 'info' && (
               <div className="sg sg1">
+                {/* ── Country & Currency ── */}
+                <div style={{ background: '#F0F9FF', border: '1.5px solid #BAE6FD', borderRadius: 14, padding: 16, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                    <span style={{ fontSize: 22 }}>🌍</span>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: '#0369A1' }}>Country, Currency & Phone Configuration</div>
+                      <div style={{ fontSize: 12, color: '#64748B' }}>Sets the portal's currency symbol and phone number format across all modules.</div>
+                    </div>
+                  </div>
+                  <div className="field-row">
+                    <div className="field">
+                      <label>Country</label>
+                      <select
+                        value={profile.country || 'KE'}
+                        onChange={e => {
+                          const country = COUNTRIES.find(c => c.code === e.target.value) || COUNTRIES[0];
+                          setProfile({ ...profile, country: country.code, currency: country.currency, phonePrefix: country.phonePrefix });
+                        }}
+                      >
+                        {COUNTRIES.map(c => (
+                          <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Currency</label>
+                      <select
+                        value={profile.currency || 'KES'}
+                        onChange={e => setProfile({ ...profile, currency: e.target.value })}
+                      >
+                        {COUNTRIES.filter((c, i, a) => a.findIndex(x => x.currency === c.currency) === i).map(c => (
+                          <option key={c.currency} value={c.currency}>{c.currencySymbol} — {c.currency}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Phone Country Code</label>
+                      <input
+                        value={profile.phonePrefix || '+254'}
+                        onChange={e => setProfile({ ...profile, phonePrefix: e.target.value })}
+                        placeholder="+254"
+                        style={{ width: 110 }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="field-row">
                   <div className="field">
                     <label>Official Phone</label>
-                    <input value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})} placeholder="07XXXXXXXX" />
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', padding: '0 10px', background: '#F1F5F9', border: '1.5px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>{profile.phonePrefix || '+254'}</span>
+                      <input value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})} placeholder="7XXXXXXXX" style={{ flex: 1 }} />
+                    </div>
                   </div>
                   <div className="field">
                     <label>Official Email</label>

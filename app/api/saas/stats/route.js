@@ -19,7 +19,8 @@ export async function GET() {
 
     const db = await getClient();
     
-    // 1. Fetch all schools and aggregate data in a single SQL query to avoid N+1 problem
+    // 1. Fetch all schools — union across subscriptions, staff AND learners tables
+    //    so schools that exist but never bought a plan still show up.
     const statsQuery = await db.execute(`
       SELECT 
         t.tenant_id as id,
@@ -40,6 +41,8 @@ export async function GET() {
         SELECT DISTINCT tenant_id FROM subscriptions WHERE tenant_id != 'platform-master'
         UNION
         SELECT DISTINCT tenant_id FROM staff WHERE tenant_id != 'platform-master'
+        UNION
+        SELECT DISTINCT tenant_id FROM learners WHERE tenant_id != 'platform-master'
       ) t
       LEFT JOIN subscriptions sub ON t.tenant_id = sub.tenant_id
     `);
@@ -96,7 +99,7 @@ export async function GET() {
 
     return NextResponse.json({
       totalSchools: schools.length,
-      activeSchools: schoolStats.filter(s => s.status === 'active').length,
+      activeSchools: schoolStats.filter(s => !['expired', 'suspended', 'cancelled'].includes(s.status)).length,
       totalRevenue: schoolStats.reduce((acc, s) => acc + s.revenue, 0),
       schools: schoolStats
     });

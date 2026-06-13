@@ -12,7 +12,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { buildMeritList, fmtK, JSS, SENIOR, gInfo, getCurriculum, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled } from '@/lib/cbe';
+import { buildMeritList, fmtK, JSS, SENIOR, gInfo, getCurriculum, getDistributionBuckets, getGradeColors, shouldRankByMarks, isLevelEnabled, mergeAssessments } from '@/lib/cbe';
 import { usePersistedState } from '@/components/TabState';
 import { getCachedUser, getCachedDBMulti } from '@/lib/client-cache';
 import { useSchoolProfile } from '@/lib/school-profile';
@@ -44,6 +44,7 @@ export default function MeritListPage() {
   const [mounted,  setMounted]  = useState(false);
   const [modal,    setModal]    = useState(null);
   const [stream,   setStream]   = useState('');  // '' = all streams (whole grade)
+  const [customExams, setCustomExams] = useState([]);
 
   useEffect(() => setMounted(true), []);
 
@@ -58,11 +59,7 @@ export default function MeritListPage() {
   const LABELS = getLabels(school?.curriculum || 'CBC');
   const TERMS = curr.TERMS || [{ id: 'T1', name: 'Term 1' }, { id: 'T2', name: 'Term 2' }, { id: 'T3', name: 'Term 3' }];
   const ALL_GRADES = (curr.ALL_GRADES || []).filter(g => isLevelEnabled(g, school, school?.curriculum));
-  const ASSESSMENTS = curr.ASSESSMENT_TYPES || [
-    { key: 'op1', label: 'Opener'   },
-    { key: 'mt1', label: 'Mid-Term' },
-    { key: 'et1', label: 'End-Term' },
-  ];
+  const ASSESSMENTS = mergeAssessments(curr.ASSESSMENT_TYPES || [], customExams);
 
   useEffect(() => {
     if (!grade && ALL_GRADES.length > 0) {
@@ -84,7 +81,8 @@ export default function MeritListPage() {
           'paav6_marks',
           'paav8_grad',
           'paav8_subj',
-          'paav_school_profile'
+          'paav_school_profile',
+          'paav_custom_exams'
         ])
       ]);
 
@@ -95,6 +93,7 @@ export default function MeritListPage() {
       setMarks(db.paav6_marks || {});
       setGradCfg(db.paav8_grad || null);
       setSubjCfg(db.paav8_subj || {});
+      setCustomExams(db.paav_custom_exams || []);
     } catch (e) {
       console.error('Merit list load error:', e);
       setError('Connection timed out. Please try again.');

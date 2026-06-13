@@ -506,6 +506,33 @@ function AddLearnerModal({ onClose, isAdmin, streams, curr }) {
         <div className="field"><label>National Exam Index Number</label>
           <input autoComplete="off" value={form.index_number} onChange={e => F('index_number', e.target.value)} placeholder="e.g. 10000100" /></div>
       </div>
+      {isSeniorLevel(form.grade, curr?.name || 'CBC') && (
+        <div className="field-row">
+          <div className="field"><label>Pathway / Track</label>
+            <select value={form.pathway || ''} onChange={e => F('pathway', e.target.value)}>
+              <option value="">Select Pathway</option>
+              {getSeniorPathways(curr?.name || 'CBC').map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>Elective Subjects</label>
+            <div style={{ maxHeight: 100, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
+              {getDefaultSubjects(form.grade, curr?.name || 'CBC').map(s => {
+                let current = [];
+                try { current = JSON.parse(form.elective_subjects) || []; } catch(e){}
+                if (!Array.isArray(current)) current = [];
+                return (
+                  <label key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, cursor: 'pointer', textTransform: 'none', letterSpacing: 0, padding: '3px 0' }}>
+                    <input type="checkbox" style={{ width: 'auto' }} checked={current.includes(s)} onChange={e => {
+                      const updated = e.target.checked ? [...current, s] : current.filter(x => x !== s);
+                      F('elective_subjects', JSON.stringify(updated));
+                    }} /> {s}
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="field"><label>Address</label>
         <input autoComplete="off" value={form.addr} onChange={e => F('addr', e.target.value)} /></div>
 
