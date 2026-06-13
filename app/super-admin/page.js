@@ -58,6 +58,10 @@ export default function SuperAdminPage() {
   const [healthReport, setHealthReport] = useState([]);
   const [runningDiag, setRunningDiag] = useState(false);
   const [settlementQueue, setSettlementQueue] = useState([]);
+  const [smsMsg, setSmsMsg] = useState('');
+  const [smsTarget, setSmsTarget] = useState('all'); // 'all' or specific tenantId
+  const [smsSending, setSmsSending] = useState(false);
+  const [smsResult, setSmsResult] = useState(null);
 
   const load = useCallback(async () => {
     const u = await getCachedUser();
@@ -134,6 +138,46 @@ export default function SuperAdminPage() {
       alert('🚀 Broadcast Updated Successfully!');
     } catch (e) { alert(e.message); }
     finally { setSaving(false); }
+  };
+
+  const sendSmsToAdmins = async () => {
+    if (!smsMsg.trim()) return alert('Please type a message first.');
+    if (!confirm(`Send SMS to ${smsTarget === 'all' ? 'ALL school admins' : `admin of ${smsTarget}`}?`)) return;
+    setSmsSending(true);
+    setSmsResult(null);
+    try {
+      const body = { message: smsMsg.trim() };
+      if (smsTarget !== 'all') body.tenantIds = [smsTarget];
+      const res = await fetch('/api/saas/sms-admins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const d = await res.json();
+      if (d.ok) setSmsResult({ ok: true, msg: `✅ Sent ${d.sent}/${d.total} messages (${d.failed} failed)` });
+      else setSmsResult({ ok: false, msg: `❌ Error: ${d.error}` });
+    } catch (e) { setSmsResult({ ok: false, msg: `❌ ${e.message}` }); }
+    setSmsSending(false);
+  };
+
+  const downloadSchoolCsv = () => {
+    const sch = data?.schools || [];
+    const rows = [
+      ['School Name','Tenant ID','Plan','Status','Curriculum','Learners','Expected Pay (KES)','Revenue (KES)','Expires At'],
+      ...sch.map(s => [
+        s.name, s.id, s.plan, s.status, s.curriculum,
+        s.students, s.expectedPay || 0, s.revenue,
+        s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : 'N/A'
+      ])
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `eduvantage-schools-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleDelete = async (tid, name) => {
@@ -349,7 +393,10 @@ export default function SuperAdminPage() {
                   style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 13, width: 250 }}
                 />
               </div>
-              <button className="btn btn-primary btn-sm" onClick={() => setShowRegister(true)}>+ Register Institution</button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-ghost btn-sm" onClick={downloadSchoolCsv} title="Download all school data as CSV">⬇️ Export CSV</button>
+                <button className="btn btn-primary btn-sm" onClick={() => setShowRegister(true)}>+ Register Institution</button>
+              </div>
             </div>
             <div className="tbl-wrap">
               <table>
@@ -648,28 +695,83 @@ export default function SuperAdminPage() {
         )}
 
         {tab === 'broadcast' && (
-          <div className="panel" style={{ maxWidth: 600, margin: '0 auto' }}>
-            <div className="panel-hdr"><h3>🚀 Global Network Broadcast</h3></div>
-            <div className="panel-body">
-              <div className="field">
-                <label>Announcement Message</label>
-                <textarea rows={4} value={announcement.message} onChange={e => setAnnouncement({...announcement, message: e.target.value})} placeholder="Message for all school administrators..." />
-              </div>
-              <div className="field-row">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 25, maxWidth: 1100, margin: '0 auto' }}>
+            {/* ── In-App Dashboard Broadcast ── */}
+            <div className="panel">
+              <div className="panel-hdr"><h3>🖥️ In-App Dashboard Broadcast</h3></div>
+              <div className="panel-body">
+                <p style={{ fontSize: 12, color: SLATE, marginBottom: 14 }}>Push a banner message to all school admin dashboards. This shows as an alert bar at the top of every portal.</p>
                 <div className="field">
-                  <label>Priority</label>
-                  <select value={announcement.priority} onChange={e => setAnnouncement({...announcement, priority: e.target.value})}>
-                    <option value="normal">Normal (Blue)</option>
-                    <option value="high">High (Yellow)</option>
-                    <option value="critical">Critical (Red)</option>
+                  <label>Announcement Message</label>
+                  <textarea rows={4} value={announcement.message} onChange={e => setAnnouncement({...announcement, message: e.target.value})} placeholder="Message for all school administrators..." />
+                </div>
+                <div className="field-row">
+                  <div className="field">
+                    <label>Priority</label>
+                    <select value={announcement.priority} onChange={e => setAnnouncement({...announcement, priority: e.target.value})}>
+                      <option value="normal">Normal (Blue)</option>
+                      <option value="high">High (Yellow)</option>
+                      <option value="critical">Critical (Red)</option>
+                    </select>
+                  </div>
+                  <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 30 }}>
+                    <input type="checkbox" id="ann-active" checked={announcement.active} onChange={e => setAnnouncement({...announcement, active: e.target.checked})} />
+                    <label htmlFor="ann-active" style={{ margin: 0 }}>Active</label>
+                  </div>
+                </div>
+                <button className="btn btn-primary" style={{ width: '100%', padding: 15 }} onClick={saveBroadcast} disabled={saving}>Push to All Dashboards</button>
+              </div>
+            </div>
+
+            {/* ── SMS to School Admins ── */}
+            <div className="panel" style={{ border: '2px solid #7C3AED' }}>
+              <div className="panel-hdr" style={{ background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', margin: -1, borderRadius: '12px 12px 0 0' }}>
+                <h3 style={{ color: '#fff', margin: 0 }}>📱 SMS to School Admins</h3>
+                <p style={{ color: '#C4B5FD', fontSize: 12, margin: '4px 0 0' }}>Send a live SMS to admin phones via Africa&apos;s Talking</p>
+              </div>
+              <div className="panel-body">
+                <div className="field">
+                  <label>Target</label>
+                  <select value={smsTarget} onChange={e => setSmsTarget(e.target.value)}>
+                    <option value="all">📡 All School Admins ({(data?.schools || []).length} schools)</option>
+                    {(data?.schools || []).map(s => (
+                      <option key={s.id} value={s.id}>🏫 {s.name}</option>
+                    ))}
                   </select>
                 </div>
-                <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 30 }}>
-                  <input type="checkbox" checked={announcement.active} onChange={e => setAnnouncement({...announcement, active: e.target.checked})} />
-                  <label style={{ margin: 0 }}>Active</label>
+                <div className="field">
+                  <label>SMS Message</label>
+                  <textarea
+                    rows={5}
+                    value={smsMsg}
+                    onChange={e => setSmsMsg(e.target.value)}
+                    placeholder="Type your message here...\n\nKeep under 160 characters for a single SMS segment."
+                    style={{ fontFamily: 'monospace' }}
+                  />
+                  <div style={{ fontSize: 11, color: smsMsg.length > 160 ? '#DC2626' : SLATE, marginTop: 4 }}>
+                    {smsMsg.length} chars · ~{Math.ceil(smsMsg.length / 160) || 1} SMS segment{Math.ceil(smsMsg.length / 160) > 1 ? 's' : ''}
+                  </div>
                 </div>
+                {smsResult && (
+                  <div style={{ padding: '10px 14px', borderRadius: 10, marginBottom: 14, fontWeight: 700, fontSize: 13,
+                    background: smsResult.ok ? '#F0FDF4' : '#FEF2F2',
+                    color: smsResult.ok ? '#166534' : '#991B1B',
+                    border: `1px solid ${smsResult.ok ? '#BBF7D0' : '#FECACA'}` }}>
+                    {smsResult.msg}
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: 15, background: smsSending ? '#7C3AED88' : '#7C3AED', borderColor: '#7C3AED' }}
+                  onClick={sendSmsToAdmins}
+                  disabled={smsSending || !smsMsg.trim()}
+                >
+                  {smsSending ? '📡 Sending SMS...' : '📱 Send SMS to Admins'}
+                </button>
+                <p style={{ fontSize: 11, color: SLATE, marginTop: 10, textAlign: 'center' }}>
+                  SMS gateway configured in Global Settings → SMS Gateway (Africa&apos;s Talking)
+                </p>
               </div>
-              <button className="btn btn-primary" style={{ width: '100%', padding: 15 }} onClick={saveBroadcast} disabled={saving}>Push to All Dashboards</button>
             </div>
           </div>
         )}

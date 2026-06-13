@@ -680,6 +680,67 @@ function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
   const [saved,   setSaved]  = useState(false);
   const [search,  setSearch] = useState('');
   const [expandedGrade, setExpandedGrade] = useState(null);
+  const [csvMsg, setCsvMsg] = useState('');
+
+  // Download a CSV template for fee upload
+  function downloadCsvTemplate() {
+    const header = ['Grade', ...TERMS.map(t => t.name)];
+    const rows = (grades || []).map(g => {
+      const cfg_row = [g, ...TERMS.map(t => (feeCfg[g]?.[t.id.toLowerCase()] || 0))];
+      return cfg_row;
+    });
+    const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fee-config-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Parse uploaded CSV fee file
+  function handleCsvUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const lines = ev.target.result.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) { setCsvMsg('❌ CSV has no data rows'); return; }
+        const headers = lines[0].split(',').map(h => h.trim());
+        // First column must be Grade, rest are term names
+        const termCols = headers.slice(1);
+        let updated = 0;
+        const newCfg = { ...cfg };
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map(c => c.trim());
+          const grade = cols[0];
+          if (!grade) continue;
+          const gradeCfg = { ...(newCfg[grade] || {}) };
+          let annual = 0;
+          termCols.forEach((tName, idx) => {
+            // Match by term name (case-insensitive)
+            const term = TERMS.find(t => t.name.toLowerCase() === tName.toLowerCase());
+            const amount = Number(cols[idx + 1]) || 0;
+            if (term) {
+              gradeCfg[term.id.toLowerCase()] = amount;
+              annual += amount;
+            }
+          });
+          gradeCfg.annual = annual;
+          newCfg[grade] = gradeCfg;
+          updated++;
+        }
+        setCfg(newCfg);
+        setCsvMsg(`✅ Imported ${updated} grade(s) from CSV. Review & save below.`);
+      } catch (err) {
+        setCsvMsg(`❌ Parse error: ${err.message}`);
+      }
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  }
 
   // Compute annual total for a grade from all terms
   function annualFor(g) {
@@ -768,6 +829,28 @@ function FeeConfigModal({ feeCfg, grades, onClose, TERMS }) {
     >
       {/* Flex column so content fills modal-body */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
+
+        {/* CSV upload banner */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, padding: '10px 14px', borderRadius: 10,
+          background: '#EEF2FF', border: '1.5px dashed #6366F1', flexShrink: 0, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: '#4338CA', fontWeight: 700, flex: 1, minWidth: 180 }}>📋 Bulk Import via CSV</span>
+          <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '5px 10px' }} onClick={downloadCsvTemplate}>
+            ⬇ Download Template
+          </button>
+          <label className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '5px 10px', cursor: 'pointer', margin: 0 }}>
+            📤 Upload CSV
+            <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={handleCsvUpload} />
+          </label>
+        </div>
+        {csvMsg && (
+          <div style={{ padding: '8px 12px', borderRadius: 8, marginBottom: 10, fontSize: 12, fontWeight: 700,
+            background: csvMsg.startsWith('✅') ? '#F0FDF4' : '#FEF2F2',
+            color: csvMsg.startsWith('✅') ? '#166534' : '#991B1B',
+            border: `1px solid ${csvMsg.startsWith('✅') ? '#BBF7D0' : '#FECACA'}`,
+            flexShrink: 0 }}>
+            {csvMsg}
+          </div>
+        )}
 
         {/* Summary bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14,
