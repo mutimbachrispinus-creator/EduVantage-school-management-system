@@ -67,19 +67,52 @@ export async function POST(request) {
       return NextResponse.json({ error: 'requests must be an array' }, { status: 400 });
     }
 
-    const results = [];
+    const results = new Array(requests.length).fill(null);
+    const getReqs = [];
+    const getIndices = [];
+
+    // 1. Group all 'get' requests to prevent Cloudflare Worker subrequest limits
     for (let i = 0; i < requests.length; i++) {
+      if (requests[i].type === 'get' && requests[i].key) {
+        getReqs.push(requests[i].key);
+        getIndices.push(i);
+      }
+    }
+
+    if (getReqs.length > 0) {
+      try {
+        const batchReq = { type: 'getAll', keys: getReqs };
+        const batchRes = await handleRequest(batchReq, auth, impTenant);
+        for (let j = 0; j < getIndices.length; j++) {
+          const idx = getIndices[j];
+          const key = getReqs[j];
+          results[idx] = {
+            type: 'get',
+            key: key,
+            value: batchRes.data?.[key] ?? null,
+            updatedAt: batchRes.meta?.[key] ?? 0
+          };
+        }
+      } catch (e) {
+        for (let j = 0; j < getIndices.length; j++) {
+          results[getIndices[j]] = { type: 'get', key: getReqs[j], error: e.message, ok: false };
+        }
+      }
+    }
+
+    // 2. Process all other requests sequentially
+    for (let i = 0; i < requests.length; i++) {
+      if (results[i] !== null) continue; // already processed by batch
       const req = requests[i];
       try {
-        const res = await handleRequest(req, auth, impTenant);
-        results.push(res);
+        results[i] = await handleRequest(req, auth, impTenant);
       } catch (reqErr) {
         console.error(`[api/db] Request #${i} (${req.type}) failed:`, reqErr.message);
-        results.push({ 
+        results[i] = { 
           type: req.type, 
           error: reqErr.message || 'Internal error in sub-request',
           ok: false 
-        });
+        };
       }
     }
     return NextResponse.json({ results });
