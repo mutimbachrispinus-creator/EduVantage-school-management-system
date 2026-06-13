@@ -224,7 +224,33 @@ export default function MeritListPage() {
             {stream && <span style={{fontWeight:700,color:'#0369A1',marginLeft:8}}>· Stream {stream}</span>}
           </p>
         </div>
-        <div className="page-hdr-acts">
+        <div className="page-hdr-acts" style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => {
+            let csv = 'Rank,Adm,Name,' + subjects.map(s => `"${s}"`).join(',') + ',Total Marks,Total Pts,Avg Pts,Band,%,VAP\n';
+            ranked.forEach(l => {
+              let row = [l.rank, l.adm, `"${l.name}"`];
+              subjects.forEach(s => {
+                const d = l.detail.find(x => x.subj === s);
+                row.push(d && d.score !== null ? d.score : '');
+              });
+              row.push(l.detail.reduce((sum, d) => sum + (d.score || 0), 0));
+              row.push(l.totalPts);
+              row.push(l.enteredCount > 0 ? (l.totalPts / l.enteredCount).toFixed(2) : 0);
+              const lPct = max ? Number(((l.totalPts/max)*100).toFixed(2)) : 0;
+              const lInfo = max ? gInfo(lPct, grade, gradCfg, school?.curriculum || 'CBC') : { lv: '—' };
+              row.push(lInfo.lv);
+              row.push(lPct);
+              row.push(l.vap || 0);
+              csv += row.join(',') + '\n';
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Merit_List_${grade.replace(/ /g, '_')}_${stream||'All'}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}>⬇️ Export CSV</button>
           <button className="btn btn-ghost btn-sm no-print" onClick={() => {
             const style = document.createElement('style');
             style.innerHTML = '@page { size: A4 landscape; margin: 8mm; }';
