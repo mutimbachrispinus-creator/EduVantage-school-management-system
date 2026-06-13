@@ -3,20 +3,16 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { getEnabledLanguages, getLanguageInfo } from '@/lib/i18n/languages';
+import { useI18n } from '@/lib/i18n';
 
-// Inline language switcher for landing page (avoids i18n context dependency)
+// Inline language switcher for landing page (avoids full reload)
 function LandingLangSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState('en');
+  const { language: currentLang, changeLanguage } = useI18n();
   const ref = useRef(null);
   const languages = getEnabledLanguages();
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('eduvantage_language');
-      if (stored) setCurrentLang(stored);
-    } catch {}
-
     function handleClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
     }
@@ -24,11 +20,9 @@ function LandingLangSwitcher() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (code) => {
-    try { localStorage.setItem('eduvantage_language', code); } catch {}
-    setCurrentLang(code);
+  const handleSelect = async (code) => {
+    await changeLanguage(code);
     setIsOpen(false);
-    window.location.reload(); // Reload to apply language change
   };
 
   const lang = getLanguageInfo(currentLang);
@@ -92,6 +86,7 @@ function LandingLangSwitcher() {
 
 export default function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -111,17 +106,16 @@ export default function LandingNavbar() {
         
         <div className="nav-actions">
           <div className="nav-links desktop-only">
-            <Link href="/curricula">Curricula</Link>
-            <Link href="/workspaces">Workspaces</Link>
+            <Link href="/curricula">{t('landing.supported_curricula') || 'Curricula'}</Link>
             <Link href="/features">Feature Catalog</Link>
+            <Link href="/#about-us">About Us</Link>
             <Link href="/#demo" style={{ color: 'var(--lp-primary,#4F46E5)', fontWeight: 800 }}>🎥 Demo</Link>
-            <Link href="/compare">Compare</Link>
             <Link href="/pricing">Pricing</Link>
           </div>
           <div className="nav-btns" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <LandingLangSwitcher />
             <Link href="/login" className="btn btn-ghost">Sign In</Link>
-            <Link href="/saas/signup" className="btn btn-primary btn-glow">Get Started Free</Link>
+            <Link href="/saas/signup" className="btn btn-primary btn-glow">{t('landing.get_started') || 'Get Started Free'}</Link>
           </div>
         </div>
       </div>

@@ -1411,6 +1411,7 @@
           .stats-box { flex-direction: column; gap: 30px; }
           .stat-sep { width: 100px; height: 1px; }
           .experience-grid { flex-direction: column; }
+          .readiness-grid { grid-template-columns: 1fr; gap: 32px; }
 
           /* Section headers */
           .section-title { font-size: 32px; }

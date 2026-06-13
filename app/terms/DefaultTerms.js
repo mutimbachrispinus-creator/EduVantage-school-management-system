@@ -117,7 +117,15 @@ export default function TermsOfService() {
         <Section title="5. EduVantage Pay — Payment Processing Terms">
           <p>Schools that opt into the <strong>EduVantage Pay</strong> aggregator service agree to the following additional terms:</p>
 
-          <SubHeading>5.1 Aggregator Model</SubHeading>
+          <SubHeading>5.1 Aggregator Model & Third-Party Processors (Important Notice)</SubHeading>
+          <div style={{ background: '#FFFBEB', borderLeft: '4px solid #F59E0B', padding: '16px', borderRadius: '4px', margin: '16px 0', fontSize: '15px' }}>
+            <strong>⚠️ THIRD-PARTY INTEGRATION CONSENT:</strong> EduVantage utilizes external infrastructure to provide seamless services. By using our platform, you explicitly agree to our use of:
+            <ul style={{ marginTop: '8px', marginBottom: 0 }}>
+              <li><strong>Safaricom M-Pesa (Daraja API):</strong> To facilitate STK Push payments, payment reconciliation, and B2C/B2B fund settlements.</li>
+              <li><strong>Pesapal:</strong> As an alternative payment gateway for processing debit/credit card transactions.</li>
+              <li><strong>Africa's Talking:</strong> As the underlying telecommunications provider for all SMS text messaging features.</li>
+            </ul>
+          </div>
           <p>EduVantage operates as a central payment aggregator. Parents and guardians make fee payments to EduVantage's Safaricom Paybill. EduVantage processes these payments and remits collected funds (net of the platform convenience fee) to the school's registered bank account or Till Number.</p>
 
           <SubHeading>5.2 Convenience Fee</SubHeading>

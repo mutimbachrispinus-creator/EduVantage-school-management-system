@@ -90,11 +90,16 @@ export default function DefaultPrivacy() {
           <p>We do <strong>not</strong> sell, rent, or trade your personal data. We share data only in the following limited circumstances:</p>
           <SubHeading>4.1 Within Your School</SubHeading>
           <p>Data is shared with authorized users within each school tenant — administrators, teachers, and parents — strictly based on their assigned role permissions. Data is tenant-isolated; no school can access another school's data.</p>
-          <SubHeading>4.2 Service Providers</SubHeading>
+          <SubHeading>4.2 Third-Party Service Providers (Important Alert)</SubHeading>
+          <div style={{ background: '#FFFBEB', borderLeft: '4px solid #F59E0B', padding: '16px', borderRadius: '4px', margin: '16px 0', fontSize: '15px' }}>
+            <strong>⚠️ IMPORTANT:</strong> By using EduVantage, you acknowledge and agree that certain personal and financial data is transmitted to and processed by our trusted third-party partners to facilitate core platform functions:
+            <ul style={{ marginTop: '8px', marginBottom: 0 }}>
+              <li><strong>Safaricom M-Pesa (Daraja API):</strong> For processing STK Push payments, B2C, and B2B settlements. Phone numbers and transaction amounts are shared securely.</li>
+              <li><strong>PesaPal / Payment Gateway:</strong> For processing credit/debit card and alternative digital payments under PCI DSS compliance.</li>
+              <li><strong>Africa's Talking:</strong> For delivering bulk SMS notifications, alerts, and OTPs to registered mobile numbers.</li>
+            </ul>
+          </div>
           <ul>
-            <li><strong>Safaricom Daraja API:</strong> For M-Pesa STK Push, B2C, and B2B settlement processing.</li>
-            <li><strong>PesaPal / Payment Gateway:</strong> For card and alternative payment processing where applicable.</li>
-            <li><strong>Africa's Talking / SMS Gateway:</strong> For bulk SMS delivery to registered phone numbers.</li>
             <li><strong>Turso / Cloudflare:</strong> Our database and edge hosting infrastructure, operating under strict data processing agreements.</li>
           </ul>
           <SubHeading>4.3 Legal Obligations</SubHeading>

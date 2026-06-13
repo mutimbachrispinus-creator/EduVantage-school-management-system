@@ -7,6 +7,7 @@ import LandingNavbar from '@/components/landing/LandingNavbar';
 import LandingFooter from '@/components/landing/LandingFooter';
 
 import ChatBot from '@/components/ChatBot';
+import { useI18n } from '@/lib/i18n';
 
 // Colors mapped to dynamic CSS variables, falling back to sleek modern theme palettes
 const PRIMARY = 'var(--lp-primary, #4F46E5)'; // Indigo
@@ -34,6 +35,7 @@ export default function LandingPage() {
   const [stats, setStats] = useState({ schools: 0, learners: 0 });
   const [plans, setPlans] = useState([]);
   const [nativeAppMode, setNativeAppMode] = useState(null);
+  const { t } = useI18n();
 
   // Interactive UI states
   const [expandedFaq, setExpandedFaq] = useState(null);
@@ -119,17 +121,15 @@ export default function LandingPage() {
         <div className="hero-mesh"></div>
         
         <div className="container hero-content fade-in-up">
-          <div className="badge-pill pulse-glow">Complete School Management Platform</div>
-          <h1 className="hero-title">
-            Run the school.<br/>See the <span className="text-gradient">whole picture.</span>
-          </h1>
+          <div className="badge-pill pulse-glow">{t('landing.complete_platform') || 'Complete School Management Platform'}</div>
+          <h1 className="hero-title" dangerouslySetInnerHTML={{__html: t('landing.hero_title') || 'Run the school.<br/>See the <span className="text-gradient">whole picture.</span>'}} />
           <p className="hero-subtitle">
-            EduVantage simplifies admissions, fee collections, academics, payroll, and messaging. Manage your entire school efficiently with an intuitive, all-in-one system.
+            {t('landing.hero_subtitle') || 'EduVantage simplifies admissions, fee collections, academics, payroll, and messaging. Manage your entire school efficiently with an intuitive, all-in-one system.'}
           </p>
           
           <div className="hero-actions">
-            <Link href="/saas/signup" className="btn btn-xl btn-primary btn-glow">Get Started</Link>
-            <Link href="/demo" className="btn btn-xl btn-outline glass-btn">Explore Live Demo</Link>
+            <Link href="/saas/signup" className="btn btn-xl btn-primary btn-glow">{t('landing.get_started') || 'Get Started'}</Link>
+            <Link href="/demo" className="btn btn-xl btn-outline glass-btn">{t('landing.explore_demo') || 'Explore Live Demo'}</Link>
           </div>
 
           {/* Floating UI Grid */}
@@ -273,6 +273,36 @@ export default function LandingPage() {
                 <span>{point.value}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── ABOUT US SECTION ── */}
+      <section id="about-us" style={{ padding: '100px 0', background: '#FAFAFB', borderTop: '1px solid #F1F5F9' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 50 }}>
+            <div className="badge-pill">Who We Are</div>
+            <h2 className="section-title">About EduVantage</h2>
+            <p className="section-subtitle">Dedicated to transforming educational administration across Africa.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontSize: '18px', color: 'var(--lp-slate, #64748B)', lineHeight: 1.8, marginBottom: '20px' }}>
+                EduVantage was born from a simple realization: schools spend too much time managing administrative overhead and not enough time focusing on student success. Our mission is to provide an intuitive, comprehensive, and scalable platform that empowers educators, engages parents, and streamlines finance.
+              </p>
+              <p style={{ fontSize: '18px', color: 'var(--lp-slate, #64748B)', lineHeight: 1.8 }}>
+                With deep integrations to national curricula, secure M-Pesa fee collection, and Africa's Talking messaging infrastructure, we are committed to building localized solutions that solve real problems for African institutions.
+              </p>
+            </div>
+            <div style={{ background: '#fff', padding: '40px', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0' }}>
+              <h3 style={{ fontSize: '24px', color: 'var(--lp-dark, #0F172A)', marginBottom: '20px' }}>Our Core Values</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}><span style={{ fontSize: '20px' }}>🌍</span> <span style={{ fontSize: '16px', color: 'var(--lp-slate, #64748B)', fontWeight: 600 }}>Localized for African schools.</span></li>
+                <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}><span style={{ fontSize: '20px' }}>🔒</span> <span style={{ fontSize: '16px', color: 'var(--lp-slate, #64748B)', fontWeight: 600 }}>Uncompromising security and anti-fraud protocols.</span></li>
+                <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}><span style={{ fontSize: '20px' }}>🤝</span> <span style={{ fontSize: '16px', color: 'var(--lp-slate, #64748B)', fontWeight: 600 }}>Seamless parent-teacher-school collaboration.</span></li>
+                <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}><span style={{ fontSize: '20px' }}>🚀</span> <span style={{ fontSize: '16px', color: 'var(--lp-slate, #64748B)', fontWeight: 600 }}>Continuous innovation and reliability.</span></li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
